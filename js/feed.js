@@ -13,9 +13,22 @@ export const EXPLORE = 0.15;
 
 export const weightFor = (kind, prefs = {}) => FEED_BASE[kind] * Math.exp(clamp(prefs[kind] || 0, PREF_MIN, PREF_MAX) / 6);
 
-/** Weighted random pick of the next card kind; never repeats `last` back-to-back. */
-export function pickKind(prefs = {}, rand = Math.random, last = null) {
-  const kinds = Object.keys(FEED_BASE).filter((k) => k !== last);
+/** Topic filters shown above the feed: [id, label, kinds (null = everything), icon]. */
+export const TOPICS = [
+  ['all', 'All', null, 'sparkles'],
+  ['laugh', 'Laugh', ['joke', 'comedy'], 'smile'],
+  ['wisdom', 'Wisdom', ['wisdom'], 'sparkle'],
+  ['learn', 'Learn', ['fact', 'word', 'quiz'], 'bulb'],
+  ['mind', 'Mind', ['eq', 'prompt', 'breathe', 'poll'], 'heart'],
+  ['body', 'Glow-up', ['glow', 'avoid', 'challenge'], 'flame'],
+  ['money', 'Money', ['money'], 'coin'],
+];
+export const topicKinds = (id) => TOPICS.find((t) => t[0] === id)?.[2] || null;
+
+/** Weighted random pick of the next card kind, optionally limited to `allowed`; never repeats `last` back-to-back (unless it's the only option). */
+export function pickKind(prefs = {}, rand = Math.random, last = null, allowed = null) {
+  const pool = (allowed || Object.keys(FEED_BASE)).filter((k) => k in FEED_BASE);
+  const kinds = pool.length > 1 ? pool.filter((k) => k !== last) : pool;
   if (rand() < EXPLORE) return kinds[Math.floor(rand() * kinds.length)];
   const ws = kinds.map((k) => weightFor(k, prefs));
   let r = rand() * ws.reduce((a, b) => a + b, 0);

@@ -13,6 +13,7 @@ export const DEFAULTS = () => ({
     currency: '₱', waterTarget: 8, sleepTarget: 8, bedTime: '22:30', wakeTime: '06:30', budget: 15000,
     socialLimit: 15, weightUnit: 'kg', savingsGoal: 0, savingsName: 'Emergency fund', haptics: true,
     theme: 'dark', accent: 'sunrise', // theme: 'auto' | 'dark' | 'light'
+    feedHint: true, // show "swipe up" hint until the first swipe
     hygAM: ['Brush teeth', 'Wash face', 'Shower', 'Sunscreen', 'Deodorant', 'Groom hair'],
     hygPM: ['Wash face', 'Brush teeth', 'Floss', 'Moisturize', 'Lay out tomorrow\'s clothes', 'Screens off 30 min before bed'],
   },

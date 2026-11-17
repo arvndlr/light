@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { FEED_BASE, pickKind, nudge, dwellSignal, splitJoke, weightFor, topKinds, PREF_MAX, pickIndex, pruneSeen } from '../js/feed.js';
+import { FEED_BASE, pickKind, nudge, dwellSignal, splitJoke, weightFor, topKinds, PREF_MAX, pickIndex, pruneSeen, TOPICS, topicKinds } from '../js/feed.js';
 
 // Deterministic PRNG for distribution tests.
 const prng = (seed = 1) => () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
@@ -26,6 +26,14 @@ test('disliked kinds still appear thanks to exploration', () => {
 test('never repeats the same kind back-to-back', () => {
   const r = prng(3);
   for (let i = 0; i < 2000; i++) assert.notEqual(pickKind({ joke: 15 }, r, 'joke'), 'joke');
+});
+test('topic filter limits kinds, even with one kind and a "last" repeat', () => {
+  const r = prng(5);
+  const learn = topicKinds('learn');
+  for (let i = 0; i < 500; i++) assert.ok(learn.includes(pickKind({}, r, 'fact', learn)));
+  for (let i = 0; i < 50; i++) assert.equal(pickKind({}, r, 'money', topicKinds('money')), 'money');
+  assert.equal(topicKinds('all'), null);
+  for (const [, , kinds] of TOPICS) for (const k of kinds || []) assert.ok(k in FEED_BASE, k);
 });
 test('nudge clamps and ignores unknown kinds', () => {
   const p = {};

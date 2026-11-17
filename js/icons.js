@@ -68,6 +68,10 @@ const P = {
   palette: '<path d="M12 3.5a8.5 8.5 0 0 0 0 17c1 0 1.5-.7 1.5-1.4 0-.9-.8-1.4-.8-2.3 0-.8.7-1.3 1.5-1.3h2.3a4 4 0 0 0 4-4c0-4.4-3.8-8-8.5-8z"/><circle cx="7.8" cy="11" r="1" fill="currentColor" stroke="none"/><circle cx="10.5" cy="7.5" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="7.8" r="1" fill="currentColor" stroke="none"/>',
   bell: '<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 21h4"/>',
   download: '<path d="M12 3.5v11M7.5 10 12 14.5 16.5 10M5 20.5h14"/>',
+  chevronUp: '<path d="M6 15l6-6 6 6"/>',
+  more: '<circle cx="5.5" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.3" fill="currentColor" stroke="none"/>',
+  thumbDown: '<path d="M7.5 13.5V4M7.5 13.5l3.6 6.2a1.9 1.9 0 0 0 3.5-1.3L13.8 15h4.6a2 2 0 0 0 2-2.4l-1.3-6.7A2.4 2.4 0 0 0 16.7 4H7.5M7.5 4H5a1.5 1.5 0 0 0-1.5 1.5v6.5A1.5 1.5 0 0 0 5 13.5h2.5"/>',
+  copy: '<rect x="8.5" y="8.5" width="12" height="12" rx="2.5"/><path d="M15.5 8.5V6A2.5 2.5 0 0 0 13 3.5H6A2.5 2.5 0 0 0 3.5 6v7A2.5 2.5 0 0 0 6 15.5h2.5"/>',
   lock: '<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
 };
 

@@ -13,9 +13,9 @@ import {
 } from './core.js';
 import { ring, lineChart, barChart, heatmap } from './charts.js';
 import { icon, ico, iconize } from './icons.js';
-import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, topKinds, pickIndex, pruneSeen } from './feed.js';
+import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '2.3.0';
+const APP_VERSION = '2.4.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
@@ -335,23 +335,24 @@ function viewMoney() {
 
 // ----- Feed: immersive, personalized "For You" reels (algorithm in feed.js) -----
 const FEED_BATCH = 6, CLAIM_CAP = 15, TIME_CHECK_EVERY = 25;
-const feed = { items: [], active: -1, activeAt: 0, lastKind: null, views: 0, startedAt: 0, obs: null, tap: { t: 0, i: -1 } };
+const feed = { items: [], active: -1, activeAt: 0, lastKind: null, views: 0, startedAt: 0, obs: null, tap: { t: 0, i: -1 }, mode: 'foryou', topic: 'all', menu: null };
+// bg = color palette class (see "Reels feed" in styles.css); ic = line icon for the topic chip and avatar.
 const KIND_META = {
-  wisdom: { tag: 'Wisdom', handle: 'light.wisdom', tags: '#mindset #stoic', bg: 'g-gold', fx: ['✨', '🌟', '💫'] },
-  challenge: { tag: 'Real-life challenge', handle: 'light.challenge', tags: '#discipline #irl', bg: 'g-green', fx: ['💪', '🔥', '⚡'] },
-  eq: { tag: 'EQ lesson', handle: 'light.eq', tags: '#emotionalintelligence', bg: 'g-violet', fx: ['❤️', '🧠', '🫶'] },
-  joke: { tag: 'Laugh', handle: 'light.comedy', tags: '#joke #lol', bg: 'g-pink', fx: ['😂', '🤣', '😆'] },
-  comedy: { tag: 'Comedy school', handle: 'light.comedy', tags: '#standup #funny', bg: 'g-pink', fx: ['🎤', '😂', '🎭'] },
-  glow: { tag: 'Glow-up', handle: 'light.glowup', tags: '#selfcare #grooming', bg: 'g-teal', fx: ['✨', '🪞', '💧'] },
-  avoid: { tag: 'Avoid this', handle: 'light.glowup', tags: '#stayhandsome', bg: 'g-red', fx: ['⛔', '🚫', '⚠️'] },
-  money: { tag: 'Money', handle: 'light.money', tags: '#savings #finance', bg: 'g-amber', fx: ['💰', '🏦', '📈'] },
-  prompt: { tag: 'Reflect', handle: 'light.journal', tags: '#journal #selfawareness', bg: 'g-blue', fx: ['📓', '💭', '🌙'] },
-  quiz: { tag: 'Quick quiz', handle: 'light.quiz', tags: '#brain #learn', bg: 'g-indigo', fx: ['❓', '🧩', '💡'] },
-  poll: { tag: 'This or that', handle: 'light.you', tags: '#knowyourself', bg: 'g-violet', fx: ['🤔', '⚖️', '👀'] },
-  breathe: { tag: 'Reset', handle: 'light.calm', tags: '#breathe #calm', bg: 'g-blue', fx: ['🫧', '🌊', '☁️'] },
-  you: { tag: 'Your progress', handle: 'you', tags: '#yourjourney', bg: 'g-gold', fx: ['🔥', '🏆', '⭐'] },
-  fact: { tag: 'Did you know?', handle: 'light.science', tags: '#science #health', bg: 'g-cyan', fx: ['🔬', '🧬', '💡'] },
-  word: { tag: 'Word of the day', handle: 'light.words', tags: '#vocabulary #communication', bg: 'g-rose', fx: ['📖', '✍️', '🗣️'] },
+  wisdom: { tag: 'Wisdom', handle: 'light.wisdom', tags: '#mindset #stoic', bg: 'g-gold', ic: 'sparkle', fx: ['✨', '🌟', '💫'] },
+  challenge: { tag: 'Real-life challenge', handle: 'light.challenge', tags: '#discipline #irl', bg: 'g-green', ic: 'flame', fx: ['💪', '🔥', '⚡'] },
+  eq: { tag: 'EQ lesson', handle: 'light.eq', tags: '#emotionalintelligence', bg: 'g-violet', ic: 'heart', fx: ['❤️', '🧠', '🫶'] },
+  joke: { tag: 'Laugh', handle: 'light.comedy', tags: '#joke #lol', bg: 'g-pink', ic: 'smile', fx: ['😂', '🤣', '😆'] },
+  comedy: { tag: 'Comedy school', handle: 'light.comedy', tags: '#standup #funny', bg: 'g-pink', ic: 'mic', fx: ['🎤', '😂', '🎭'] },
+  glow: { tag: 'Glow-up', handle: 'light.glowup', tags: '#selfcare #grooming', bg: 'g-teal', ic: 'sparkles', fx: ['✨', '🪞', '💧'] },
+  avoid: { tag: 'Avoid this', handle: 'light.glowup', tags: '#stayhandsome', bg: 'g-red', ic: 'ban', fx: ['⛔', '🚫', '⚠️'] },
+  money: { tag: 'Money', handle: 'light.money', tags: '#savings #finance', bg: 'g-amber', ic: 'coin', fx: ['💰', '🏦', '📈'] },
+  prompt: { tag: 'Reflect', handle: 'light.journal', tags: '#journal #selfawareness', bg: 'g-blue', ic: 'pen', fx: ['📓', '💭', '🌙'] },
+  quiz: { tag: 'Quick quiz', handle: 'light.quiz', tags: '#brain #learn', bg: 'g-indigo', ic: 'target', fx: ['❓', '🧩', '💡'] },
+  poll: { tag: 'This or that', handle: 'light.you', tags: '#knowyourself', bg: 'g-violet', ic: 'compass', fx: ['🤔', '⚖️', '👀'] },
+  breathe: { tag: 'Reset', handle: 'light.calm', tags: '#breathe #calm', bg: 'g-blue', ic: 'wind', fx: ['🫧', '🌊', '☁️'] },
+  you: { tag: 'Your progress', handle: 'you', tags: '#yourjourney', bg: 'g-gold', ic: 'trophy', fx: ['🔥', '🏆', '⭐'] },
+  fact: { tag: 'Did you know?', handle: 'light.science', tags: '#science #health', bg: 'g-cyan', ic: 'bulb', fx: ['🔬', '🧬', '💡'] },
+  word: { tag: 'Word of the day', handle: 'light.words', tags: '#vocabulary #communication', bg: 'g-rose', ic: 'book', fx: ['📖', '✍️', '🗣️'] },
 };
 const poolFor = (k) => ({ wisdom: C.wisdom, challenge: C.challenges, eq: C.eq, joke: C.jokes, comedy: C.comedy, glow: C.glow.do, avoid: C.glow.avoid, money: C.money, prompt: C.prompts, quiz: C.quiz, poll: C.polls, breathe: [1], fact: C.facts, word: C.words })[k];
 
@@ -372,8 +373,9 @@ function youCard() {
   return out.length ? { kind: 'you', id: 'you', data: out[Math.floor(Math.random() * out.length)] } : null;
 }
 function nextItem() {
+  const allowed = topicKinds(feed.topic);
   for (let guard = 0; guard < 5; guard++) {
-    const kind = pickKind(S.feedPrefs, Math.random, feed.lastKind);
+    const kind = pickKind(S.feedPrefs, Math.random, feed.lastKind, allowed);
     feed.lastKind = kind;
     if (kind === 'you') { const y = youCard(); if (y) return y; continue; }
     const pool = poolFor(kind);
@@ -383,6 +385,14 @@ function nextItem() {
     return { kind, id, data: pool[idx] };
   }
   return { kind: 'wisdom', id: 'wisdom:0', data: C.wisdom[0] };
+}
+/** Saved cards, newest first, rebuilt from their ids. */
+function savedItems() {
+  return [...S.saved].reverse().map((s) => {
+    const [kind, idx] = String(s.id || '').split(':');
+    const pool = poolFor(kind);
+    return pool && pool[+idx] != null ? { kind, id: s.id, data: pool[+idx] } : null;
+  }).filter(Boolean);
 }
 /** Plain-text version of a card, for share/save/reflect. */
 function itemText(it) {
@@ -399,63 +409,80 @@ function itemText(it) {
 }
 /** Word-by-word reveal: each word animates in when the card becomes active. */
 const words = (text) => esc(text).split(/\s+/).map((w, i) => `<span class="w" style="--i:${Math.min(i, 40)}">${w}</span>`).join(' ');
+/** Estimated read time, drives the thin progress line at the top of each card. */
+const readMs = (it) => clamp(itemText(it).split(/\s+/).length * 290 + 1200, 3500, 16000);
 
+function specialReel(i, bg, art, title, text, actions) {
+  return `<section class="reel ${bg}" data-i="${i}" aria-label="${esc(title)}">
+    <div class="r-inner center"><div class="r-art">${art}</div><div class="r-title">${esc(title)}</div>
+      <div class="r-text sm">${words(text)}</div><div class="r-opts two">${actions}</div></div></section>`;
+}
 function reelHTML(it, i) {
   if (it.kind === 'pause') {
     const mins = Math.max(1, Math.round((Date.now() - feed.startedAt) / 60000));
-    return `<section class="reel g-green" data-i="${i}" aria-label="Time check">
-      <div class="r-inner center"><div class="r-big">🌍</div><div class="r-title">${i} cards · ${mins} min</div>
-        <div class="r-text sm">${words('Nice session. The best dopamine is in real life — do one quest, then come back for more.')}</div>
-        <div class="r-opts two"><button class="r-cta" data-act="tab" data-tab="today">Do a quest</button><button class="r-cta ghost" data-act="feed-next">Keep exploring</button></div></div></section>`;
+    return specialReel(i, 'g-green', icon('compass', 56), `${i} cards · ${mins} min`, 'Nice session. The best dopamine is in real life — do one quest, then come back for more.',
+      `<button class="r-cta" data-act="tab" data-tab="today">Do a quest</button><button class="r-cta ghost" data-act="feed-next">Keep exploring</button>`);
+  }
+  if (it.kind === 'empty') {
+    return specialReel(i, 'g-violet', icon('bookmark', 56), 'Nothing saved yet', 'Tap Save on the cards you love. They’ll live here so you can come back to them anytime.',
+      `<button class="r-cta" data-act="feed-mode" data-v="foryou">Back to For You</button>`);
   }
   const m = KIND_META[it.kind], d = it.data, liked = !!S.feedLikes[it.id];
   const saved = S.saved.some((s) => s.id === it.id);
   let body = '';
   switch (it.kind) {
-    case 'wisdom': body = `<div class="r-quote">${words(`“${d.q}”`)}</div><div class="r-sub">— ${esc(d.a)}</div>`; break;
-    case 'challenge': body = `<div class="r-kicker">Your challenge</div><div class="r-text">${words(d)}</div><button class="r-cta" data-act="claim">I did it · +10 XP</button><div class="r-sub" data-claims>${S.claims[today()] || 0}/${CLAIM_CAP} today</div>`; break;
-    case 'eq': case 'comedy': body = `<div class="r-kicker">${esc(d.t)}</div><div class="r-text">${words(d.b)}</div>${it.kind === 'comedy' ? `<button class="r-cta ghost" data-act="go-comedy">Try it: ${esc(d.p)}</button>` : ''}`; break;
+    case 'wisdom': body = `<div class="r-quote">${words(`“${d.q}”`)}</div><div class="r-author">— ${esc(d.a)}</div>`; break;
+    case 'challenge': body = `<div class="r-text">${words(d)}</div><button class="r-cta" data-act="claim">${icon('check', 18)} I did it · +10 XP</button><div class="r-sub" data-claims>${S.claims[today()] || 0}/${CLAIM_CAP} today</div>`; break;
+    case 'eq': case 'comedy': body = `<div class="r-label">${esc(d.t)}</div><div class="r-text">${words(d.b)}</div>${it.kind === 'comedy' ? `<button class="r-cta ghost" data-act="go-comedy">${icon('pen', 16)} Try it: ${esc(d.p)}</button>` : ''}`; break;
     case 'joke': {
       const sp = splitJoke(d);
-      body = sp ? `<div class="r-text">${words(sp[0])}</div><button class="r-cta ghost r-punch-btn" data-act="punch">Tap for the punchline 👇</button><div class="r-text r-punch" hidden>${esc(sp[1])}</div>` : `<div class="r-text">${words(d)}</div>`;
+      body = sp ? `<div class="r-text">${words(sp[0])}</div><button class="r-cta ghost r-punch-btn" data-act="punch">Tap for the punchline</button><div class="r-text r-punch" hidden>${esc(sp[1])}</div>` : `<div class="r-text">${words(d)}</div>`;
       break;
     }
-    case 'prompt': body = `<div class="r-kicker">Think about it</div><div class="r-text">${words(d)}</div><button class="r-cta" data-act="reflect">Write your answer · +10 XP</button>`; break;
+    case 'prompt': body = `<div class="r-label">Think about it</div><div class="r-text">${words(d)}</div><button class="r-cta" data-act="reflect">${icon('pen', 16)} Write your answer · +10 XP</button>`; break;
     case 'quiz': {
       const done = it.id in S.quiz;
-      body = `<div class="r-kicker">Quick quiz${done ? ' · answered' : ' · +5 XP'}</div><div class="r-text">${words(d.q)}</div>
-        <div class="r-opts">${d.o.map((o, j) => `<button class="r-opt" data-act="quiz" data-j="${j}">${esc(o)}</button>`).join('')}</div><div class="r-why" hidden>${esc(d.why)}</div>`;
+      body = `<div class="r-label">${done ? 'Answered before' : '+5 XP if you get it right'}</div><div class="r-text">${words(d.q)}</div>
+        <div class="r-opts">${d.o.map((o, j) => `<button class="r-opt" data-act="quiz" data-j="${j}"><span class="r-opt-k">${'ABC'[j]}</span>${esc(o)}</button>`).join('')}</div><div class="r-why" hidden>${esc(d.why)}</div>`;
       break;
     }
-    case 'poll': body = `<div class="r-kicker">This or that?</div><div class="r-text">${words(d.q)}</div><div class="r-opts two">${d.o.map((o, j) => `<button class="r-opt" data-act="poll" data-j="${j}">${esc(o.t)}</button>`).join('')}</div><div class="r-why" hidden></div>`; break;
-    case 'fact': body = `<div class="r-kicker">Did you know?</div><div class="r-text">${words(d)}</div>`; break;
-    case 'word': body = `<div class="r-kicker">Word of the day</div><div class="r-word">${esc(d.w)}</div><div class="r-text sm">${words(d.d)}</div><div class="r-sub r-example">“${esc(d.ex)}”</div><div class="r-sub tiny">Use it once today — new words stick when you say them.</div>`; break;
-    case 'breathe': body = `<div class="r-kicker">30-second reset</div><div class="r-breath" aria-hidden="true"><span>Breathe</span></div><div class="r-sub">In for 4 · out for 6. Let your shoulders drop.</div>`; break;
+    case 'poll': body = `<div class="r-label">Pick one</div><div class="r-text">${words(d.q)}</div><div class="r-opts two">${d.o.map((o, j) => `<button class="r-opt" data-act="poll" data-j="${j}">${esc(o.t)}</button>`).join('')}</div><div class="r-why" hidden></div>`; break;
+    case 'fact': body = `<div class="r-text">${words(d)}</div>`; break;
+    case 'word': body = `<div class="r-word">${esc(d.w)}</div><div class="r-text sm">${words(d.d)}</div><div class="r-example">“${esc(d.ex)}”</div><div class="r-sub">Use it once today — new words stick when you say them.</div>`; break;
+    case 'breathe': body = `<div class="r-breath" aria-hidden="true"><span>Breathe</span></div><div class="r-sub">In for 4 · out for 6. Let your shoulders drop.</div>`; break;
     case 'you': body = `<div class="r-big">${d.big}</div><div class="r-title">${esc(d.title)}</div><div class="r-text sm">${words(d.body)}</div>${d.progress != null ? `<div class="xpbar" style="margin-top:16px"><i style="width:${d.progress * 100}%"></i></div>` : ''}${d.action ? `<button class="r-cta" data-act="${d.action.act}">${esc(d.action.label)}</button>` : ''}`; break;
     default: body = `<div class="r-text">${words(d)}</div>`;
   }
-  const floaters = [...m.fx, ...m.fx].map((e, j) => `<span style="--x:${((j * 17 + i * 23) % 86) + 4}%;--d:${7 + (j % 3) * 2}s;--s:${(j * 1.3).toFixed(1)}s">${e}</span>`).join('');
-  return `<section class="reel ${m.bg}" data-i="${i}" aria-label="${esc(m.tag)}, card ${i + 1}">
+  const floaters = [...m.fx, ...m.fx].map((e, j) => `<span style="--x:${((j * 17 + i * 23) % 86) + 4}%;--d:${8 + (j % 3) * 2}s;--s:${(j * 1.4).toFixed(1)}s">${e}</span>`).join('');
+  const hint = i === 0 && feed.mode === 'foryou' && S.settings.feedHint !== false
+    ? `<div class="r-hint" aria-hidden="true">${icon('chevronUp', 22)}<span>Swipe up for more</span></div>` : '';
+  return `<section class="reel ${m.bg}" data-i="${i}" style="--read:${readMs(it)}ms" aria-label="${esc(m.tag)}, card ${i + 1}">
+    <div class="r-progress" aria-hidden="true"><i></i></div>
     <div class="r-float" aria-hidden="true">${floaters}</div>
-    <div class="r-inner">${body}</div>
+    <div class="r-inner"><div class="r-topic">${icon(m.ic, 14)}<span>${m.tag}</span></div>${body}</div>
     <div class="rail">
       <button class="r-btn ${liked ? 'on' : ''}" data-act="like" aria-pressed="${liked}"><span class="r-ic">${icon('heart', 26, liked ? 'filled' : '')}</span><span>Like</span></button>
       <button class="r-btn" data-act="reflect"><span class="r-ic">${icon('message', 24)}</span><span>Reflect</span></button>
       <button class="r-btn ${saved ? 'on' : ''}" data-act="feed-save" aria-pressed="${saved}"><span class="r-ic">${icon('bookmark', 24, saved ? 'filled' : '')}</span><span>${saved ? 'Saved' : 'Save'}</span></button>
       <button class="r-btn" data-act="share" data-b="${esc(itemText(it))}"><span class="r-ic">${icon('share', 24)}</span><span>Share</span></button>
+      <button class="r-btn r-more" data-act="feed-more" aria-label="More options"><span class="r-ic">${icon('more', 22)}</span></button>
     </div>
-    <div class="caption"><strong>@${m.handle}</strong> · ${m.tag}<div class="tiny">${m.tags}</div></div>
+    <div class="caption"><span class="cap-av">${icon(m.ic, 18)}</span><div class="grow"><strong>@${m.handle}</strong><div class="tiny">${m.tags}</div></div></div>
+    ${hint}
   </section>`;
 }
 function viewFeed() {
-  const fav = topKinds(S.feedPrefs, 2).map((k) => KIND_META[k]?.tag).filter(Boolean);
-  return `<div class="feed-top"><div><div class="feed-title">For You</div><div class="tiny feed-sub">${fav.length ? `More ${fav.join(' & ').toLowerCase()} — learning from your likes` : 'Like, save and linger — the feed learns what you love'}</div></div>
-      <div class="row"><button class="icon-btn glass-btn" data-act="refeed" aria-label="Refresh feed">${icon('refresh', 20)}</button><button class="sos-mini" data-act="sos">Urge?</button></div></div>
+  const tab = (v, label, extra = '') => `<button role="tab" aria-selected="${feed.mode === v}" class="${feed.mode === v ? 'on' : ''}" data-act="feed-mode" data-v="${v}">${label}${extra}</button>`;
+  return `<div class="feed-top">
+      <div class="feed-tabs" role="tablist" aria-label="Feed">${tab('foryou', 'For You')}${tab('saved', 'Saved', S.saved.length ? ` <span class="ft-count">${S.saved.length}</span>` : '')}</div>
+      <div class="row"><button class="icon-btn glass-btn" data-act="refeed" aria-label="Refresh feed">${icon('refresh', 19)}</button><button class="sos-mini" data-act="sos">Urge?</button></div>
+    </div>
+    ${feed.mode === 'foryou' ? `<div class="feed-topics" role="radiogroup" aria-label="Topics">${TOPICS.map(([id, n, , ic]) => `<button role="radio" aria-checked="${feed.topic === id}" class="ft-chip ${feed.topic === id ? 'on' : ''}" data-act="feed-topic" data-v="${id}">${icon(ic, 14)}${n}</button>`).join('')}</div>` : ''}
     <div id="feed-stage" class="feed-stage" tabindex="0" aria-label="Feed. Swipe up, or use the arrow keys, to see the next card. Double-tap to like."></div>
     <div id="heart-layer" aria-hidden="true"></div>`;
 }
 function appendReels(n) {
-  const stage = $('#feed-stage'); if (!stage) return;
+  const stage = $('#feed-stage'); if (!stage || feed.mode !== 'foryou') return;
   let html = '';
   for (let k = 0; k < n; k++) {
     const i = feed.items.length;
@@ -470,20 +497,28 @@ function feedInit() {
   Object.assign(feed, { items: [], active: -1, views: 0, startedAt: Date.now(), lastKind: null });
   S.feedSeen = pruneSeen(S.feedSeen);
   feed.obs?.disconnect();
+  const stage = $('#feed-stage');
   feed.obs = 'IntersectionObserver' in window
-    ? new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) activateReel(+e.target.dataset.i); }, { root: $('#feed-stage'), threshold: 0.6 })
+    ? new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) activateReel(+e.target.dataset.i); }, { root: stage, threshold: 0.6 })
     : null;
-  appendReels(FEED_BATCH);
-  $('#feed-stage').focus({ preventScroll: true });
+  if (feed.mode === 'saved') {
+    const items = savedItems();
+    feed.items = items.length ? items : [{ kind: 'empty', id: 'empty' }];
+    stage.innerHTML = feed.items.map(reelHTML).join('');
+    if (feed.obs) $$('.reel', stage).forEach((r) => feed.obs.observe(r));
+  } else appendReels(FEED_BATCH);
+  stage.focus({ preventScroll: true });
 }
+const isSpecial = (it) => !it || it.kind === 'pause' || it.kind === 'empty';
 /** Called when a card becomes the one on screen: animate it, learn from time spent on the previous one, preload more. */
 function activateReel(i) {
   if (i === feed.active) return;
   const now = Date.now(), prev = feed.items[feed.active];
-  if (prev && prev.kind !== 'pause') nudge(S.feedPrefs, prev.kind, dwellSignal(now - feed.activeAt));
+  if (!isSpecial(prev)) nudge(S.feedPrefs, prev.kind, dwellSignal(now - feed.activeAt));
   feed.active = i; feed.activeAt = now; feed.views++;
   $$('.reel.active').forEach((r) => r.classList.remove('active'));
   $(`.reel[data-i="${i}"]`)?.classList.add('active');
+  if (i >= 1 && S.settings.feedHint !== false) { S.settings.feedHint = false; $$('.r-hint').forEach((h) => h.remove()); } // first swipe learned
   if (feed.views % 5 === 0) save();
   if (i >= feed.items.length - 3) appendReels(FEED_BATCH);
 }
@@ -494,7 +529,7 @@ function scrollReel(dir) {
 }
 function heartPop(x, y) {
   const h = document.createElement('div');
-  h.className = 'heart-pop'; h.textContent = '❤️';
+  h.className = 'heart-pop'; h.innerHTML = icon('heart', 96, 'filled');
   h.style.left = x + 'px'; h.style.top = y + 'px';
   $('#heart-layer')?.appendChild(h);
   setTimeout(() => h.remove(), 900);
@@ -509,6 +544,17 @@ function setLike(r, it, on) {
   $('.r-ic', btn).innerHTML = icon('heart', 26, on ? 'filled' : '');
   if (on) { btn.classList.remove('bump'); void btn.offsetWidth; btn.classList.add('bump'); buzz(10); }
 }
+function openFeedMenu(it) {
+  feed.menu = it;
+  const m = KIND_META[it.kind];
+  const row = (act, ic, t, s) => `<button class="menu-row" data-act="${act}">${icon(ic, 22)}<span class="grow"><strong>${t}</strong><span class="tiny muted">${s}</span></span></button>`;
+  openModal(`<div class="row between"><h2>${icon(m.ic, 18, 'h-ic')}${esc(m.tag)}</h2><button class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
+    <div class="menu-list">
+      ${row('more-like', 'heart', 'More like this', `Show more ${m.tag.toLowerCase()} cards`)}
+      ${row('less-like', 'thumbDown', 'Not interested', `Show fewer ${m.tag.toLowerCase()} cards`)}
+      ${row('copy-card', 'copy', 'Copy text', 'Paste it in a note or message')}
+    </div>`, { label: 'Card options', onClose: render });
+}
 // Double-tap anywhere on a card to like it (like video apps).
 document.addEventListener('pointerup', (e) => {
   const r = e.target.closest('.reel');
@@ -516,7 +562,7 @@ document.addEventListener('pointerup', (e) => {
   const now = Date.now(), i = +r.dataset.i;
   if (now - feed.tap.t < 320 && feed.tap.i === i) {
     const it = feed.items[i];
-    if (it && it.kind !== 'pause') { setLike(r, it, true); heartPop(e.clientX, e.clientY); }
+    if (!isSpecial(it)) { setLike(r, it, true); heartPop(e.clientX, e.clientY); }
     feed.tap.t = 0;
   } else feed.tap = { t: now, i };
 });
@@ -1163,6 +1209,24 @@ const A = {
     el.disabled = true; el.textContent = `💧 Logged · ${d.water}/${S.settings.waterTarget}`;
   },
   'feed-next': () => scrollReel(1),
+  'feed-mode': (el) => { feed.mode = el.dataset.v; render({ full: true }); },
+  'feed-topic': (el) => {
+    feed.topic = el.dataset.v; render({ full: true }); buzz(8);
+    $('.ft-chip.on')?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
+  },
+  'feed-more': (el) => { const { it } = reelOf(el); if (it && !isSpecial(it)) openFeedMenu(it); },
+  'more-like': () => { const it = feed.menu; if (!it) return; nudge(S.feedPrefs, it.kind, 5); save(); closeModal(); toast(`${icon('heart', 16)} You’ll see more ${KIND_META[it.kind].tag.toLowerCase()}`); },
+  'less-like': () => {
+    const it = feed.menu; if (!it) return;
+    nudge(S.feedPrefs, it.kind, -6); save(); closeModal();
+    toast(`Got it — fewer ${KIND_META[it.kind].tag.toLowerCase()} cards`, { undo: () => { nudge(S.feedPrefs, it.kind, 6); save(); } });
+    scrollReel(1);
+  },
+  'copy-card': async () => {
+    const it = feed.menu; if (!it) return;
+    try { await navigator.clipboard.writeText(itemText(it)); toast('Copied to clipboard'); } catch { toast('Couldn’t copy on this device'); }
+    closeModal();
+  },
   share: async (el) => {
     const text = el.dataset.b + '\n— shared from Light';
     const { it } = reelOf(el); if (it) { nudge(S.feedPrefs, it.kind, SIGNAL.share); save(); }
