@@ -15,7 +15,7 @@ import { ring, lineChart, barChart, heatmap } from './charts.js';
 import { icon, ico, iconize } from './icons.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '2.4.1';
+const APP_VERSION = '2.5.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
@@ -107,9 +107,24 @@ function render({ full = false } = {}) {
       <details class="tiny muted"><summary>Technical details</summary><pre style="white-space:pre-wrap">${esc(err && err.stack || err)}</pre></details></div>`;
   }
 }
-const go = (tab, extra = {}) => {
+// ---------- Routing: the URL remembers where you are (refresh, back button) ----------
+const GROW_TABS = ['comedy', 'eq', 'glow', 'freedom', 'journal', 'badges'];
+function routeFromHash() {
+  const [tab, sub] = location.hash.replace(/^#\/?/, '').split('/');
+  const r = { tab: TABS.some((t) => t[0] === tab) ? tab : 'today' };
+  if (GROW_TABS.includes(sub)) r.grow = sub;
+  return r;
+}
+const hashFor = () => `#/${UI.tab}${UI.tab === 'grow' ? '/' + UI.grow : ''}`;
+function syncHash(replace = false) {
+  const h = hashFor();
+  if (location.hash === h) return;
+  history[replace ? 'replaceState' : 'pushState'](null, '', h);
+}
+
+const go = (tab, extra = {}, { push = true } = {}) => {
   if (UI.tab === 'feed' && tab !== 'feed') { const prev = feed.items[feed.active]; if (prev && prev.kind !== 'pause') nudge(S.feedPrefs, prev.kind, dwellSignal(Date.now() - feed.activeAt)); save(); }
-  Object.assign(UI, extra, { tab }); render({ full: true }); window.scrollTo(0, 0);
+  Object.assign(UI, extra, { tab }); if (S.profile) syncHash(!push); render({ full: true }); window.scrollTo(0, 0);
   const v = $('#view');
   v.classList.remove('view-enter'); void v.offsetWidth; v.classList.add('view-enter'); // page-enter animation on tab change only
   // Safety net: if the browser skips/pauses animations (background tab, power saver), never leave content invisible.
@@ -184,15 +199,20 @@ function focusCardHTML() {
     return `<button class="card focus-live" data-act="focus"><span class="big" aria-hidden="true">⏱️</span><span class="grow" style="text-align:left"><strong>Focusing: ${esc(S.timer.label || 'Deep work')}</strong><br><span class="small muted"><span data-timer-text>${timerLeftText()}</span> left · tap to open</span></span></button>`;
   }
   const d = S.days[today()] || {};
-  return `<button class="card focus-start" data-act="focus"><span class="big" aria-hidden="true">⏱️</span><span class="grow" style="text-align:left"><strong>Start a focus session</strong><br><span class="small muted">${d.deepWork || 0} min focused today · goal 60</span></span><span class="pill gold">Start</span></button>`;
+  return `<button class="card focus-start" data-act="focus"><span class="big" aria-hidden="true">⏱️</span><span class="grow" style="text-align:left"><strong>Start a focus session</strong><br><span class="small muted">${d.deepWork || 0} of 60 min focused today</span></span><span class="pill gold">Start</span></button>`;
 }
+/** Section header: emoji token (turned into a line icon), title, optional right-side action. */
+const secH = (ic, title, right = '', id = '') => `<div class="sec"${id ? ` id="${id}"` : ''}><h2>${ic} ${title}</h2>${right}</div>`;
+/** Next streak milestone, for the little progress rings on streak cards. */
+const MILESTONES = [3, 7, 14, 30, 60, 90, 180, 365];
+const nextMilestone = (n) => MILESTONES.find((m) => m > n) || n + 100;
 
 function viewToday() {
   const k = today(), d = S.days[k] || {}, st = S.settings, y = addDays(k, -1);
   const xp = computeXP(), lvl = levelOf(xp), lo = xpFor(lvl), hi = xpFor(lvl + 1);
   const q = quests(), qd = q.filter((x) => x.done).length, pct = Math.round((qd / q.length) * 100);
   const h = hour();
-  const greet = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+  const greet = h < 5 ? 'Still up' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
   const w = daily(C.wisdom), lesson = daily(C.eq, 1), glow = daily(C.glow.do, 2), avoid = daily(C.glow.avoid, 5);
   const gs = goals();
   const pr = (d.morning?.priorities || []).map((p, i) => ({ ...p, i })).filter((p) => p.t?.trim());
@@ -200,6 +220,14 @@ function viewToday() {
   const streak = checkinStreak();
   const missedYesterday = S.profile.created <= y && !S.days[y]?.evening && h < 15;
   const lr = latestReview();
+  const water = d.water || 0;
+  const todo = q.filter((x) => !x.done), done = q.filter((x) => x.done);
+  const questRow = (x) => {
+    const tag = x.act && !x.done ? 'button' : 'div';
+    return `<${tag} class="quest ${x.done ? 'done' : ''} ${tag === 'button' ? 'quest-btn' : ''}" ${tag === 'button' ? `data-act="${x.act}"` : ''}>
+      <div class="q-ic" aria-hidden="true">${x.done ? '✅' : x.ic}</div><div class="grow q-t small">${x.t}${x.done ? '<span class="sr-only"> (done)</span>' : ''}</div><div class="q-xp">+${x.xp}</div></${tag}>`;
+  };
+  const stat = (ic, v, l) => `<div class="hstat"><span class="hstat-ic">${icon(ic, 16)}</span><strong>${v}</strong><span>${l}</span></div>`;
 
   return `
   <header class="today-head">
@@ -208,70 +236,99 @@ function viewToday() {
     <button class="icon-btn" data-act="settings" aria-label="Settings">${icon('settings', 20)}</button>
   </header>
 
-  <section class="card hero" style="margin-top:16px" aria-label="Your progress today">
-    <div class="orb-wrap"><div class="orb" style="opacity:${0.72 + pct / 360}"></div>
-      <div class="orb-ring">${ring(pct, 'var(--gold)', 120, 6, '', `${pct}% of today's quests done`)}</div><div class="orb-num" aria-hidden="true">${pct}%</div></div>
-    <div class="grow">
-      <div class="row between wrap"><strong>Level ${lvl} · ${titleOf(lvl)}</strong><span class="pill gold" title="Check-in streak">${icon('flame', 14)} ${streak} day${streak === 1 ? '' : 's'}</span></div>
-      <div class="xpbar" style="margin:8px 0 4px" role="progressbar" aria-label="XP to next level" aria-valuemin="0" aria-valuemax="${hi - lo}" aria-valuenow="${xp - lo}"><i style="width:${((xp - lo) / (hi - lo)) * 100}%"></i></div>
-      <div class="tiny muted">${xp - lo} / ${hi - lo} XP to level ${lvl + 1} · ${qd}/${q.length} quests today</div>
+  <section class="card hero today-hero" aria-label="Your progress today">
+    <div class="hero-top">
+      <div class="orb-wrap"><div class="orb" style="opacity:${0.72 + pct / 360}"></div>
+        <div class="orb-ring">${ring(pct, 'var(--gold)', 112, 6, '', `${pct}% of today's quests done`)}</div><div class="orb-num" aria-hidden="true">${pct}<small>%</small></div></div>
+      <div class="grow">
+        <div class="tiny muted hero-kick">Level ${lvl}</div>
+        <div class="hero-title">${titleOf(lvl)}</div>
+        <div class="xpbar" style="margin:10px 0 6px" role="progressbar" aria-label="XP to next level" aria-valuemin="0" aria-valuemax="${hi - lo}" aria-valuenow="${xp - lo}"><i style="width:${((xp - lo) / (hi - lo)) * 100}%"></i></div>
+        <div class="tiny muted">${hi - xp} XP to level ${lvl + 1}</div>
+      </div>
+    </div>
+    <div class="hero-stats">
+      ${stat('flame', streak, streak === 1 ? 'day streak' : 'day streak')}
+      ${stat('checkCircle', `${qd}/${q.length}`, 'quests')}
+      ${stat('droplet', `${water}/${st.waterTarget}`, 'water')}
+      ${stat('timer', `${d.deepWork || 0}m`, 'focus')}
     </div>
   </section>
 
+  ${nextUpHTML()}
   ${chestReady() ? `<button class="card chest-card" data-act="chest"><span class="chest-ic" aria-hidden="true">🎁</span><span class="grow" style="text-align:left"><strong>Daily reward unlocked!</strong><br><span class="small muted">You completed both check-ins. Open your chest.</span></span><span class="pill gold">Open</span></button>` : ''}
   ${missedYesterday ? `<button class="card banner-btn" data-act="open-evening-y"><span class="ico" aria-hidden="true">🕰️</span> <span><strong>Yesterday's evening check-in is missing.</strong> <span class="small muted">Log it now so your stats stay true.</span></span></button>` : ''}
-  ${nextUpHTML()}
   ${reviewDue() ? `<button class="card banner-btn" data-act="open-weekly"><span class="ico" aria-hidden="true">🗓️</span> <span><strong>Your weekly review is ready.</strong> <span class="small muted">See your week, update goals, pick one thing to improve · +100 XP</span></span></button>` : ''}
 
-  <div class="grid" style="margin-top:14px">
-    <button class="card checkin-card ${d.morning ? 'done' : ''}" data-act="open-morning"><span class="big" aria-hidden="true">🌅</span><span><strong>Morning</strong><br><span class="small muted">${d.morning ? 'Done ✓ · tap to edit' : '10-min check-in'}</span></span></button>
-    <button class="card checkin-card ${d.evening ? 'done' : ''}" data-act="open-evening"><span class="big" aria-hidden="true">🌙</span><span><strong>Evening</strong><br><span class="small muted">${d.evening ? 'Done ✓ · tap to edit' : '10-min check-in'}</span></span></button>
+  <nav class="quick" aria-label="Quick actions">
+    <button class="qa" data-act="water+"><span class="qa-ic" style="--qa:var(--blue)">${icon('droplet', 20)}</span>Water</button>
+    <button class="qa" data-act="focus"><span class="qa-ic" style="--qa:var(--accent)">${icon('timer', 20)}</span>Focus</button>
+    <button class="qa" data-act="log-exercise"><span class="qa-ic" style="--qa:var(--good)">${icon('activity', 20)}</span>Move</button>
+    <button class="qa" data-act="tab" data-tab="money"><span class="qa-ic" style="--qa:var(--amber)">${icon('wallet', 20)}</span>Spend</button>
+    <button class="qa" data-act="go-comedy"><span class="qa-ic" style="--qa:var(--pink)">${icon('mic', 20)}</span>Joke</button>
+    <button class="qa" data-act="sos"><span class="qa-ic" style="--qa:var(--bad)">${icon('wind', 20)}</span>Urge</button>
+  </nav>
+
+  <div class="grid checkins">
+    <button class="card checkin-card ${d.morning ? 'done' : ''}" data-act="open-morning"><span class="big" aria-hidden="true">🌅</span><span><strong>Morning</strong><br><span class="small muted">${d.morning ? 'Done · tap to edit' : '10-min check-in'}</span></span></button>
+    <button class="card checkin-card ${d.evening ? 'done' : ''}" data-act="open-evening"><span class="big" aria-hidden="true">🌙</span><span><strong>Evening</strong><br><span class="small muted">${d.evening ? 'Done · tap to edit' : '10-min check-in'}</span></span></button>
   </div>
 
-  <div class="sec"><h2>📖 Today's guide</h2></div>
-  <div class="card stack">
-    <div><div class="quote">“${esc(w.q)}”</div><div class="quote-a">— ${esc(w.a)}</div></div>
-    <div><div class="small label-violet">EQ LESSON · ${esc(lesson.t)}</div><div class="small">${esc(lesson.b)}</div></div>
-    <div><div class="small label-teal">GLOW-UP</div><div class="small">Do: ${esc(glow)}<br>Avoid: ${esc(avoid)}</div></div>
+  ${secH('📖', 'Today’s guide', '<span class="tiny muted swipe-hint">swipe →</span>')}
+  <div class="guide" role="list">
+    <article class="guide-card" role="listitem" style="--tint:var(--accent)"><div class="g-kick">${icon('sparkle', 14)} Wisdom</div><div class="quote">“${esc(w.q)}”</div><div class="quote-a">— ${esc(w.a)}</div></article>
+    <article class="guide-card" role="listitem" style="--tint:var(--violet)"><div class="g-kick">${icon('heart', 14)} EQ lesson</div><h3>${esc(lesson.t)}</h3><p class="small">${esc(lesson.b)}</p></article>
+    <article class="guide-card" role="listitem" style="--tint:var(--teal)"><div class="g-kick">${icon('sparkles', 14)} Glow-up</div><p class="small"><strong>Do:</strong> ${esc(glow)}</p><p class="small" style="margin-top:8px"><strong>Avoid:</strong> ${esc(avoid)}</p></article>
   </div>
 
-  <div class="sec"><h2>🎯 Focus</h2><button class="btn sm ghost" data-act="settings">Edit goals</button></div>
+  ${secH('🎯', 'Focus', '<button class="btn sm ghost" data-act="settings">Edit goals</button>')}
   <div class="card">
-    ${d.morning?.goal ? `<div class="small muted">Today's goal</div><div><strong>${esc(d.morning.goal)}</strong>${d.morning.goalAction ? ` → ${esc(d.morning.goalAction)}` : ''}</div>` : ''}
-    ${gs.length ? `<div class="stack" style="margin-top:${d.morning?.goal ? 12 : 0}px">${gs.map((g) => `<div><div class="row between small"><span>${esc(g.t)}</span><span class="muted">${g.p}%</span></div><div class="xpbar thin"><i style="width:${g.p}%"></i></div></div>`).join('')}</div>` : '<div class="small muted">Add your goals in Settings.</div>'}
-    ${lr?.nextWeek && weekStart(today()) > lr.week ? `<div class="insight small" style="margin-top:12px">🗓️ This week's commitment: <strong>${esc(lr.nextWeek)}</strong></div>` : ''}
-    ${pr.length ? `<div class="small muted" style="margin:14px 0 6px">Top priorities</div>` + pr.map((p) =>
+    ${d.morning?.goal ? `<div class="today-goal"><span class="tiny muted">Today’s goal</span><strong>${esc(d.morning.goal)}</strong>${d.morning.goalAction ? `<span class="small">${icon('arrowRight', 14)} ${esc(d.morning.goalAction)}</span>` : ''}</div>` : ''}
+    ${gs.length ? `<div class="goal-list">${gs.map((g) => `<div><div class="row between small"><span>${esc(g.t)}</span><span class="muted">${g.p}%</span></div><div class="xpbar thin"><i style="width:${g.p}%"></i></div></div>`).join('')}</div>` : '<div class="small muted">Add your goals in Settings.</div>'}
+    ${lr?.nextWeek && weekStart(today()) > lr.week ? `<div class="insight small" style="margin-top:12px">This week’s commitment: <strong>${esc(lr.nextWeek)}</strong></div>` : ''}
+    ${pr.length ? `<div class="small muted" style="margin:16px 0 8px">Top priorities</div>` + pr.map((p) =>
       `<button class="check ${p.done ? 'on' : ''}" data-act="prio" data-i="${p.i}" aria-pressed="${!!p.done}"><span class="box" aria-hidden="true">${p.done ? '✓' : ''}</span><span>${esc(p.t)}</span></button>`).join('')
-      : `<button class="btn sm" style="margin-top:12px" data-act="open-morning">Set today's top 3 priorities</button>`}
+      : `<button class="btn sm" style="margin-top:14px" data-act="open-morning">Set today's top 3 priorities</button>`}
   </div>
   ${focusCardHTML()}
 
-  <div class="sec"><h2>💡 Recommended for you</h2></div>
-  <div class="card">${recommendations().map(([ic, t]) => `<div class="quest"><div class="q-ic" aria-hidden="true">${ic}</div><div class="grow small">${t}</div></div>`).join('')}</div>
-
-  <div class="sec"><h2>💧 Water</h2><span class="muted small">${d.water || 0} of ${st.waterTarget} glasses</span></div>
-  <div class="card water">
-    <button class="round-btn minus" data-act="water-" aria-label="Remove a glass">−</button>
-    <div class="glasses" role="img" aria-label="${d.water || 0} of ${st.waterTarget} glasses">${Array.from({ length: Math.max(st.waterTarget, d.water || 0) }, (_, i) => `<span class="glass ${i < (d.water || 0) ? 'full' : ''}"></span>`).join('')}</div>
-    <button class="round-btn" data-act="water+" aria-label="Add a glass">+</button>
+  ${secH('🗺️', 'Daily quests', `<span class="pill gold">${qd}/${q.length}</span>`)}
+  <div class="card">
+    <div class="xpbar thin" style="margin:0 0 6px" aria-hidden="true"><i style="width:${pct}%"></i></div>
+    ${todo.map(questRow).join('') || '<div class="empty" style="padding:14px">Every quest done. Legendary.</div>'}
+    ${done.length ? `<details class="done-list"><summary>${icon('checkCircle', 16)} Completed (${done.length})</summary>${done.map(questRow).join('')}</details>` : ''}
   </div>
 
-  <div class="sec"><h2>🗺️ Daily quests</h2><span class="pill gold">${qd}/${q.length}</span></div>
-  <div class="card">${q.map((x) => {
-    const tag = x.act && !x.done ? 'button' : 'div';
-    return `<${tag} class="quest ${x.done ? 'done' : ''} ${tag === 'button' ? 'quest-btn' : ''}" ${tag === 'button' ? `data-act="${x.act}"` : ''}>
-      <div class="q-ic" aria-hidden="true">${x.done ? '✅' : x.ic}</div><div class="grow q-t small">${x.t}${x.done ? '<span class="sr-only"> (done)</span>' : ''}</div><div class="q-xp">+${x.xp} XP</div></${tag}>`;
+  <div class="grid duo">
+    <section>
+      ${secH('💧', 'Water', `<span class="muted small">${(water * 0.25).toFixed(2).replace(/\.?0+$/, '')} L</span>`)}
+      <div class="card water-card">
+        <div class="water-num"><strong>${water}</strong><span>/ ${st.waterTarget} glasses</span></div>
+        <div class="glasses" role="img" aria-label="${water} of ${st.waterTarget} glasses">${Array.from({ length: Math.max(st.waterTarget, water) }, (_, i) => `<span class="glass ${i < water ? 'full' : ''}"></span>`).join('')}</div>
+        <div class="row" style="margin-top:12px"><button class="round-btn minus" data-act="water-" aria-label="Remove a glass">−</button><button class="btn primary grow" data-act="water+">${icon('plus', 18)} Add a glass</button></div>
+      </div>
+    </section>
+    <section>
+      ${secH('🪥', 'Hygiene', `<div class="seg mini" role="tablist"><button role="tab" aria-selected="${hygTab === 'hygAM'}" class="${hygTab === 'hygAM' ? 'on' : ''}" data-act="hygtab" data-v="hygAM">${icon('sun', 14)}AM</button><button role="tab" aria-selected="${hygTab === 'hygPM'}" class="${hygTab === 'hygPM' ? 'on' : ''}" data-act="hygtab" data-v="hygPM">${icon('moon', 14)}PM</button></div>`, 'hyg-sec')}
+      <div class="card"><div class="hyg-grid">${st[hygTab].map((it) => { const on = d[hygTab]?.[it]; return `<button class="hchip ${on ? 'on' : ''}" data-act="hyg" data-l="${hygTab}" data-item="${esc(it)}" aria-pressed="${!!on}"><span class="hbox" aria-hidden="true">${on ? icon('check', 14) : ''}</span><span>${esc(it)}</span></button>`; }).join('')}</div>
+        <div class="tiny muted" style="margin-top:10px">${Math.round(hygRatio(d, hygTab) * 100)}% done</div></div>
+    </section>
+  </div>
+
+  ${secH('🛡️', 'Freedom streaks', '<button class="btn sm ghost" data-act="go-freedom">Details</button>')}
+  <div class="grid g4 streaks">${HABITS.map((hb) => {
+    const s = habitStreak(hb.id), m = nextMilestone(s.current);
+    return `<div class="card streak"><div class="streak-ring">${ring((s.current / m) * 100, 'var(--accent)', 58, 5)}<span class="ic" aria-hidden="true">${hb.ic}</span></div><div class="n">${s.current}</div><div class="tiny muted">days · ${hb.name.toLowerCase()}</div><div class="tiny streak-next">next: ${m}</div></div>`;
   }).join('')}</div>
 
-  <div class="sec" id="hyg-sec"><h2>🪥 Hygiene</h2>
-    <div class="seg" role="tablist" style="min-width:180px"><button role="tab" aria-selected="${hygTab === 'hygAM'}" class="${hygTab === 'hygAM' ? 'on' : ''}" data-act="hygtab" data-v="hygAM">☀️ Morning</button><button role="tab" aria-selected="${hygTab === 'hygPM'}" class="${hygTab === 'hygPM' ? 'on' : ''}" data-act="hygtab" data-v="hygPM">🌙 Night</button></div></div>
-  <div class="card">${st[hygTab].map((it) => { const on = d[hygTab]?.[it]; return `<button class="check ${on ? 'on' : ''}" data-act="hyg" data-l="${hygTab}" data-item="${esc(it)}" aria-pressed="${!!on}"><span class="box" aria-hidden="true">${on ? '✓' : ''}</span><span>${esc(it)}</span></button>`; }).join('')}</div>
+  ${secH('💡', 'Recommended for you')}
+  <div class="card tips">${recommendations().map(([ic, t]) => `<div class="quest"><div class="q-ic" aria-hidden="true">${ic}</div><div class="grow small">${t}</div></div>`).join('')}</div>
 
-  <div class="sec"><h2>🛡️ Freedom streaks</h2><button class="btn sm ghost" data-act="go-freedom">Details</button></div>
-  <div class="grid">${HABITS.map((hb) => { const s = habitStreak(hb.id); return `<div class="card streak"><div class="ic" aria-hidden="true">${hb.ic}</div><div class="n">${s.current}</div><div class="tiny muted">days free of ${hb.name.toLowerCase()}</div></div>`; }).join('')}</div>
-
-  <div class="sec"><h2>😂 Joke of the day</h2></div>
-  <div class="card"><div>${esc(daily(C.jokes))}</div><div class="row" style="margin-top:10px"><button class="btn sm" data-act="go-comedy">Write your own (+10 XP)</button></div></div>`;
+  <div class="card joke-card">
+    <div class="g-kick" style="--tint:var(--pink)">${icon('smile', 14)} Joke of the day</div>
+    <p>${esc(daily(C.jokes))}</p>
+    <button class="btn sm" data-act="go-comedy">${icon('pen', 15)} Write your own · +10 XP</button>
+  </div>`;
 }
 
 // ----- Money -----
@@ -639,23 +696,54 @@ function viewProjection() {
 }
 
 // ----- Grow -----
+const GROW_META = {
+  comedy: { ic: 'mic', n: 'Comedy', tint: 'var(--pink)', sub: 'Become the funniest version of you' },
+  eq: { ic: 'heart', n: 'EQ', tint: 'var(--violet)', sub: 'Understand feelings — yours and theirs' },
+  glow: { ic: 'sparkle', n: 'Glow-up', tint: 'var(--teal)', sub: 'Look sharp, feel sharp' },
+  freedom: { ic: 'shield', n: 'Freedom', tint: 'var(--good)', sub: 'Break free from what pulls you down' },
+  journal: { ic: 'bookOpen', n: 'Journal', tint: 'var(--blue)', sub: 'Think on paper, grow in life' },
+  badges: { ic: 'trophy', n: 'Badges', tint: 'var(--accent)', sub: 'Proof of the person you’re becoming' },
+};
+const COMEDY_RANKS = [[0, 'Rookie'], [5, 'Class clown'], [20, 'Open-mic regular'], [50, 'Feature act'], [100, 'Headliner']];
+/** Tinted hero card used at the top of each Grow section. */
+const growHero = (tint, kicker, title, body = '', extra = '') => `<section class="card g-hero" style="--tint:${tint}">
+  <div class="g-kick">${kicker}</div><h2 class="g-title">${title}</h2>${body ? `<p class="small g-body">${body}</p>` : ''}${extra}</section>`;
+const listItem = (ic, t, cls = '') => `<li class="g-li ${cls}"><span class="g-li-ic">${icon(ic, 16)}</span><span>${t}</span></li>`;
+
 function viewGrow() {
-  const tabs = [['comedy', 'mic', 'Comedy'], ['eq', 'heart', 'EQ'], ['glow', 'sparkle', 'Glow-up'], ['freedom', 'shield', 'Freedom'], ['journal', 'bookOpen', 'Journal'], ['badges', 'trophy', 'Badges']];
+  const meta = GROW_META[UI.grow] || GROW_META.comedy;
+  const refl = Object.values(S.days).filter((d) => d.evening?.eq?.trim()).length;
+  const got = BADGES.filter((b) => S.badges[b.id]).length;
   const body = { comedy: growComedy, eq: growEQ, glow: growGlow, freedom: growFreedom, journal: growJournal, badges: growBadges }[UI.grow]();
-  return `<h1>Grow</h1><div class="seg" role="tablist" style="margin-top:14px">${tabs.map(([id, ic, n]) => `<button role="tab" aria-selected="${UI.grow === id}" class="${UI.grow === id ? 'on' : ''}" data-act="growtab" data-v="${id}">${icon(ic, 16)}${n}</button>`).join('')}</div>${body}`;
+  const stat = (ic, v, l, tab) => `<button class="gstat" data-act="growtab" data-v="${tab}"><span class="hstat-ic">${icon(ic, 16)}</span><strong>${v}</strong><span>${l}</span></button>`;
+  return `<header class="page-head"><h1>Grow</h1><p class="muted small">${esc(meta.sub)}</p></header>
+  <div class="grow-stats">
+    ${stat('mic', S.jokes.length, 'jokes', 'comedy')}
+    ${stat('heart', refl, 'reflections', 'eq')}
+    ${stat('bookOpen', S.journal.length, 'entries', 'journal')}
+    ${stat('trophy', `${got}/${BADGES.length}`, 'badges', 'badges')}
+  </div>
+  <div class="grow-tabs" role="tablist" aria-label="Grow sections">${GROW_TABS.map((id) => { const m = GROW_META[id]; return `<button role="tab" aria-selected="${UI.grow === id}" class="gt ${UI.grow === id ? 'on' : ''}" style="--tint:${m.tint}" data-act="growtab" data-v="${id}">${icon(m.ic, 16)}${m.n}</button>`; }).join('')}</div>
+  <div class="grow-body">${body}</div>`;
 }
 function growComedy() {
   const c = daily(C.comedy), n = S.jokes.length;
-  const rank = n >= 100 ? 'Headliner' : n >= 50 ? 'Feature act' : n >= 20 ? 'Open-mic regular' : n >= 5 ? 'Class clown' : 'Rookie';
-  return `<div class="card" style="margin-top:14px"><div class="row between"><div><div class="tiny muted">Comedian rank</div><h2>🎤 ${rank}</h2></div><span class="pill gold">${n} jokes</span></div></div>
-  <form class="card" data-form="addjoke" novalidate><div class="small label-pink">TODAY'S TECHNIQUE</div><h3 style="margin:4px 0">${esc(c.t)}</h3><div class="small">${esc(c.b)}</div>
-    <label class="lbl" for="joke-in">✍️ ${esc(c.p)}</label><textarea id="joke-in" placeholder="Write your joke here…" maxlength="1000"></textarea>
-    <button class="btn primary block" style="margin-top:10px" type="submit">Add to my notebook · +10 XP</button></form>
-  <div class="card"><div class="small muted">Joke of the day</div><div style="margin-top:4px">${esc(daily(C.jokes))}</div><div class="tiny muted" style="margin-top:8px">Tip: tell one joke to a real person today. Watching faces is how comedians learn.</div></div>
-  <div class="sec"><h2>📒 My joke notebook</h2></div>
-  <div class="card">${n ? [...S.jokes].reverse().map((j) => `<div class="tx"><div class="grow"><div style="white-space:pre-wrap">${esc(j.text)}</div><div class="tiny muted">${fmtDate(j.date)}</div></div><button class="icon-btn xs" data-act="deljoke" data-id="${j.id}" aria-label="Delete joke">${icon('x', 14)}</button></div>`).join('') : '<div class="empty">Your first joke is the hardest. It doesn\'t have to be good — it has to be written.</div>'}</div>
-  <div class="sec"><h2>🎓 All techniques</h2></div>
-  <div class="card">${C.comedy.map((x) => `<details style="padding:6px 0"><summary><strong>${esc(x.t)}</strong></summary><div class="small" style="margin-top:6px">${esc(x.b)}</div><div class="small muted" style="margin-top:4px">Practice: ${esc(x.p)}</div></details>`).join('')}</div>`;
+  const ri = COMEDY_RANKS.reduce((a, r, i) => (n >= r[0] ? i : a), 0);
+  const next = COMEDY_RANKS[ri + 1];
+  const prog = next ? ((n - COMEDY_RANKS[ri][0]) / (next[0] - COMEDY_RANKS[ri][0])) * 100 : 100;
+  return growHero('var(--pink)', `${icon('mic', 14)} Comedian rank`, COMEDY_RANKS[ri][1],
+      next ? `${n} joke${n === 1 ? '' : 's'} written · ${next[0] - n} more to <strong>${next[1]}</strong>` : `${n} jokes — you’re a headliner.`,
+      `<div class="xpbar" style="margin-top:12px"><i style="width:${prog}%;background:linear-gradient(90deg,var(--pink),var(--accent))"></i></div>`) + `
+  <form class="card" data-form="addjoke" novalidate>
+    <div class="g-kick" style="--tint:var(--pink)">${icon('sparkle', 14)} Today’s technique</div>
+    <h3 style="margin:6px 0 4px">${esc(c.t)}</h3><p class="small muted">${esc(c.b)}</p>
+    <label class="lbl" for="joke-in">${esc(c.p)}</label><textarea id="joke-in" placeholder="Write your joke here…" maxlength="1000"></textarea>
+    <button class="btn primary block" style="margin-top:10px" type="submit">${icon('plus', 18)} Add to my notebook · +10 XP</button></form>
+  <div class="card soft" style="--tint:var(--pink)"><div class="g-kick">${icon('smile', 14)} Joke of the day</div><p style="margin-top:6px">${esc(daily(C.jokes))}</p><p class="tiny muted" style="margin-top:8px">Tell one joke to a real person today. Watching faces is how comedians learn.</p></div>
+  ${secH('📒', 'My joke notebook', n ? `<span class="pill">${n}</span>` : '')}
+  <div class="card">${n ? [...S.jokes].reverse().map((j) => `<div class="tx"><div class="grow"><div style="white-space:pre-wrap">${esc(j.text)}</div><div class="tiny muted">${fmtDate(j.date)}</div></div><button class="icon-btn xs" data-act="deljoke" data-id="${j.id}" aria-label="Delete joke">${icon('x', 14)}</button></div>`).join('') : `<div class="empty"><div class="empty-ic">${icon('mic', 30)}</div>Your first joke is the hardest. It doesn’t have to be good — it has to be written.</div>`}</div>
+  ${secH('📚', 'All techniques', `<span class="pill">${C.comedy.length}</span>`)}
+  <div class="card acc">${C.comedy.map((x) => `<details><summary>${esc(x.t)}</summary><p class="small">${esc(x.b)}</p><p class="small muted">Practice: ${esc(x.p)}</p></details>`).join('')}</div>`;
 }
 function growEQ() {
   const l = daily(C.eq, 1);
@@ -663,47 +751,59 @@ function growEQ() {
   for (const d of Object.values(S.days)) if (d.evening?.emotion) emo[d.evening.emotion] = (emo[d.evening.emotion] || 0) + 1;
   const total = sum(Object.values(emo)) || 1;
   const refl = Object.entries(S.days).filter(([, d]) => d.evening?.eq?.trim()).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 10);
-  return `<div class="card" style="margin-top:14px"><div class="small label-violet">TODAY'S LESSON</div><h2 style="margin:4px 0">${esc(l.t)}</h2><div>${esc(l.b)}</div></div>
-  <div class="sec"><h2>🎨 Your emotional palette</h2></div>
-  <div class="card">${Object.keys(emo).length ? Object.entries(emo).sort((a, b) => b[1] - a[1]).map(([e, n]) => `<div class="bar-row"><span class="small bar-lbl">${esc(e)}</span><span class="bar"><i style="width:${(n / total) * 100}%;background:var(--violet)"></i></span><span class="small bar-val">${n}</span></div>`).join('') : '<div class="empty">Name your strongest emotion in each evening check-in to see your palette.</div>'}</div>
-  <div class="sec"><h2>🪞 Recent reflections</h2></div>
-  <div class="card">${refl.length ? refl.map(([k, d]) => `<div class="insight small"><strong>${fmtDate(k)} · ${esc(d.evening.emotion || '')}</strong><br>${esc(d.evening.eq)}</div>`).join('') : '<div class="empty">Your EQ reflections will appear here.</div>'}</div>
-  <div class="sec"><h2>📚 All lessons</h2></div>
-  <div class="card">${C.eq.map((x) => `<details style="padding:6px 0"><summary><strong>${esc(x.t)}</strong></summary><div class="small" style="margin-top:6px">${esc(x.b)}</div></details>`).join('')}</div>`;
+  return growHero('var(--violet)', `${icon('heart', 14)} Today’s lesson`, esc(l.t), esc(l.b)) + `
+  ${secH('🎨', 'Your emotional palette')}
+  <div class="card">${Object.keys(emo).length ? Object.entries(emo).sort((a, b) => b[1] - a[1]).map(([e, n]) => `<div class="bar-row"><span class="small bar-lbl">${esc(e)}</span><span class="bar"><i style="width:${(n / total) * 100}%;background:linear-gradient(90deg,var(--violet),var(--pink))"></i></span><span class="small bar-val">${n}</span></div>`).join('') : `<div class="empty"><div class="empty-ic">${icon('palette', 30)}</div>Name your strongest emotion in each evening check-in to see your palette.</div>`}</div>
+  ${secH('🪞', 'Recent reflections')}
+  <div class="card">${refl.length ? `<ol class="timeline">${refl.map(([k, d]) => `<li><div class="tiny muted">${fmtDate(k)}${d.evening.emotion ? ` · <span class="pill">${esc(d.evening.emotion)}</span>` : ''}</div><div class="small">${esc(d.evening.eq)}</div></li>`).join('')}</ol>` : `<div class="empty"><div class="empty-ic">${icon('pen', 30)}</div>Your EQ reflections from evening check-ins will appear here.</div>`}</div>
+  ${secH('📚', 'All lessons', `<span class="pill">${C.eq.length}</span>`)}
+  <div class="card acc">${C.eq.map((x) => `<details><summary>${esc(x.t)}</summary><p class="small">${esc(x.b)}</p></details>`).join('')}</div>`;
 }
 function growGlow() {
   const hyg = lastN(14).map((k) => ({ label: fmtDate(k, { day: 'numeric' }), v: Math.round(hygRatio(S.days[k]) * 100) }));
-  return `<div class="card" style="margin-top:14px"><div class="small muted" style="margin-bottom:6px">Hygiene completion — last 14 days (%)</div>${barChart(hyg, { color: 'var(--teal)', max: 100, target: 100, fmt: (v) => v + '%', label: 'Hygiene completion, last 14 days' })}</div>
-  <div class="grid"><div class="card streak"><div class="ic" aria-hidden="true">🍔</div><div class="n">${habitStreak('fastfood').current}</div><div class="tiny muted">days without fast food</div></div>
-    <div class="card streak"><div class="ic" aria-hidden="true">🥤</div><div class="n">${habitStreak('soda').current}</div><div class="tiny muted">days without soda</div></div></div>
-  <div class="sec"><h2>✅ Do this to stay handsome</h2></div>
-  <div class="card">${C.glow.do.map((t) => `<div class="quest"><div class="q-ic" aria-hidden="true">✨</div><div class="small">${esc(t)}</div></div>`).join('')}</div>
-  <div class="sec"><h2>🚫 Avoid this</h2></div>
-  <div class="card">${C.glow.avoid.map((t) => `<div class="quest"><div class="q-ic" aria-hidden="true">⛔</div><div class="small">${esc(t)}</div></div>`).join('')}</div>
-  <div class="card small muted">Edit your morning & night routines in ⚙️ Settings (on the Today tab).</div>`;
+  const avg14 = Math.round(avg(hyg.map((x) => x.v)));
+  const tile = (hid, label) => { const s = habitStreak(hid), m = nextMilestone(s.current); return `<div class="card streak"><div class="streak-ring">${ring((s.current / m) * 100, 'var(--teal)', 58, 5)}<span class="ic" aria-hidden="true">${HABITS.find((h) => h.id === hid).ic}</span></div><div class="n">${s.current}</div><div class="tiny muted">${label}</div></div>`; };
+  return growHero('var(--teal)', `${icon('sparkle', 14)} Your glow score`, `${avg14}%`, 'Average hygiene routine completion over the last 14 days.',
+      `<div style="margin-top:10px">${barChart(hyg, { color: 'var(--teal)', max: 100, target: 100, fmt: (v) => v + '%', label: 'Hygiene completion, last 14 days' })}</div>`) + `
+  <div class="grid">${tile('fastfood', 'days without fast food')}${tile('soda', 'days without soda')}</div>
+  <div class="grid duo">
+    <section>${secH('✅', 'Do this')}<div class="card"><ul class="g-list">${C.glow.do.map((t) => listItem('check', esc(t), 'good')).join('')}</ul></div></section>
+    <section>${secH('🚫', 'Avoid this')}<div class="card"><ul class="g-list">${C.glow.avoid.map((t) => listItem('ban', esc(t), 'bad')).join('')}</ul></div></section>
+  </div>
+  <div class="card soft small muted" style="--tint:var(--teal)">${icon('settings', 16)} Edit your morning & night routines in Settings.</div>`;
 }
 function growFreedom() {
   const recent = [...S.sos].reverse().slice(0, 12);
-  return `<div class="card" style="margin-top:14px"><strong>Why you're doing this</strong><div class="small" style="margin-top:6px">${esc(S.profile.why || 'Add your “why” in Settings — it\'s your anchor when urges hit.')}</div></div>
-  <div class="grid">${HABITS.map((h) => { const s = habitStreak(h.id); return `<div class="card streak"><div class="ic" aria-hidden="true">${h.ic}</div><div class="n">${s.current}</div><div class="tiny muted">days free · best ${s.best}</div><div class="tiny" style="margin-top:4px">${h.name}</div></div>`; }).join('')}</div>
-  <div class="card"><button class="btn primary block" data-act="sos">${icon('wind', 18)} I have an urge right now</button><div class="tiny muted center" style="margin-top:8px">Urges peak and pass within minutes. Surf the wave instead of fighting it.</div></div>
-  <div class="sec"><h2>📜 Urge log</h2></div>
-  <div class="card">${recent.length ? recent.map((s) => { const h = HABITS.find((x) => x.id === s.type) || { ic: '🌀', name: 'Other' }; return `<div class="tx"><div class="cat" aria-hidden="true">${h.ic}</div><div class="grow"><div>${h.name}</div><div class="tiny muted">${fmtDate(s.date)} ${s.t || ''}</div></div><span class="pill ${s.result === 'won' ? 'good' : 'bad'}">${s.result === 'won' ? 'Beat it 💪' : 'Slipped'}</span></div>`; }).join('') : '<div class="empty">When an urge hits, tap the pink “Urge?” button.</div>'}</div>
-  <div class="card small"><strong>🎲 About gambling</strong><div class="muted" style="margin-top:6px">Gambling apps are engineered to keep you playing. If it feels out of control: block gambling sites and apps on all devices, ask your bank to block gambling transactions, use self-exclusion programs, hand money management to someone you trust for a while, and contact a local gambling or mental-health helpline. Asking for help is strength.</div></div>
-  <div class="card small"><strong>📵 Make social media harder to reach</strong><div class="muted" style="margin-top:6px">Log out after each use · delete apps from your phone (use browser only) · turn on grayscale · set app limits in Digital Wellbeing / Screen Time · put Light where your social apps used to be on your home screen.</div></div>`;
+  const won = S.sos.filter((s) => s.result === 'won').length;
+  return growHero('var(--good)', `${icon('shield', 14)} Why you’re doing this`, esc(S.profile.why || 'Add your “why” in Settings'), 'This is your anchor when urges hit. Read it out loud.') + `
+  <div class="grid g4 streaks">${HABITS.map((h) => {
+    const s = habitStreak(h.id), m = nextMilestone(s.current);
+    return `<div class="card streak"><div class="streak-ring">${ring((s.current / m) * 100, 'var(--good)', 58, 5)}<span class="ic" aria-hidden="true">${h.ic}</span></div><div class="n">${s.current}</div><div class="tiny muted">${h.name}</div><div class="tiny streak-next">best ${s.best} · next ${m}</div></div>`;
+  }).join('')}</div>
+  <button class="card urge-cta" data-act="sos"><span class="nu-ic">${icon('wind', 26)}</span><span class="grow"><strong>I have an urge right now</strong><span class="small">Urges peak and pass within minutes. Surf the wave.</span></span>${icon('arrowRight', 18)}</button>
+  ${secH('📜', 'Urge log', S.sos.length ? `<span class="pill good">${won} beaten</span>` : '')}
+  <div class="card">${recent.length ? recent.map((s) => { const h = HABITS.find((x) => x.id === s.type) || { ic: '🌀', name: 'Other' }; return `<div class="tx"><div class="cat" aria-hidden="true">${h.ic}</div><div class="grow"><div>${h.name}</div><div class="tiny muted">${fmtDate(s.date)} ${s.t || ''}</div></div><span class="pill ${s.result === 'won' ? 'good' : 'bad'}">${s.result === 'won' ? 'Beat it' : 'Slipped'}</span></div>`; }).join('') : `<div class="empty"><div class="empty-ic">${icon('wind', 30)}</div>When an urge hits, tap “Urge?” — every urge you surf shows up here.</div>`}</div>
+  <div class="grid duo">
+    <div class="card soft" style="--tint:var(--bad)"><div class="g-kick">${icon('dice', 14)} About gambling</div><p class="small" style="margin-top:6px">Gambling apps are engineered to keep you playing. If it feels out of control: block gambling sites and apps, ask your bank to block gambling transactions, use self-exclusion programs, let someone you trust help with money for a while, and contact a local gambling or mental-health helpline. Asking for help is strength.</p></div>
+    <div class="card soft" style="--tint:var(--blue)"><div class="g-kick">${icon('phoneOff', 14)} Make social media harder</div><ul class="g-list" style="margin-top:6px">${['Log out after each use', 'Delete apps — use the browser only', 'Turn on grayscale', 'Set app limits in Digital Wellbeing / Screen Time', 'Put Light where your social apps used to be'].map((t) => listItem('check', t)).join('')}</ul></div>
+  </div>`;
 }
 function growJournal() {
   const p = daily(C.prompts);
-  return `<form class="card" data-form="addjournal" data-p="${esc(p)}" style="margin-top:14px" novalidate><div class="small label-blue">TODAY'S PROMPT</div><h3 style="margin:4px 0 10px">${esc(p)}</h3>
-    <textarea id="journal-in" aria-label="Journal entry" placeholder="Write freely…"></textarea><button class="btn primary block" style="margin-top:10px" type="submit">Save · +10 XP</button></form>
-  ${S.saved.length ? `<div class="sec"><h2>🔖 Saved from the feed</h2></div><div class="card">${[...S.saved].reverse().map((s, i) => `<div class="tx"><div class="grow"><div class="tiny muted">${esc(s.tag)}</div><div class="small">${esc(s.body)}</div></div><button class="icon-btn xs" data-act="delsaved" data-i="${S.saved.length - 1 - i}" aria-label="Remove saved card">${icon('x', 14)}</button></div>`).join('')}</div>` : ''}
-  <div class="sec"><h2>📓 Entries</h2></div>
-  <div class="card">${S.journal.length ? [...S.journal].reverse().map((j) => `<div class="insight small" style="border-left-color:var(--blue)"><div class="tiny muted">${fmtDate(j.date)} · ${esc(j.prompt)}</div><div style="white-space:pre-wrap;margin-top:4px">${esc(j.text)}</div></div>`).join('') : '<div class="empty">No entries yet.</div>'}</div>`;
+  return `<form class="card g-hero" style="--tint:var(--blue)" data-form="addjournal" data-p="${esc(p)}" novalidate>
+    <div class="g-kick">${icon('pen', 14)} Today’s prompt</div><h2 class="g-title" style="font-size:1.2rem">${esc(p)}</h2>
+    <textarea id="journal-in" aria-label="Journal entry" placeholder="Write freely…" style="margin-top:12px"></textarea>
+    <button class="btn primary block" style="margin-top:10px" type="submit">${icon('check', 18)} Save entry · +10 XP</button></form>
+  ${S.saved.length ? `${secH('🔖', 'Saved from the feed', `<button class="btn sm ghost" data-act="tab" data-tab="feed">Open in feed</button>`)}<div class="card">${[...S.saved].reverse().map((s, i) => `<div class="tx"><div class="grow"><div class="tiny muted">${esc(s.tag)}</div><div class="small">${esc(s.body)}</div></div><button class="icon-btn xs" data-act="delsaved" data-i="${S.saved.length - 1 - i}" aria-label="Remove saved card">${icon('x', 14)}</button></div>`).join('')}</div>` : ''}
+  ${secH('📓', 'Entries', S.journal.length ? `<span class="pill">${S.journal.length}</span>` : '')}
+  <div class="card">${S.journal.length ? `<ol class="timeline">${[...S.journal].reverse().map((j) => `<li><div class="tiny muted">${fmtDate(j.date)} · ${esc(j.prompt)}</div><div class="small" style="white-space:pre-wrap">${esc(j.text)}</div></li>`).join('')}</ol>` : `<div class="empty"><div class="empty-ic">${icon('bookOpen', 30)}</div>No entries yet. Five honest minutes is all it takes.</div>`}</div>`;
 }
 function growBadges() {
   const got = BADGES.filter((b) => S.badges[b.id]).length;
-  return `<div class="card" style="margin-top:14px"><div class="row between"><strong>${got} of ${BADGES.length} badges</strong><span class="pill gold">+50 XP each</span></div><div class="xpbar" style="margin-top:8px"><i style="width:${(got / BADGES.length) * 100}%"></i></div></div>
-  <div class="grid g3">${BADGES.map((b) => `<div class="card badge ${S.badges[b.id] ? '' : 'locked'}"><div class="bic" aria-hidden="true">${b.ic}</div><div class="small"><strong>${b.n}</strong></div><div class="tiny muted">${b.d}</div>${S.badges[b.id] ? `<div class="tiny" style="color:var(--gold)">${fmtDate(S.badges[b.id])}</div>` : '<span class="sr-only">Locked</span>'}</div>`).join('')}</div>`;
+  const sorted = [...BADGES].sort((a, b) => (!!S.badges[b.id]) - (!!S.badges[a.id]));
+  return growHero('var(--accent)', `${icon('trophy', 14)} Collection`, `${got} of ${BADGES.length} badges`, 'Each badge is worth +50 XP.',
+      `<div class="xpbar" style="margin-top:12px"><i style="width:${(got / BADGES.length) * 100}%"></i></div>`) + `
+  <div class="grid g3 badges">${sorted.map((b) => `<div class="card badge ${S.badges[b.id] ? '' : 'locked'}"><div class="bic" aria-hidden="true">${b.ic}</div><div class="small"><strong>${b.n}</strong></div><div class="tiny muted">${b.d}</div>${S.badges[b.id] ? `<div class="tiny badge-date">${icon('check', 12)} ${fmtDate(S.badges[b.id])}</div>` : `<div class="tiny badge-lock">${icon('lock', 12)} Locked</div>`}</div>`).join('')}</div>`;
 }
 
 // ---------- Modal (accessible: focus trap, Escape, focus restore) ----------
@@ -1242,7 +1342,7 @@ const A = {
   range: (el) => { UI.range = +el.dataset.v; render(); },
   domain: (el) => { UI.domain = el.dataset.v; render(); },
   // Grow
-  growtab: (el) => { UI.grow = el.dataset.v; render(); },
+  growtab: (el) => { UI.grow = el.dataset.v; syncHash(true); render(); $('.grow-tabs .on')?.scrollIntoView({ inline: 'nearest', block: 'nearest' }); },
   deljoke: (el) => removeWithUndo(S.jokes, S.jokes.findIndex((j) => j.id === el.dataset.id), 'Joke'),
   delsaved: (el) => removeWithUndo(S.saved, +el.dataset.i, 'Saved card'),
   // Settings & data
@@ -1405,9 +1505,22 @@ window.addEventListener('unhandledrejection', (e) => onErr(e.reason));
 // Debug/testing hook (harmless in production).
 window.__light = { get state() { return S; }, scores, computeXP, render, version: APP_VERSION };
 
+// Back/forward buttons and manual URL edits move between pages.
+const onRoute = () => {
+  if (!S.profile) return;
+  const r = routeFromHash();
+  if (r.tab === UI.tab && (!r.grow || r.grow === UI.grow)) return;
+  if (modalOpen()) closeModal();
+  go(r.tab, r.grow ? { grow: r.grow } : {}, { push: false });
+};
+window.addEventListener('popstate', onRoute);
+window.addEventListener('hashchange', onRoute);
+
 // ---------- Boot ----------
 applyTheme();
 snapshotDaily();
 if (S.profile && awardBadges().length) save();
+Object.assign(UI, routeFromHash()); // reopen the page you were on
+if (S.profile) syncHash(true);
 render();
 if (S.timer && timerLeftMs() <= 0) finishFocus(true);
