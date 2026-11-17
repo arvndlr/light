@@ -443,9 +443,57 @@ body.modal-open { overflow: hidden; }
 .onboard { max-width: 520px; margin: 0 auto; padding-top: 20px; }
 .onboard .orb-wrap { margin: 0 auto 20px; width: 140px; height: 140px; }
 .badge { text-align: center; padding: 14px 6px; }
-.badge .ic { font-size: 1.9rem; }
+.badge .bic { font-size: 1.9rem; }
 .badge.locked { opacity: .4; filter: grayscale(1); }
 .empty { text-align: center; color: var(--muted); padding: 26px 12px; }
+
+/* ---------- Line icons ---------- */
+.i { display: block; flex: none; }
+.i.filled { fill: currentColor; }
+.h-ic { display: inline-block; vertical-align: -3px; margin-right: 9px; color: var(--accent-text); }
+.ico { display: inline-flex; vertical-align: -3px; }
+.ico .i, .bar-lbl .i, .ring-card .small .i, .ring-card .tiny .i { display: inline-block; vertical-align: -3px; margin-right: 5px; }
+.bar-lbl .i { color: var(--muted); }
+.ring-card .i { color: var(--muted); }
+.fact-ic { color: var(--accent-text); }
+.chip .i, .seg .i { display: inline-block; vertical-align: -3px; margin-right: 6px; }
+.chip.on .i { color: var(--accent-text); }
+.pill .i { display: inline-block; }
+.icon-btn .i, .avatar .i { margin: auto; }
+
+.nav-btn .ic { display: grid; place-items: center; height: 24px; filter: none; }
+.nav-btn .i { stroke-width: 1.75; transition: transform .3s var(--spring); }
+.nav-btn.on .i { stroke-width: 2.1; }
+
+.quest .q-ic { color: var(--accent-text); }
+.quest .q-ic .i { width: 20px; height: 20px; }
+.quest.done .q-ic { color: var(--good); }
+.nu-ic .i { width: 26px; height: 26px; }
+.nu-cta { display: inline-flex; align-items: center; gap: 4px; }
+
+/* Icon tiles on Today's cards */
+.checkin-card .big, .focus-start .big, .focus-live .big {
+  width: 48px; height: 48px; flex: none; border-radius: 15px; display: grid; place-items: center;
+  background: var(--accent-soft); color: var(--accent-text); font-size: 1.5rem;
+}
+.checkin-card.done .big { background: var(--good-soft); color: var(--good); }
+.checkin-card .big .i, .focus-start .big .i, .focus-live .big .i { width: 24px; height: 24px; }
+.chest-ic { width: 52px; height: 52px; flex: none; display: grid; place-items: center; border-radius: 16px; background: var(--accent-soft); color: var(--accent-text); }
+.chest-ic .i { width: 28px; height: 28px; }
+.banner-btn .ico { color: var(--accent-text); margin-top: 1px; }
+
+.streak .ic { display: grid; place-items: center; height: 30px; color: var(--accent-text); }
+.streak .ic .i { width: 26px; height: 26px; }
+.tx .cat { color: var(--muted); }
+.tx .cat .i { width: 20px; height: 20px; }
+
+/* Feed rail icons */
+.r-ic .i { width: 24px; height: 24px; color: #fff; }
+.r-btn[data-act="like"].on .r-ic { color: #f472b6; }
+.r-btn[data-act="like"].on .r-ic .i { color: #f472b6; }
+.r-btn[data-act="feed-save"].on .r-ic { background: rgba(255, 209, 102, .25); border-color: rgba(255, 209, 102, .7); }
+.r-btn[data-act="feed-save"].on .r-ic .i { color: #ffd166; }
+.glass-btn .i { color: #fff; }
 
 /* =====================================================================
    Reels feed — always dark & immersive regardless of theme

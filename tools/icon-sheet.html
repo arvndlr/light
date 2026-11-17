@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Light icons</title>
+  <style>
+    body { margin: 0; padding: 24px; font: 13px system-ui, sans-serif; background: #080b16; color: #f3f5ff; }
+    body.light { background: #f5f4f0; color: #141826; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+    .cell { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 6px; border-radius: 14px; background: rgba(127, 127, 127, .1); }
+    .cell span { opacity: .7; font-size: 11px; }
+    button { margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <button onclick="document.body.classList.toggle('light')">Toggle light</button>
+  <div class="grid" id="g"></div>
+  <script type="module">
+    import { icon, ICON_NAMES } from '../js/icons.js';
+    document.getElementById('g').innerHTML = ICON_NAMES.map((n) => `<div class="cell">${icon(n, 28)}<span>${n}</span></div>`).join('');
+  </script>
+</body>
+</html>

@@ -197,7 +197,7 @@ export function quests(k = today()) {
     { id: 'morning', ic: '🌅', t: 'Morning check-in', done: !!d.morning, xp: 50, act: 'open-morning' },
     { id: 'water', ic: '💧', t: `Drink ${st.waterTarget} glasses of water (${d.water || 0}/${st.waterTarget})`, done: (d.water || 0) >= st.waterTarget, xp: st.waterTarget * 5 + 10 },
     { id: 'hygAM', ic: '🪥', t: 'Morning hygiene routine', done: hygRatio(d, 'hygAM') === 1, xp: st.hygAM.length * 3 },
-    { id: 'prio', ic: '✅', t: pr.length ? `Finish your top priorities (${prDone}/${pr.length})` : 'Set & finish your top 3 priorities', done: pr.length > 0 && prDone === pr.length, xp: 30 },
+    { id: 'prio', ic: '🎯', t: pr.length ? `Finish your top priorities (${prDone}/${pr.length})` : 'Set & finish your top 3 priorities', done: pr.length > 0 && prDone === pr.length, xp: 30 },
     { id: 'move', ic: '🏃', t: `Move 20+ minutes (${d.exercise || 0} min)`, done: (d.exercise || 0) >= 20, xp: 20, act: 'log-exercise' },
     { id: 'focus', ic: '🧠', t: `Focused work 60+ min (${d.deepWork || 0} min)`, done: (d.deepWork || 0) >= 60, xp: 15, act: 'focus' },
     { id: 'joke', ic: '😂', t: 'Comedy rep: write one joke', done: jokesOn(k) > 0 || !!d.evening?.funny?.trim(), xp: 10, act: 'go-comedy' },

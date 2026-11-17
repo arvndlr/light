@@ -61,7 +61,7 @@ Settings → **Add reminders to my calendar** downloads a calendar file with dai
 ## Development
 
 ```bash
-npm test        # 38 unit tests for the core logic (Node 20+, no dependencies)
+npm test        # 41 unit tests for the core logic (Node 20+, no dependencies)
 npm start       # serve on http://localhost:5173
 ```
 
@@ -76,6 +76,7 @@ When you change any file, bump `VERSION` in `sw.js` so installed apps pick up th
 - `js/core.js`: domain logic — scores, streaks, XP, quests, badges, projection, insights, reminders (pure, unit-tested)
 - `js/store.js`: saving, schema migrations, daily snapshot
 - `js/feed.js`: "For You" feed algorithm (pure, unit-tested)
+- `js/icons.js`: the app's line-icon set (open `tools/icon-sheet.html` to preview them all)
 - `js/charts.js`: tiny SVG charts (rings, lines, bars, heatmap)
 - `js/util.js`: date & text helpers
 - `js/content.js` + `js/content-extra.js`: wisdom, lessons, jokes, quizzes, facts, words, tips (edit freely to add your own!)
