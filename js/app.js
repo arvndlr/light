@@ -17,9 +17,11 @@ import { LEVELS, GROUPS, EXERCISES, WORKOUTS, WEEK_PLAN, exercise, workout, work
 import { dayPlan } from './plan.js';
 import { DISCLAIMER, RED_FLAGS, EMERGENCY, IMMUNITY, ASTHMA_BASICS, TRIGGERS, EXERCISE_TIPS, FOODS, MYTHS, BREATHING, breathing, SYMPTOMS, asthmaControl } from './health.js';
 import { figureSVG, hasFigure, poseCount, animateFigures } from './figures.js';
+import { setLang, LANGS, locale, tr } from './i18n.js';
+import { setLocale, getLocale } from './util.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '3.0.0';
+const APP_VERSION = '3.1.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
@@ -150,12 +152,16 @@ function applyTheme() {
 }
 prefersLight.addEventListener?.('change', () => { if (S.settings.theme === 'auto') applyTheme(); });
 
+// ----- Language -----
+const langSeg = () => `<div class="seg" role="radiogroup" aria-label="Language" data-i18n-skip>${LANGS.map(([v, n]) => `<button type="button" role="radio" aria-checked="${(S.settings.lang || 'en') === v}" class="${(S.settings.lang || 'en') === v ? 'on' : ''}" data-act="set-lang" data-v="${v}">${n}</button>`).join('')}</div>`;
+
 // ----- Onboarding -----
 function viewOnboard() {
   return `<div class="onboard stack">
     <div class="orb-wrap"><div class="orb"></div></div>
     <h1 class="center">Welcome to Light</h1>
     <p class="center muted">Your daily guide for focus, health, money, character and joy. 10 minutes in the morning, 10 at night. Everything stays private on this device.</p>
+    <div class="card"><div class="lbl" data-i18n-skip>Language · Wika</div>${langSeg()}</div>
     <form class="card stack" data-form="onboard" novalidate>
       <div><label class="lbl" for="ob-name">What should I call you?</label><input type="text" id="ob-name" placeholder="Your name" autocomplete="given-name" required></div>
       <div><label class="lbl" for="ob-g1">Your 3 biggest goals for this year</label>
@@ -212,7 +218,7 @@ const secH = (ic, title, right = '', id = '') => `<div class="sec"${id ? ` id="$
 const MILESTONES = [3, 7, 14, 30, 60, 90, 180, 365];
 const nextMilestone = (n) => MILESTONES.find((m) => m > n) || n + 100;
 
-const fmtClock = (m) => new Date(2000, 0, 1, Math.floor(m / 60), m % 60).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+const fmtClock = (m) => new Date(2000, 0, 1, Math.floor(m / 60), m % 60).toLocaleTimeString(getLocale() || [], { hour: 'numeric', minute: '2-digit' });
 /** Time-of-day plan built from your wake/bed times (see plan.js). */
 function planHTML() {
   const p = dayPlan();
@@ -381,7 +387,7 @@ function viewMoney() {
   return `
   <h1>Money</h1>
   <div class="card" style="margin-top:14px">
-    <div class="row between"><div><div class="small muted">Spent in ${dt.toLocaleDateString(undefined, { month: 'long' })}</div><div class="big-num">${cur(out)}</div></div>
+    <div class="row between"><div><div class="small muted">Spent in ${dt.toLocaleDateString(getLocale(), { month: 'long' })}</div><div class="big-num">${cur(out)}</div></div>
       ${ring(st.budget ? (out / st.budget) * 100 : 0, out > st.budget ? 'var(--bad)' : 'var(--amber)', 72, 8, st.budget ? Math.round((out / st.budget) * 100) + '%' : '–', 'Share of monthly budget used')}</div>
     <div class="grid g3" style="margin-top:12px">
       <div><div class="tiny muted">Budget left</div><strong style="color:${left < 0 ? 'var(--bad)' : 'var(--good)'}">${cur(left)}</strong></div>
@@ -1433,6 +1439,7 @@ function openSettings() {
   openModal(`<div class="row between"><h2>⚙️ Settings</h2><button class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
     <div class="sec" style="margin-top:14px"><h2>🎨 Appearance</h2><span class="tiny muted">changes apply instantly</span></div>
     <div class="card stack">
+      <div><div class="lbl" data-i18n-skip>Language · Wika</div>${langSeg()}</div>
       <div class="seg" role="radiogroup" aria-label="Theme">${[['auto', 'contrast', 'Auto'], ['dark', 'moon', 'Dark'], ['light', 'sun', 'Light']].map(([v, ic, n]) => `<button type="button" role="radio" aria-checked="${st.theme === v}" class="${st.theme === v ? 'on' : ''}" data-act="set-theme" data-v="${v}">${icon(ic, 16)}${n}</button>`).join('')}</div>
       <div class="swatches" role="radiogroup" aria-label="Accent color">${ACCENTS.map(([v, n]) => `<button type="button" role="radio" aria-checked="${st.accent === v}" class="swatch ${st.accent === v ? 'on' : ''}" data-act="set-accent" data-v="${v}" data-accent-preview="${v}"><i aria-hidden="true"></i><span>${n}</span></button>`).join('')}</div>
     </div>
@@ -1520,6 +1527,7 @@ const A = {
   'go-comedy': () => go('grow', { grow: 'comedy' }),
   'go-freedom': () => go('grow', { grow: 'freedom' }),
   settings: () => openSettings(),
+  'set-lang': (el) => { if ((S.settings.lang || 'en') === el.dataset.v) return; S.settings.lang = el.dataset.v; save(); location.reload(); },
   'set-theme': (el) => { S.settings.theme = el.dataset.v; save(); applyTheme(); markRadio('set-theme', el); },
   'set-accent': (el) => { S.settings.accent = el.dataset.v; save(); applyTheme(); markRadio('set-accent', el); buzz(); },
   'start-workout': (el) => openWorkout(el.dataset.w),
@@ -1835,6 +1843,8 @@ window.addEventListener('popstate', onRoute);
 window.addEventListener('hashchange', onRoute);
 
 // ---------- Boot ----------
+setLang(S.settings.lang); setLocale(locale());
+{ const c = window.confirm.bind(window); window.confirm = (m) => c(tr(m)); } // translate confirm dialogs too
 applyTheme();
 snapshotDaily();
 if (S.profile && awardBadges().length) save();

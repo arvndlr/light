@@ -15,6 +15,7 @@ export const DEFAULTS = () => ({
     theme: 'dark', accent: 'sunrise', // theme: 'auto' | 'dark' | 'light'
     feedHint: true, // show "swipe up" hint until the first swipe
     fitLevel: 'beginner', fitVoice: true, // home workouts
+    lang: 'en', // interface language: 'en' | 'tl' (Taglish)
     asthma: false, // asthma tracking & reminders (Grow → Health)
     hygAM: ['Brush teeth', 'Wash face', 'Shower', 'Sunscreen', 'Deodorant', 'Groom hair'],
     hygPM: ['Wash face', 'Brush teeth', 'Floss', 'Moisturize', 'Lay out tomorrow\'s clothes', 'Screens off 30 min before bed'],

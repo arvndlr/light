@@ -46,6 +46,10 @@ Data lives in the browser on each device. Your laptop and phone do **not** sync 
 | **Daily reward chest** | Complete both check-ins to open a chest: common, rare or legendary XP + a quote or joke |
 | **Urge? button** | 90-second urge-surfing breathing, your "why", healthy alternatives; log "I beat it" (+XP) or an honest slip |
 
+## Language
+
+Settings → **Language · Wika** (also on the welcome screen): English or **Tagalog (Taglish)**. The whole interface switches, including dates in Filipino, coaching tips and insights. Feed cards, stories, exercise how-tos and health articles are still in English for now; they can be translated in batches by adding entries to `js/i18n-tl.js`.
+
 ## Look & feel
 
 Settings → **Appearance**: Auto / Dark / Light mode and four accent colors (Sunrise, Ocean, Aurora, Forest). The Today screen opens with a smart **Next up** card that always shows the single most useful thing to do right now.
@@ -64,7 +68,7 @@ Settings → **Add reminders to my calendar** downloads a calendar file with dai
 ## Development
 
 ```bash
-npm test        # 61 unit tests for the core logic (Node 20+, no dependencies)
+npm test        # 69 unit tests for the core logic (Node 20+, no dependencies)
 npm start       # serve on http://localhost:5173
 ```
 
@@ -85,6 +89,7 @@ When you change any file, bump `VERSION` in `sw.js` so installed apps pick up th
 - `js/figures.js`: animated exercise demo figures (pose + IK engine; preview all at `tools/figure-sheet.html`)
 - `js/stories.js`: inspiring stories (true stories, fables, parables, originals)
 - `js/health.js`: immunity & asthma content + 7-day asthma control check (unit-tested)
+- `js/i18n.js` + `js/i18n-tl.js`: language switch: translates the rendered screen from a Taglish phrase list (exact phrases + patterns for text with numbers/names); `tools/collect-strings.js` lists every interface phrase
 - `js/charts.js`: tiny SVG charts (rings, lines, bars, heatmap)
 - `js/util.js`: date & text helpers
 - `js/content.js` + `js/content-extra.js`: wisdom, lessons, jokes, quizzes, facts, words, tips (edit freely to add your own!)

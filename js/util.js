@@ -26,7 +26,10 @@ export const round1 = (n) => Math.round(n * 10) / 10;
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 export const hour = () => new Date().getHours();
 export const lastN = (n, end = today()) => Array.from({ length: n }, (_, i) => addDays(end, i - n + 1));
-export const fmtDate = (k, o = { weekday: 'short', month: 'short', day: 'numeric' }) => parseKey(k).toLocaleDateString(undefined, o);
+let LOCALE; // set by the language switch (e.g. 'fil-PH')
+export const setLocale = (l) => { LOCALE = l; };
+export const getLocale = () => LOCALE;
+export const fmtDate = (k, o = { weekday: 'short', month: 'short', day: 'numeric' }) => parseKey(k).toLocaleDateString(LOCALE, o);
 
 /** Deterministic pick that changes once per day (same card all day, new card tomorrow). */
 export const dayNum = (k = today()) => Math.floor(parseKey(k).getTime() / 864e5);

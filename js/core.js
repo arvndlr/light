@@ -1,6 +1,7 @@
 // Domain logic. No DOM access here — everything is a pure function of the stored
 // state (plus "today"), which is what makes it unit-testable.
 import C from './content.js';
+import { tr } from './i18n.js';
 import { S, version } from './store.js';
 import {
   today, addDays, daysBetween, parseKey, lastN, clamp, avg, sum, round1, slope, daily, weekStart,
@@ -329,7 +330,7 @@ export function recommendations(h = new Date().getHours()) {
     out.push(['✨', esc(daily(C.challenges, 3))]);
     out.push(['😂', `Comedy practice: ${esc(daily(C.comedy).p)}`]);
   }
-  return out.slice(0, 5);
+  return out.slice(0, 5).map(([i, t]) => [i, tr(t)]);
 }
 
 // ---------- Projection ("Future You") ----------
@@ -425,7 +426,7 @@ export function insights(keys) {
     if (hours.length >= 3 && lateShare >= 0.6) lines.push(`🌃 ${Math.round(lateShare * 100)}% of your urges hit after 9 PM. Make nights the time your phone charges outside the bedroom.`);
   }
   if (!lines.length) lines.push('Keep checking in — after about a week, Light will start spotting patterns in your habits, sleep, mood and spending.');
-  return { slipCounts, lines };
+  return { slipCounts, lines: lines.map((l) => tr(l)) };
 }
 
 // ---------- Calendar reminders (.ics) ----------
