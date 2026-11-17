@@ -2,6 +2,8 @@
 
 Your all-in-one daily life app: focus, health, money, sleep, hygiene, character, emotional intelligence, comedy, and freedom from social media, gambling, fast food and soda.
 
+**Live app: https://arvndlr.github.io/light/**
+
 It runs in any modern browser on a laptop or phone, works offline, and keeps all data **privately on the device** (no account, no server).
 
 ## Run it on your laptop
