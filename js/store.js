@@ -19,10 +19,13 @@ export const DEFAULTS = () => ({
   tx: [],       // { id, date, type: 'out'|'in'|'save', amount, cat, note }
   jokes: [], journal: [], saved: [], sos: [], focusLog: [],
   badges: {}, claims: {}, reviews: {}, chests: {},
+  feedPrefs: {}, // card kind -> learned preference score (see feed.js)
+  feedLikes: {}, // card id -> date liked
+  quiz: {},      // quiz card id -> answered correctly (first try)
   timer: null,  // running focus session { start, dur, label }
 });
 
-const OBJECT_KEYS = ['days', 'badges', 'claims', 'reviews', 'chests'];
+const OBJECT_KEYS = ['days', 'badges', 'claims', 'reviews', 'chests', 'feedPrefs', 'feedLikes', 'quiz'];
 const ARRAY_KEYS = ['tx', 'jokes', 'journal', 'saved', 'sos', 'focusLog'];
 const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
 

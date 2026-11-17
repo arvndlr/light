@@ -194,4 +194,33 @@ const CONTENT = {
     other: ["Breathe 10 slow breaths", "Change rooms", "Drink water", "Move your body for 2 minutes", "Write down what you're feeling"],
   },
 };
+
+// Interactive feed cards. quiz: { q, o: options, a: correct index, why }. polls: { q, o: [{ t, r: reply }] }.
+CONTENT.quiz = [
+  { q: 'How long does the first wave of anger chemicals usually last?', o: ['About 6 seconds', 'About 1 hour', 'All day'], a: 0, why: 'That’s why the 6-second pause works — wait out the spike before you reply.' },
+  { q: 'What’s the #1 cause of early skin aging?', o: ['Sun (UV) exposure', 'Drinking water', 'Sleeping 8 hours'], a: 0, why: 'UV damage. Sunscreen every morning is the cheapest anti-aging product there is.' },
+  { q: 'Saving 100 a day for a year adds up to about…', o: ['3,650', '36,500', '365,000'], a: 1, why: '36,500. Small daily habits become big numbers.' },
+  { q: 'In gambling, who wins over time?', o: ['A player with a system', 'The house', 'Whoever is luckiest'], a: 1, why: 'Every game has a built-in house edge. The longer you play, the more certain the loss.' },
+  { q: 'If you don’t act on a craving, how long does it usually last?', o: ['A few minutes', 'Several days', 'It never stops'], a: 0, why: 'Most urges peak and fade within minutes. That’s the idea behind urge surfing.' },
+  { q: 'Which helps you fall asleep faster?', o: ['Scrolling in bed', 'Dim lights, no screens 30 min before bed', 'A can of soda'], a: 1, why: 'Bright screens and caffeine both delay sleepiness. Darkness tells your body it’s night.' },
+  { q: 'A can of regular soda has roughly how much sugar?', o: ['1 teaspoon', '3 teaspoons', '8–10 teaspoons'], a: 2, why: 'About 35–40 g. That’s more than many adults’ whole daily limit for added sugar.' },
+  { q: 'What makes a punchline land harder?', o: ['Explaining it first', 'A short pause before it', 'Saying it twice'], a: 1, why: 'The pause builds tension. Then the punchline releases it.' },
+  { q: 'A friend shares a problem. The high-EQ move is…', o: ['Fix it immediately', 'Listen and reflect back what they said', 'Share a bigger problem of yours'], a: 1, why: 'People want to feel understood before they want advice.' },
+  { q: 'The "rule of three" in comedy means…', o: ['Tell 3 jokes max', 'Two normal things, then a surprising third', 'Laugh 3 times'], a: 1, why: 'The first two set a pattern. The third breaks it, and the surprise makes the laugh.' },
+  { q: 'What does HALT stand for?', o: ['Hungry, Angry, Lonely, Tired', 'Happy, Active, Loud, Tough', 'Hold, Act, Listen, Talk'], a: 0, why: 'Check these four before big decisions. Most bad choices come from one of them.' },
+  { q: '"Pay yourself first" means…', o: ['Buy a treat on payday', 'Move savings out the day you get paid', 'Pay bills last'], a: 1, why: 'Save before you spend, so willpower never has to decide.' },
+  { q: 'Which habit compounds the most over a year?', o: ['One big effort in January', 'Small daily actions', 'Waiting for motivation'], a: 1, why: '1% better each day is about 37× better in a year. Consistency beats intensity.' },
+  { q: 'Fastest way to calm your body in a stressful moment?', o: ['Long, slow exhales', 'Checking your phone', 'Holding your breath'], a: 0, why: 'Slow exhales activate your body’s “rest and digest” system within a few breaths.' },
+];
+CONTENT.polls = [
+  { q: 'Morning person or night owl?', o: [{ t: '🌅 Morning', r: 'Protect your first hour. It’s your power hour.' }, { t: '🌙 Night owl', r: 'Fine, but guard your sleep. Set a hard screens-off time.' }] },
+  { q: 'When stress hits, you usually…', o: [{ t: '🏃 Move', r: 'Great instinct. Movement burns off stress chemicals.' }, { t: '📱 Scroll', r: 'Notice it. Next time, try 10 slow breaths first, then decide.' }] },
+  { q: 'You’d rather have…', o: [{ t: '💰 More money', r: 'Then track every expense this week. Awareness is step one.' }, { t: '⏳ More time', r: 'Then cut one time-sink app this week. Time is the real currency.' }] },
+  { q: 'Your humor style?', o: [{ t: '🤪 Silly', r: 'Lean into exaggeration and acting things out.' }, { t: '🧐 Dry', r: 'Master understatement and the deadpan pause.' }] },
+  { q: 'When someone criticizes you…', o: [{ t: '🛡️ I defend', r: 'Try "Tell me more" first. Curiosity disarms people.' }, { t: '🤔 I reflect', r: 'That’s high EQ. Keep what’s useful and drop the rest.' }] },
+  { q: 'Perfect weekend?', o: [{ t: '🛋️ Rest', r: 'Rest is productive. Just schedule it so it doesn’t turn into scrolling.' }, { t: '🚀 Build', r: 'Pick one goal task and finish it before noon.' }] },
+  { q: 'Best reward after a hard day?', o: [{ t: '🍔 Food', r: 'Make it a healthy favorite. Reward without regret.' }, { t: '🎮 Fun', r: 'Set a timer so fun stays fun.' }] },
+  { q: 'You learn best by…', o: [{ t: '📚 Reading', r: '10 pages a day is about 15 books a year.' }, { t: '🎧 Listening', r: 'Turn your walks into classes: podcast plus steps.' }] },
+];
+
 export default CONTENT;

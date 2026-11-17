@@ -35,7 +35,7 @@ Data lives in the browser on each device. Your laptop and phone do **not** sync 
 | --- | --- |
 | **Today** | Level/XP orb, 10-min morning & evening check-ins, daily wisdom + EQ lesson + glow-up tip, goals & top 3 priorities, personalized recommendations, water tracker, daily quests, AM/PM hygiene, freedom streaks, joke of the day |
 | **Money** | Quick expense/income logging, monthly budget ring, safe-to-spend per day, category breakdown, 14-day chart, cost of fast food/soda/gambling per year |
-| **Feed** | Endless, healthy scroll: wisdom, EQ lessons, comedy techniques, jokes, glow-up tips, money tips, reflection prompts and real-life challenges (claim XP) |
+| **Feed** | TikTok-style full-screen reels: swipe up (or arrow keys), double-tap to like, save, reflect, share. A "For You" algorithm learns from likes, saves and how long you stay on each card. Card types: wisdom, quizzes, this-or-that polls, jokes with punchline reveal, EQ & comedy lessons, glow-up tips, breathing resets, real-life challenges, and cards about your own progress |
 | **Stats** | Life Score + 6 areas (Health & Sleep, Physical, Mental, Career, Money, EQ & Joy) with trends, charts, **1-year "Future You" projection**, and "Know yourself" pattern insights on your bad habits |
 | **Grow** | Comedy gym + joke notebook, EQ lab, glow-up do/avoid guide, Freedom center (streaks, urge log, gambling help), journal, badges |
 | **Focus timer** | 15/25/50/90-min sessions that log focused minutes automatically, keep running if you close the app, and notify you when done |
@@ -57,7 +57,7 @@ Settings → **Add reminders to my calendar** downloads a calendar file with dai
 ## Development
 
 ```bash
-npm test        # 28 unit tests for the core logic (Node 20+, no dependencies)
+npm test        # 36 unit tests for the core logic (Node 20+, no dependencies)
 npm start       # serve on http://localhost:5173
 ```
 
@@ -71,6 +71,7 @@ When you change any file, bump `VERSION` in `sw.js` so installed apps pick up th
 - `js/app.js`: UI — screens, check-in wizards, focus timer, modals, actions
 - `js/core.js`: domain logic — scores, streaks, XP, quests, badges, projection, insights, reminders (pure, unit-tested)
 - `js/store.js`: saving, schema migrations, daily snapshot
+- `js/feed.js`: "For You" feed algorithm (pure, unit-tested)
 - `js/charts.js`: tiny SVG charts (rings, lines, bars, heatmap)
 - `js/util.js`: date & text helpers
 - `js/content.js`: wisdom, lessons, jokes, tips (edit freely to add your own!)

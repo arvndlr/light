@@ -1,0 +1,47 @@
+// "For You" feed algorithm — pure functions, no DOM, unit-tested.
+// Each card kind has a base weight; your behavior (likes, saves, shares, how long
+// you stay on a card, quick skips) nudges a per-kind preference score that scales it.
+import { clamp } from './util.js';
+
+export const FEED_BASE = {
+  wisdom: 3, challenge: 3, eq: 2, joke: 3, comedy: 2, glow: 2, avoid: 1.5, money: 1.5,
+  prompt: 1, quiz: 2.5, poll: 1.5, breathe: 0.8, you: 1,
+};
+export const PREF_MIN = -10, PREF_MAX = 15;
+/** Share of picks that ignore preferences, so the feed keeps surprising you instead of collapsing into one kind. */
+export const EXPLORE = 0.15;
+
+export const weightFor = (kind, prefs = {}) => FEED_BASE[kind] * Math.exp(clamp(prefs[kind] || 0, PREF_MIN, PREF_MAX) / 6);
+
+/** Weighted random pick of the next card kind; never repeats `last` back-to-back. */
+export function pickKind(prefs = {}, rand = Math.random, last = null) {
+  const kinds = Object.keys(FEED_BASE).filter((k) => k !== last);
+  if (rand() < EXPLORE) return kinds[Math.floor(rand() * kinds.length)];
+  const ws = kinds.map((k) => weightFor(k, prefs));
+  let r = rand() * ws.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < kinds.length; i++) { r -= ws[i]; if (r <= 0) return kinds[i]; }
+  return kinds[kinds.length - 1];
+}
+
+/** Engagement signals → preference deltas. */
+export const SIGNAL = { like: 3, unlike: -3, save: 4, share: 3, reflect: 4, claim: 3, answer: 1 };
+export function nudge(prefs, kind, delta) {
+  if (!(kind in FEED_BASE) || !delta) return prefs;
+  prefs[kind] = clamp((prefs[kind] || 0) + delta, PREF_MIN, PREF_MAX);
+  return prefs;
+}
+/** Time spent on a card is the strongest implicit signal (like watch-time on video apps). */
+export const dwellSignal = (ms) => (ms < 1200 ? -0.5 : ms < 4000 ? 0 : ms < 10000 ? 0.7 : 1.2);
+
+/** Split a joke into setup + punchline at its last sentence break, or null if it's a one-liner. */
+export function splitJoke(text) {
+  const breaks = [...String(text).matchAll(/[.?!]\s+/g)];
+  if (!breaks.length) return null;
+  const last = breaks[breaks.length - 1];
+  const cut = last.index + last[0].length;
+  const a = text.slice(0, cut).trim(), b = text.slice(cut).trim();
+  return a.length >= 6 && b.length >= 6 ? [a, b] : null;
+}
+
+/** Top kinds by preference, for showing "what Light thinks you like". */
+export const topKinds = (prefs = {}, n = 3) => Object.entries(prefs).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, n).map(([k]) => k);

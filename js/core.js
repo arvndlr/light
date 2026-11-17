@@ -150,7 +150,7 @@ export function scores(k) {
 export const rangeScores = (keys) => keys.map(scores).filter(Boolean);
 
 // ---------- XP & levels ----------
-export const XP = { checkin: 50, glass: 5, waterBonus: 10, hygItem: 3, priority: 10, exercise: 20, deepWork: 15, clean: 15, eq: 15, funny: 10, claim: 10, joke: 10, journal: 10, urge: 20, badge: 50, review: 100, focus: 5 };
+export const XP = { checkin: 50, glass: 5, waterBonus: 10, hygItem: 3, priority: 10, exercise: 20, deepWork: 15, clean: 15, eq: 15, funny: 10, claim: 10, joke: 10, journal: 10, urge: 20, badge: 50, review: 100, focus: 5, quiz: 5 };
 export function computeXP() {
   return cached('xp', () => {
     let xp = 0;
@@ -177,6 +177,7 @@ export function computeXP() {
     xp += Object.keys(S.reviews).length * XP.review;
     xp += S.focusLog.length * XP.focus;
     xp += sum(Object.values(S.chests).map((c) => c.xp || 0));
+    xp += Object.values(S.quiz).filter(Boolean).length * XP.quiz;
     return xp;
   });
 }

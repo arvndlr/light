@@ -12,8 +12,9 @@ import {
   projection, insights, buildICS, heatmapKeys,
 } from './core.js';
 import { ring, lineChart, barChart, heatmap } from './charts.js';
+import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, topKinds } from './feed.js';
 
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '2.1.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
@@ -76,17 +77,24 @@ const UI = { tab: 'today', range: 30, domain: 'overall', grow: 'comedy', hyg: nu
 const TABS = [['today', '☀️', 'Today'], ['money', '💰', 'Money'], ['feed', '✨', 'Feed'], ['stats', '📊', 'Stats'], ['grow', '🌱', 'Grow']];
 const firstName = () => (S.profile?.name || 'friend').split(' ')[0];
 
-function render() {
+/**
+ * Re-render the current screen. The feed is stateful (scroll position, loaded cards),
+ * so a plain render() while it's mounted only refreshes the nav; pass { full: true } to rebuild it.
+ */
+function render({ full = false } = {}) {
   const nav = $('#nav'), view = $('#view');
   try {
     if (!S.profile) {
       nav.innerHTML = ''; nav.classList.add('hide'); $('#sos').classList.add('hide');
+      document.body.classList.remove('feed-mode');
       view.innerHTML = viewOnboard();
       return;
     }
     nav.classList.remove('hide'); $('#sos').classList.remove('hide');
     nav.innerHTML = `<img class="nav-logo" src="icons/icon.svg" alt="Light">` + TABS.map(([id, ic, n]) =>
       `<button class="nav-btn ${UI.tab === id ? 'on' : ''}" data-act="tab" data-tab="${id}" ${UI.tab === id ? 'aria-current="page"' : ''}><span class="ic" aria-hidden="true">${ic}</span>${n}</button>`).join('');
+    document.body.classList.toggle('feed-mode', UI.tab === 'feed');
+    if (UI.tab === 'feed' && !full && $('#feed-stage')) return;
     view.innerHTML = ({ today: viewToday, money: viewMoney, feed: viewFeed, stats: viewStats, grow: viewGrow })[UI.tab]();
     if (UI.tab === 'feed') feedInit();
   } catch (err) {
@@ -98,7 +106,11 @@ function render() {
       <details class="tiny muted"><summary>Technical details</summary><pre style="white-space:pre-wrap">${esc(err && err.stack || err)}</pre></details></div>`;
   }
 }
-const go = (tab, extra = {}) => { Object.assign(UI, extra, { tab }); render(); window.scrollTo(0, 0); $('#view').focus({ preventScroll: true }); };
+const go = (tab, extra = {}) => {
+  if (UI.tab === 'feed' && tab !== 'feed') { const prev = feed.items[feed.active]; if (prev && prev.kind !== 'pause') nudge(S.feedPrefs, prev.kind, dwellSignal(Date.now() - feed.activeAt)); save(); }
+  Object.assign(UI, extra, { tab }); render({ full: true }); window.scrollTo(0, 0);
+  if (tab !== 'feed') $('#view').focus({ preventScroll: true });
+};
 
 // ----- Onboarding -----
 function viewOnboard() {
@@ -281,61 +293,190 @@ function viewMoney() {
   <div class="card">${esc(daily(C.money))}</div>`;
 }
 
-// ----- Feed (healthy infinite scroll) -----
-let feedCount = 0, feedSeed = Math.floor(Math.random() * 1000), feedObs = null;
-const FEED_KINDS = ['wisdom', 'challenge', 'eq', 'joke', 'glow', 'comedy', 'wisdom', 'challenge', 'money', 'prompt', 'avoid', 'joke'];
-const CLAIM_CAP = 15;
-function feedItem(i) {
-  const kind = FEED_KINDS[(feedSeed + i) % FEED_KINDS.length];
-  // 13 is coprime with every pool size, so items don't repeat until the pool is exhausted.
-  const at = (arr) => arr[(feedSeed * 31 + i * 13) % arr.length];
-  switch (kind) {
-    case 'wisdom': { const w = at(C.wisdom); return { kind, accent: 'var(--gold)', tag: 'Wisdom', body: `“${w.q}”`, sub: '— ' + w.a, big: true }; }
-    case 'challenge': return { kind, accent: 'var(--good)', tag: 'Real-life challenge', body: at(C.challenges) };
-    case 'eq': { const l = at(C.eq); return { kind, accent: 'var(--violet)', tag: 'EQ lesson', title: l.t, body: l.b }; }
-    case 'joke': return { kind, accent: 'var(--pink)', tag: 'Laugh', body: at(C.jokes) };
-    case 'comedy': { const c = at(C.comedy); return { kind, accent: 'var(--pink)', tag: 'Comedy school', title: c.t, body: c.b, sub: 'Try it: ' + c.p }; }
-    case 'glow': return { kind, accent: 'var(--teal)', tag: 'Glow-up', body: at(C.glow.do) };
-    case 'avoid': return { kind, accent: 'var(--bad)', tag: 'Avoid to stay handsome', body: at(C.glow.avoid) };
-    case 'money': return { kind, accent: 'var(--amber)', tag: 'Money', body: at(C.money) };
-    default: return { kind: 'prompt', accent: 'var(--blue)', tag: 'Reflect', body: at(C.prompts) };
+// ----- Feed: immersive, personalized "For You" reels (algorithm in feed.js) -----
+const FEED_BATCH = 6, CLAIM_CAP = 15, TIME_CHECK_EVERY = 25;
+const feed = { items: [], seen: new Set(), counters: {}, active: -1, activeAt: 0, lastKind: null, views: 0, startedAt: 0, obs: null, tap: { t: 0, i: -1 } };
+const KIND_META = {
+  wisdom: { tag: 'Wisdom', handle: 'light.wisdom', tags: '#mindset #stoic', bg: 'g-gold', fx: ['✨', '🌟', '💫'] },
+  challenge: { tag: 'Real-life challenge', handle: 'light.challenge', tags: '#discipline #irl', bg: 'g-green', fx: ['💪', '🔥', '⚡'] },
+  eq: { tag: 'EQ lesson', handle: 'light.eq', tags: '#emotionalintelligence', bg: 'g-violet', fx: ['❤️', '🧠', '🫶'] },
+  joke: { tag: 'Laugh', handle: 'light.comedy', tags: '#joke #lol', bg: 'g-pink', fx: ['😂', '🤣', '😆'] },
+  comedy: { tag: 'Comedy school', handle: 'light.comedy', tags: '#standup #funny', bg: 'g-pink', fx: ['🎤', '😂', '🎭'] },
+  glow: { tag: 'Glow-up', handle: 'light.glowup', tags: '#selfcare #grooming', bg: 'g-teal', fx: ['✨', '🪞', '💧'] },
+  avoid: { tag: 'Avoid this', handle: 'light.glowup', tags: '#stayhandsome', bg: 'g-red', fx: ['⛔', '🚫', '⚠️'] },
+  money: { tag: 'Money', handle: 'light.money', tags: '#savings #finance', bg: 'g-amber', fx: ['💰', '🏦', '📈'] },
+  prompt: { tag: 'Reflect', handle: 'light.journal', tags: '#journal #selfawareness', bg: 'g-blue', fx: ['📓', '💭', '🌙'] },
+  quiz: { tag: 'Quick quiz', handle: 'light.quiz', tags: '#brain #learn', bg: 'g-indigo', fx: ['❓', '🧩', '💡'] },
+  poll: { tag: 'This or that', handle: 'light.you', tags: '#knowyourself', bg: 'g-violet', fx: ['🤔', '⚖️', '👀'] },
+  breathe: { tag: 'Reset', handle: 'light.calm', tags: '#breathe #calm', bg: 'g-blue', fx: ['🫧', '🌊', '☁️'] },
+  you: { tag: 'Your progress', handle: 'you', tags: '#yourjourney', bg: 'g-gold', fx: ['🔥', '🏆', '⭐'] },
+};
+const poolFor = (k) => ({ wisdom: C.wisdom, challenge: C.challenges, eq: C.eq, joke: C.jokes, comedy: C.comedy, glow: C.glow.do, avoid: C.glow.avoid, money: C.money, prompt: C.prompts, quiz: C.quiz, poll: C.polls, breathe: [1] })[k];
+
+/** Personal cards built from your own data — the feed talks about YOU, not strangers. */
+function youCard() {
+  const k = today(), d = S.days[k] || {}, st = S.settings, out = [];
+  if ((d.water || 0) < st.waterTarget) out.push({ id: 'you:water', big: '💧', title: `${d.water || 0} of ${st.waterTarget} glasses today`, body: 'One glass right now = sharper focus in 10 minutes.', action: { act: 'feed-water', label: '+1 glass' } });
+  const sk = checkinStreak();
+  if (sk >= 2) out.push({ id: 'you:streak', big: '🔥', title: `${sk}-day streak`, body: d.evening ? 'You showed up again today. That’s who you are now.' : 'Don’t break the chain — tonight’s evening check-in keeps it alive.' });
+  const xp = computeXP(), lvl = levelOf(xp);
+  out.push({ id: 'you:level', big: '🏆', title: `Level ${lvl} · ${titleOf(lvl)}`, body: `${xpFor(lvl + 1) - xp} XP to level ${lvl + 1}. Every real-life action counts.`, progress: (xp - xpFor(lvl)) / (xpFor(lvl + 1) - xpFor(lvl)) });
+  const best = HABITS.map((h) => ({ h, s: habitStreak(h.id).current })).sort((a, b) => b.s - a.s)[0];
+  if (best?.s > 0) out.push({ id: 'you:free', big: best.h.ic, title: `${best.s} days free`, body: `of ${best.h.name.toLowerCase()}. Your brain is rewiring. Keep going.` });
+  const p = d.morning?.priorities?.find((x) => x.t?.trim() && !x.done);
+  if (p) out.push({ id: 'you:prio', big: '🎯', title: 'Your #1 right now', body: p.t, action: { act: 'focus', label: 'Start a focus session' } });
+  const pj = projection();
+  if (!pj.need) out.push({ id: 'you:future', big: pj.persona[0], title: `Future you: ${pj.persona[1]}`, body: pj.persona[2] });
+  return out.length ? { kind: 'you', id: 'you', data: out[Math.floor(Math.random() * out.length)] } : null;
+}
+function nextItem() {
+  for (let guard = 0; guard < 5; guard++) {
+    const kind = pickKind(S.feedPrefs, Math.random, feed.lastKind);
+    feed.lastKind = kind;
+    if (kind === 'you') { const y = youCard(); if (y) return y; continue; }
+    const pool = poolFor(kind), n = pool.length;
+    let c = feed.counters[kind] ?? Math.floor(Math.random() * n), tries = 0;
+    while (feed.seen.has(`${kind}:${c % n}`) && tries < n) { c++; tries++; }
+    if (tries >= n) for (let i = 0; i < n; i++) feed.seen.delete(`${kind}:${i}`); // whole pool seen: start over
+    const idx = c % n;
+    feed.counters[kind] = c + 1;
+    feed.seen.add(`${kind}:${idx}`);
+    return { kind, id: `${kind}:${idx}`, data: pool[idx] };
+  }
+  return { kind: 'wisdom', id: 'wisdom:0', data: C.wisdom[0] };
+}
+/** Plain-text version of a card, for share/save/reflect. */
+function itemText(it) {
+  const d = it.data;
+  switch (it.kind) {
+    case 'wisdom': return `“${d.q}” — ${d.a}`;
+    case 'eq': case 'comedy': return `${d.t}: ${d.b}`;
+    case 'quiz': case 'poll': return d.q;
+    case 'you': return `${d.title}. ${d.body}`;
+    case 'breathe': return 'A 30-second breathing reset.';
+    default: return String(d);
   }
 }
-function feedCardHTML(i) {
-  if (i > 0 && i % 12 === 0) {
-    return `<div class="card interstitial"><div style="font-size:2rem" aria-hidden="true">🌍</div><strong>You've explored ${i} cards.</strong><div class="small muted" style="margin:6px 0 12px">Real life is where the best dopamine is. Pick one challenge above, do it, and come back to claim your XP.</div><button class="btn sm" data-act="tab" data-tab="today">See today's quests</button></div>`;
+/** Word-by-word reveal: each word animates in when the card becomes active. */
+const words = (text) => esc(text).split(/\s+/).map((w, i) => `<span class="w" style="--i:${Math.min(i, 40)}">${w}</span>`).join(' ');
+
+function reelHTML(it, i) {
+  if (it.kind === 'pause') {
+    const mins = Math.max(1, Math.round((Date.now() - feed.startedAt) / 60000));
+    return `<section class="reel g-green" data-i="${i}" aria-label="Time check">
+      <div class="r-inner center"><div class="r-big">🌍</div><div class="r-title">${i} cards · ${mins} min</div>
+        <div class="r-text sm">${words('Nice session. The best dopamine is in real life — do one quest, then come back for more.')}</div>
+        <div class="r-opts two"><button class="r-cta" data-act="tab" data-tab="today">Do a quest</button><button class="r-cta ghost" data-act="feed-next">Keep exploring</button></div></div></section>`;
   }
-  const it = feedItem(i);
-  let acts = '';
-  if (it.kind === 'challenge') acts = `<button class="btn sm primary" data-act="claim">I did it · +10 XP</button><span class="tiny muted" data-claims>${S.claims[today()] || 0}/${CLAIM_CAP} today</span>`;
-  else if (it.kind === 'prompt') acts = `<textarea class="feed-journal" aria-label="Your reflection" placeholder="Write your thoughts… (+10 XP)" rows="3" style="min-height:70px"></textarea><button class="btn sm" data-act="journal-feed" data-p="${esc(it.body)}">Save to journal</button>`;
-  else if (it.kind === 'comedy') acts = `<button class="btn sm" data-act="go-comedy">Open joke notebook</button>`;
-  if (!['challenge', 'prompt'].includes(it.kind)) acts += `<button class="btn sm ghost" data-act="savefeed" data-t="${esc(it.tag)}" data-b="${esc((it.title ? it.title + ': ' : '') + it.body + (it.kind === 'wisdom' ? ' ' + it.sub : ''))}">🔖 Save</button><button class="btn sm ghost" data-act="share" data-b="${esc((it.title ? it.title + ': ' : '') + it.body + (it.kind === 'wisdom' ? ' ' + it.sub : ''))}" aria-label="Share">↗ Share</button>`;
-  return `<article class="card feed-card ${it.big ? 'big' : ''}" style="--accent:${it.accent}">
-    <div class="tag" style="color:${it.accent}">${it.tag}</div>
-    ${it.title ? `<h3 style="margin-bottom:6px">${esc(it.title)}</h3>` : ''}
-    <div class="body">${esc(it.body)}</div>${it.sub ? `<div class="small muted" style="margin-top:6px">${esc(it.sub)}</div>` : ''}
-    ${acts ? `<div class="acts">${acts}</div>` : ''}</article>`;
+  const m = KIND_META[it.kind], d = it.data, liked = !!S.feedLikes[it.id];
+  const saved = S.saved.some((s) => s.id === it.id);
+  let body = '';
+  switch (it.kind) {
+    case 'wisdom': body = `<div class="r-quote">${words(`“${d.q}”`)}</div><div class="r-sub">— ${esc(d.a)}</div>`; break;
+    case 'challenge': body = `<div class="r-kicker">Your challenge</div><div class="r-text">${words(d)}</div><button class="r-cta" data-act="claim">I did it · +10 XP</button><div class="r-sub" data-claims>${S.claims[today()] || 0}/${CLAIM_CAP} today</div>`; break;
+    case 'eq': case 'comedy': body = `<div class="r-kicker">${esc(d.t)}</div><div class="r-text">${words(d.b)}</div>${it.kind === 'comedy' ? `<button class="r-cta ghost" data-act="go-comedy">Try it: ${esc(d.p)}</button>` : ''}`; break;
+    case 'joke': {
+      const sp = splitJoke(d);
+      body = sp ? `<div class="r-text">${words(sp[0])}</div><button class="r-cta ghost r-punch-btn" data-act="punch">Tap for the punchline 👇</button><div class="r-text r-punch" hidden>${esc(sp[1])}</div>` : `<div class="r-text">${words(d)}</div>`;
+      break;
+    }
+    case 'prompt': body = `<div class="r-kicker">Think about it</div><div class="r-text">${words(d)}</div><button class="r-cta" data-act="reflect">Write your answer · +10 XP</button>`; break;
+    case 'quiz': {
+      const done = it.id in S.quiz;
+      body = `<div class="r-kicker">Quick quiz${done ? ' · answered' : ' · +5 XP'}</div><div class="r-text">${words(d.q)}</div>
+        <div class="r-opts">${d.o.map((o, j) => `<button class="r-opt" data-act="quiz" data-j="${j}">${esc(o)}</button>`).join('')}</div><div class="r-why" hidden>${esc(d.why)}</div>`;
+      break;
+    }
+    case 'poll': body = `<div class="r-kicker">This or that?</div><div class="r-text">${words(d.q)}</div><div class="r-opts two">${d.o.map((o, j) => `<button class="r-opt" data-act="poll" data-j="${j}">${esc(o.t)}</button>`).join('')}</div><div class="r-why" hidden></div>`; break;
+    case 'breathe': body = `<div class="r-kicker">30-second reset</div><div class="r-breath" aria-hidden="true"><span>Breathe</span></div><div class="r-sub">In for 4 · out for 6. Let your shoulders drop.</div>`; break;
+    case 'you': body = `<div class="r-big">${d.big}</div><div class="r-title">${esc(d.title)}</div><div class="r-text sm">${words(d.body)}</div>${d.progress != null ? `<div class="xpbar" style="margin-top:16px"><i style="width:${d.progress * 100}%"></i></div>` : ''}${d.action ? `<button class="r-cta" data-act="${d.action.act}">${esc(d.action.label)}</button>` : ''}`; break;
+    default: body = `<div class="r-text">${words(d)}</div>`;
+  }
+  const floaters = [...m.fx, ...m.fx].map((e, j) => `<span style="--x:${((j * 17 + i * 23) % 86) + 4}%;--d:${7 + (j % 3) * 2}s;--s:${(j * 1.3).toFixed(1)}s">${e}</span>`).join('');
+  return `<section class="reel ${m.bg}" data-i="${i}" aria-label="${esc(m.tag)}, card ${i + 1}">
+    <div class="r-float" aria-hidden="true">${floaters}</div>
+    <div class="r-inner">${body}</div>
+    <div class="rail">
+      <button class="r-btn ${liked ? 'on' : ''}" data-act="like" aria-pressed="${liked}"><span class="r-ic">${liked ? '❤️' : '🤍'}</span><span>Like</span></button>
+      <button class="r-btn" data-act="reflect"><span class="r-ic">💬</span><span>Reflect</span></button>
+      <button class="r-btn ${saved ? 'on' : ''}" data-act="feed-save" aria-pressed="${saved}"><span class="r-ic">${saved ? '📌' : '🔖'}</span><span>${saved ? 'Saved' : 'Save'}</span></button>
+      <button class="r-btn" data-act="share" data-b="${esc(itemText(it))}"><span class="r-ic">↗️</span><span>Share</span></button>
+    </div>
+    <div class="caption"><strong>@${m.handle}</strong> · ${m.tag}<div class="tiny">${m.tags}</div></div>
+  </section>`;
 }
 function viewFeed() {
-  feedCount = 0;
-  return `<div class="row between"><div><h1>Light Feed</h1><div class="small muted">Scroll as much as you like — every card makes you better.</div></div><button class="icon-btn" data-act="refeed" aria-label="Shuffle feed">🔀</button></div>
-    <div id="feed" class="stack" style="margin-top:14px" aria-live="polite"></div><div id="feed-end" style="height:40px"></div>`;
+  const fav = topKinds(S.feedPrefs, 2).map((k) => KIND_META[k]?.tag).filter(Boolean);
+  return `<div class="feed-top"><div><div class="feed-title">For You</div><div class="tiny feed-sub">${fav.length ? `More ${fav.join(' & ').toLowerCase()} — learning from your likes` : 'Like, save and linger — the feed learns what you love'}</div></div>
+      <div class="row"><button class="icon-btn glass-btn" data-act="refeed" aria-label="Refresh feed">🔄</button><button class="sos-mini" data-act="sos">Urge?</button></div></div>
+    <div id="feed-stage" class="feed-stage" tabindex="0" aria-label="Feed. Swipe up, or use the arrow keys, to see the next card. Double-tap to like."></div>
+    <div id="heart-layer" aria-hidden="true"></div>`;
 }
-function feedMore(n = 8) {
-  const f = $('#feed'); if (!f) return;
+function appendReels(n) {
+  const stage = $('#feed-stage'); if (!stage) return;
   let html = '';
-  for (let i = 0; i < n; i++) html += feedCardHTML(feedCount++);
-  f.insertAdjacentHTML('beforeend', html);
+  for (let k = 0; k < n; k++) {
+    const i = feed.items.length;
+    const it = i > 0 && i % TIME_CHECK_EVERY === 0 ? { kind: 'pause', id: 'pause' } : nextItem();
+    feed.items.push(it);
+    html += reelHTML(it, i);
+  }
+  stage.insertAdjacentHTML('beforeend', html);
+  if (feed.obs) $$('.reel', stage).slice(-n).forEach((r) => feed.obs.observe(r));
 }
 function feedInit() {
-  feedMore(10);
-  feedObs?.disconnect();
-  if ('IntersectionObserver' in window) {
-    feedObs = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) feedMore(8); }, { rootMargin: '600px' });
-    feedObs.observe($('#feed-end'));
-  }
+  Object.assign(feed, { items: [], active: -1, views: 0, startedAt: Date.now(), lastKind: null });
+  feed.obs?.disconnect();
+  feed.obs = 'IntersectionObserver' in window
+    ? new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) activateReel(+e.target.dataset.i); }, { root: $('#feed-stage'), threshold: 0.6 })
+    : null;
+  appendReels(FEED_BATCH);
+  $('#feed-stage').focus({ preventScroll: true });
 }
+/** Called when a card becomes the one on screen: animate it, learn from time spent on the previous one, preload more. */
+function activateReel(i) {
+  if (i === feed.active) return;
+  const now = Date.now(), prev = feed.items[feed.active];
+  if (prev && prev.kind !== 'pause') nudge(S.feedPrefs, prev.kind, dwellSignal(now - feed.activeAt));
+  feed.active = i; feed.activeAt = now; feed.views++;
+  $$('.reel.active').forEach((r) => r.classList.remove('active'));
+  $(`.reel[data-i="${i}"]`)?.classList.add('active');
+  if (feed.views % 5 === 0) save();
+  if (i >= feed.items.length - 3) appendReels(FEED_BATCH);
+}
+const reelOf = (el) => { const r = el.closest('.reel'); return r ? { r, it: feed.items[+r.dataset.i] } : {}; };
+function scrollReel(dir) {
+  const st = $('#feed-stage'); if (!st) return;
+  st.scrollTo({ top: Math.max(0, feed.active + dir) * st.clientHeight, behavior: reducedMotion() ? 'auto' : 'smooth' });
+}
+function heartPop(x, y) {
+  const h = document.createElement('div');
+  h.className = 'heart-pop'; h.textContent = '❤️';
+  h.style.left = x + 'px'; h.style.top = y + 'px';
+  $('#heart-layer')?.appendChild(h);
+  setTimeout(() => h.remove(), 900);
+}
+function setLike(r, it, on) {
+  const btn = $('[data-act="like"]', r);
+  if (!!S.feedLikes[it.id] === on) return;
+  if (on) S.feedLikes[it.id] = today(); else delete S.feedLikes[it.id];
+  nudge(S.feedPrefs, it.kind, on ? SIGNAL.like : SIGNAL.unlike);
+  persist();
+  btn.classList.toggle('on', on); btn.setAttribute('aria-pressed', on);
+  $('.r-ic', btn).textContent = on ? '❤️' : '🤍';
+  if (on) { btn.classList.remove('bump'); void btn.offsetWidth; btn.classList.add('bump'); buzz(10); }
+}
+// Double-tap anywhere on a card to like it (like video apps).
+document.addEventListener('pointerup', (e) => {
+  const r = e.target.closest('.reel');
+  if (!r || e.target.closest('button, textarea, input, a')) return;
+  const now = Date.now(), i = +r.dataset.i;
+  if (now - feed.tap.t < 320 && feed.tap.i === i) {
+    const it = feed.items[i];
+    if (it && it.kind !== 'pause') { setLike(r, it, true); heartPop(e.clientX, e.clientY); }
+    feed.tap.t = 0;
+  } else feed.tap = { t: now, i };
+});
 
 // ----- Stats -----
 const trendTag = (d) => (d == null || isNaN(d) ? '' : d > 0 ? `<span class="trend-up">▲ ${d}</span>` : d < 0 ? `<span class="trend-down">▼ ${Math.abs(d)}</span>` : '<span class="muted">● 0</span>');
@@ -919,25 +1060,65 @@ const A = {
   // Feed
   claim: (el) => {
     const k = today(); if ((S.claims[k] || 0) >= CLAIM_CAP) { toast('Daily challenge cap reached — go live your life! 🌍'); return; }
-    S.claims[k] = (S.claims[k] || 0) + 1; persist(); addCelebrate(el, '✨ +10 XP — real life wins!');
-    el.disabled = true; el.textContent = 'Done ✓'; el.classList.remove('primary');
+    S.claims[k] = (S.claims[k] || 0) + 1;
+    const { it } = reelOf(el); if (it) nudge(S.feedPrefs, it.kind, SIGNAL.claim);
+    persist(); addCelebrate(el, '✨ +10 XP — real life wins!');
+    el.disabled = true; el.textContent = 'Done ✓';
     $$('[data-claims]').forEach((e) => { e.textContent = `${S.claims[k]}/${CLAIM_CAP} today`; });
   },
-  'journal-feed': (el) => {
-    const ta = el.parentElement.querySelector('textarea'); const text = ta.value.trim();
-    if (!text) { toast('Write something first'); ta.focus(); return; }
-    S.journal.push({ id: uid(), date: today(), prompt: el.dataset.p, text }); persist(); toast('📓 Saved to journal · +10 XP');
-    ta.disabled = true; el.disabled = true; el.textContent = 'Saved ✓';
+  like: (el) => { const { r, it } = reelOf(el); if (it) { const on = !S.feedLikes[it.id]; setLike(r, it, on); if (on) burst(el); } },
+  'feed-save': (el) => {
+    const { it } = reelOf(el); if (!it) return;
+    const i = S.saved.findIndex((s) => s.id === it.id);
+    if (i >= 0) S.saved.splice(i, 1); else { S.saved.push({ id: it.id, tag: KIND_META[it.kind].tag, body: itemText(it) }); nudge(S.feedPrefs, it.kind, SIGNAL.save); }
+    persist();
+    const on = i < 0;
+    el.classList.toggle('on', on); el.setAttribute('aria-pressed', on);
+    el.innerHTML = `<span class="r-ic">${on ? '📌' : '🔖'}</span><span>${on ? 'Saved' : 'Save'}</span>`;
+    toast(on ? '📌 Saved — find it in Grow → Journal' : 'Removed from saved');
   },
-  savefeed: (el) => { S.saved.push({ tag: el.dataset.t, body: el.dataset.b }); persist(); el.textContent = '🔖 Saved'; el.disabled = true; },
+  reflect: (el) => {
+    const { it } = reelOf(el); if (!it) return;
+    const prompt = itemText(it);
+    openModal(`<form data-form="reflect" data-kind="${it.kind}" novalidate><div class="row between"><h2>💬 Reflect</h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close">✕</button></div>
+      <div class="card small" style="margin:12px 0">${esc(prompt)}</div>
+      <label class="lbl" for="rf-text">What does this mean for you? How will you use it today?</label>
+      <textarea id="rf-text" placeholder="Write freely…" maxlength="2000"></textarea><input type="hidden" id="rf-prompt" value="${esc(prompt)}">
+      <button class="btn primary block" style="margin-top:12px" type="submit">Save to journal · +10 XP</button></form>`, { label: 'Reflect', onClose: render });
+    $('#rf-text').focus();
+  },
+  quiz: (el) => {
+    const { r, it } = reelOf(el); if (!it || $('.r-opt[disabled]', r)) return;
+    const j = +el.dataset.j, ok = j === it.data.a, first = !(it.id in S.quiz);
+    $$('.r-opt', r).forEach((b, k) => { b.disabled = true; if (k === it.data.a) b.classList.add('right'); });
+    if (!ok) el.classList.add('wrong');
+    $('.r-why', r).hidden = false;
+    if (first) S.quiz[it.id] = ok;
+    nudge(S.feedPrefs, it.kind, SIGNAL.answer); persist();
+    if (ok) { burst(el); buzz([20, 30, 20]); toast(first ? '🧠 Correct! +5 XP' : '🧠 Correct!'); } else buzz(40);
+  },
+  poll: (el) => {
+    const { r, it } = reelOf(el); if (!it || $('.r-opt[disabled]', r)) return;
+    $$('.r-opt', r).forEach((b) => { b.disabled = true; });
+    el.classList.add('right');
+    const why = $('.r-why', r); why.textContent = it.data.o[+el.dataset.j].r; why.hidden = false;
+    nudge(S.feedPrefs, it.kind, SIGNAL.answer); save(); buzz(10);
+  },
+  punch: (el) => { const p = el.parentElement.querySelector('.r-punch'); el.hidden = true; p.hidden = false; p.classList.add('pop'); buzz(15); },
+  'feed-water': (el) => {
+    const d = day(); d.water = (d.water || 0) + 1; persist(); burst(el); buzz();
+    el.disabled = true; el.textContent = `💧 Logged · ${d.water}/${S.settings.waterTarget}`;
+  },
+  'feed-next': () => scrollReel(1),
   share: async (el) => {
     const text = el.dataset.b + '\n— shared from Light';
+    const { it } = reelOf(el); if (it) { nudge(S.feedPrefs, it.kind, SIGNAL.share); save(); }
     try {
       if (navigator.share) await navigator.share({ text });
       else { await navigator.clipboard.writeText(text); toast('Copied to clipboard 📋'); }
     } catch { /* user cancelled */ }
   },
-  refeed: () => { feedSeed = Math.floor(Math.random() * 1000); render(); window.scrollTo(0, 0); },
+  refeed: () => { feed.seen.clear(); feed.counters = {}; render({ full: true }); toast('🔄 Fresh feed'); },
   // Stats
   range: (el) => { UI.range = +el.dataset.v; render(); },
   domain: (el) => { UI.domain = el.dataset.v; render(); },
@@ -988,6 +1169,12 @@ const FORMS = {
     $('#m-amt')?.focus();
   },
   addjoke: () => { const t = $('#joke-in').value.trim(); if (!t) { toast('Write a joke first — even a terrible one!'); return; } S.jokes.push({ id: uid(), date: today(), text: t }); persist(); burst(); toast('🎤 Joke saved · +10 XP'); render(); },
+  reflect: (form) => {
+    const t = $('#rf-text').value.trim(); if (!t) { toast('Write something first'); return; }
+    S.journal.push({ id: uid(), date: today(), prompt: $('#rf-prompt').value, text: t });
+    nudge(S.feedPrefs, form.dataset.kind, SIGNAL.reflect);
+    persist(); closeModal(); toast('📓 Saved to journal · +10 XP');
+  },
   addjournal: (form) => { const t = $('#journal-in').value.trim(); if (!t) { toast('Write something first'); return; } S.journal.push({ id: uid(), date: today(), prompt: form.dataset.p, text: t }); persist(); toast('📓 Saved · +10 XP'); render(); },
   settings: () => {
     const st = S.settings, p = S.profile;
@@ -1046,6 +1233,12 @@ document.addEventListener('change', (e) => {
   r.readAsText(f);
 });
 document.addEventListener('keydown', (e) => {
+  if (!modalOpen() && UI.tab === 'feed' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName)) {
+    const dir = { ArrowDown: 1, PageDown: 1, j: 1, ' ': 1, ArrowUp: -1, PageUp: -1, k: -1 }[e.key];
+    if (dir) { e.preventDefault(); scrollReel(dir); return; }
+    if (e.key === 'l') { const r = $('.reel.active'); const it = feed.items[feed.active]; if (r && it && it.kind !== 'pause') setLike(r, it, !S.feedLikes[it.id]); }
+    return;
+  }
   if (!modalOpen()) return;
   if (e.key === 'Escape') { closeModal(); return; }
   if (e.key === 'Tab') {
