@@ -951,3 +951,4 @@ body.feed-mode #nav { --glass: rgba(6, 8, 16, .55); --line-strong: rgba(255, 255
 .fig-steps { display: flex; align-items: center; gap: 2px; }
 .fig-steps .fig { flex: 1; min-width: 0; }
 .fig-arrow { flex: none; color: var(--muted); }
+.fig-prop { fill: var(--surface-3); stroke: var(--line-strong); stroke-width: 1; }

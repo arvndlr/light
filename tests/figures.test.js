@@ -33,9 +33,11 @@ test('limbs never stretch or shrink in any frame', () => {
 test('planted feet stay put and nothing goes through the floor', () => {
   for (const [id, fig] of Object.entries(FIGURES)) {
     const frames = sample(fig).frames;
-    const first = frames[0].leg[2];
+    for (const leg of fig.planted || []) {
+      const first = frames[0][leg][2];
+      for (const f of frames) assert.ok(near(f[leg][2][0], first[0], 1) && near(f[leg][2][1], first[1], 1), `${id} ${leg} foot slides`);
+    }
     for (const f of frames) {
-      assert.ok(near(f.leg[2][0], first[0], 1) && near(f.leg[2][1], first[1], 1), `${id} front foot slides`);
       for (const k of ['arm', 'arm2', 'leg', 'leg2']) for (const p of f[k]) assert.ok(p[1] <= GROUND + 3.5, `${id} ${k} below floor`);
       assert.ok(f.head[1] + BONES.head <= GROUND + 1, `${id} head below floor`);
     }
@@ -46,4 +48,12 @@ test('figure SVG is animated by default and static on request', () => {
   assert.doesNotMatch(figureSVG('squat', { still: true }), /data-fig/);
   assert.equal(figureSVG('nope'), '');
   assert.ok(solve(FIGURES.squat.poses[0]).head);
+});
+
+test('every exercise has a figure, and planted feet can actually reach their targets', () => {
+  for (const e of EXERCISES) assert.ok(FIGURES[e.id], `missing figure: ${e.id}`);
+  for (const [id, fig] of Object.entries(FIGURES)) for (const p of fig.poses) {
+    assert.ok(len(p.hip, p.foot) <= BONES.thigh + BONES.shin + 0.1, `${id}: foot out of reach`);
+    if (p.foot2) assert.ok(len(p.hip, p.foot2) <= BONES.thigh + BONES.shin + 0.1, `${id}: foot2 out of reach`);
+  }
 });

@@ -18,7 +18,7 @@ import { dayPlan } from './plan.js';
 import { figureSVG, hasFigure, poseCount, animateFigures } from './figures.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '2.7.0';
+const APP_VERSION = '2.8.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
