@@ -15,7 +15,7 @@ import { ring, lineChart, barChart, heatmap } from './charts.js';
 import { icon, ico, iconize } from './icons.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '2.4.0';
+const APP_VERSION = '2.4.1';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
@@ -1212,7 +1212,9 @@ const A = {
   'feed-mode': (el) => { feed.mode = el.dataset.v; render({ full: true }); },
   'feed-topic': (el) => {
     feed.topic = el.dataset.v; render({ full: true }); buzz(8);
-    $('.ft-chip.on')?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
+    // Only the chip row scrolls (never the page), and only when the chips don't all fit.
+    const row = $('.feed-topics'), chip = $('.ft-chip.on');
+    if (row && chip && row.scrollWidth > row.clientWidth) row.scrollLeft = Math.max(0, chip.offsetLeft - (row.clientWidth - chip.offsetWidth) / 2);
   },
   'feed-more': (el) => { const { it } = reelOf(el); if (it && !isSpecial(it)) openFeedMenu(it); },
   'more-like': () => { const it = feed.menu; if (!it) return; nudge(S.feedPrefs, it.kind, 5); save(); closeModal(); toast(`${icon('heart', 16)} You’ll see more ${KIND_META[it.kind].tag.toLowerCase()}`); },
