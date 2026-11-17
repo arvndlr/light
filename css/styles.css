@@ -952,3 +952,15 @@ body.feed-mode #nav { --glass: rgba(6, 8, 16, .55); --line-strong: rgba(255, 255
 .fig-steps .fig { flex: 1; min-width: 0; }
 .fig-arrow { flex: none; color: var(--muted); }
 .fig-prop { fill: var(--surface-3); stroke: var(--line-strong); stroke-width: 1; }
+
+/* ---------- Stories (v2.9) ---------- */
+.g-sunset { --base: #150a10; --c1: rgba(251, 146, 60, .55); --c2: rgba(244, 63, 94, .38); --c3: rgba(250, 204, 21, .32); --tint: #fdba74; }
+.r-story-t { font-size: clamp(1.6rem, 6.6vw, 2.2rem); line-height: 1.15; margin: 4px 0 10px; }
+.story { max-width: 620px; margin: 0 auto; }
+.story-t { font-size: 1.7rem; font-weight: 850; letter-spacing: -.025em; line-height: 1.15; margin: 14px 0 10px; }
+.story-lead { font-size: 1.08rem; font-weight: 600; color: var(--muted); line-height: 1.55; margin: 0 0 16px; }
+.story p { font-size: 1.02rem; line-height: 1.72; margin: 0 0 14px; }
+.story-box { margin: 16px 0 0; padding: 14px 16px; border-radius: 16px; background: color-mix(in srgb, var(--tint) 9%, var(--surface)); border: 1px solid color-mix(in srgb, var(--tint) 28%, transparent); }
+.story-box p { margin: 6px 0 0; font-size: .98rem; }
+.story-actions { margin-top: 16px; }
+.story .btn .i, .story .g-kick .i { display: inline-block; }

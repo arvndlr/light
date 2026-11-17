@@ -1,5 +1,6 @@
 // Light — content library. All text is original or paraphrased from ancient public-domain thinkers.
 import EXTRA from './content-extra.js';
+import STORIES from './stories.js';
 const CONTENT = {
   wisdom: [
     { q: "You have power over your mind, not outside events. Realize this, and you will find strength.", a: "Marcus Aurelius" },
@@ -229,5 +230,7 @@ for (const [k, v] of Object.entries(EXTRA)) {
   if (Array.isArray(v)) CONTENT[k] = [...(CONTENT[k] || []), ...v];
   else for (const [k2, v2] of Object.entries(v)) CONTENT[k][k2] = [...(CONTENT[k][k2] || []), ...v2];
 }
+
+CONTENT.stories = STORIES;
 
 export default CONTENT;

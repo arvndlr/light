@@ -1,0 +1,267 @@
+// Inspiring stories for the feed — all written in Light's own words.
+// kind: 'True story' (well-documented facts only), 'Fable' / 'Parable' / 'Zen story'
+// (traditional, public domain), 'Light story' (original fiction).
+// Each: { t: title, kind, teaser, body: [paragraphs], lesson, act: one thing to try today }
+export default [
+  {
+    t: 'The girl in the leg brace', kind: 'True story',
+    teaser: 'As a child, Wilma Rudolph was told she might never walk normally. Years later, the world called her the fastest woman alive.',
+    body: [
+      'Wilma Rudolph was born in Tennessee in 1940, the twentieth of twenty-two children. As a young child she survived serious illnesses, including polio, which left her with a weak, twisted left leg. For years she wore a metal brace.',
+      'Her family refused to treat her as fragile. Twice a week her mother took her on a long bus ride to a hospital for treatment, and at home her brothers and sisters took turns massaging her leg every day.',
+      'By around age twelve, she could walk without the brace. She started playing basketball, then running — and kept running.',
+      'At the 1960 Olympics in Rome she won three gold medals in sprinting, becoming the first American woman to win three golds in track and field at a single Olympics.',
+    ],
+    lesson: 'Where you start is not where you have to finish. Daily, boring repetition — like massaging a weak leg — quietly builds extraordinary results.',
+    act: 'Pick your “weak leg” — the area of life you avoid — and give it 10 minutes of work today.',
+  },
+  {
+    t: 'The night the factory burned', kind: 'True story',
+    teaser: 'In 1914, fire tore through Thomas Edison’s laboratory complex. He was 67. What he did next surprised everyone.',
+    body: [
+      'In December 1914, a fire broke out at Thomas Edison’s factory complex in West Orange, New Jersey. Buildings, equipment and years of records were destroyed. The losses ran into millions of dollars, and much of it wasn’t insured.',
+      'Edison was 67 years old. Instead of collapsing, he reportedly told his family that the fire had burned up old mistakes too, and that they would start rebuilding right away.',
+      'Within weeks, crews were clearing the rubble and the factory was producing again. Edison kept working and inventing for many more years.',
+    ],
+    lesson: 'Disasters feel like endings, but they can also clear space. The question isn’t “Why did this happen?” — it’s “What do I build now?”',
+    act: 'Think of one recent setback. Write one sentence about what it cleared space for.',
+  },
+  {
+    t: 'Twelve rejections', kind: 'True story',
+    teaser: 'A single mother wrote a book about a boy wizard. Publisher after publisher said no.',
+    body: [
+      'In the early 1990s, J.K. Rowling was a single mother living on very little money in Edinburgh. She wrote much of her first book in cafés while caring for her young daughter.',
+      'When the manuscript was finished, it was rejected by twelve publishers. Children’s books were long, it was said, and this one was too long and too unusual.',
+      'Finally, a small publisher agreed to print a modest first run. That book — Harry Potter and the Philosopher’s Stone — became the start of one of the best-selling series in history.',
+    ],
+    lesson: 'Rejection is information about timing and fit, not a final verdict on your worth. Twelve “no”s are survivable. Quitting after the first one isn’t.',
+    act: 'Send the message, application or idea you’ve been sitting on — even if it might get a “no”.',
+  },
+  {
+    t: 'Born a slave, free in mind', kind: 'True story',
+    teaser: 'One of history’s great teachers of inner freedom began life owned by another man.',
+    body: [
+      'Epictetus was born around the year 50 in what is now Turkey, into slavery. He later lived in Rome, still enslaved, and is said to have had a permanently injured leg.',
+      'Somehow he was allowed to study philosophy. After gaining his freedom, he became a teacher and opened a school in Greece. Students travelled far to hear him.',
+      'His central idea was simple: some things are up to us — our judgments, choices and efforts — and some things are not. Peace comes from putting your energy only into the first group.',
+      'He wrote nothing himself. His student Arrian wrote down his teachings, and people still read them nearly two thousand years later.',
+    ],
+    lesson: 'Your circumstances may be outside your control. Your response never is.',
+    act: 'Write two lists: “Up to me” and “Not up to me” for one thing worrying you. Act only on the first list.',
+  },
+  {
+    t: 'The emperor’s private notebook', kind: 'True story',
+    teaser: 'The most powerful man in the world kept a diary of reminders to be kinder, calmer and more disciplined.',
+    body: [
+      'Marcus Aurelius ruled the Roman Empire from 161 to 180. He faced wars, a devastating plague and betrayal by people close to him.',
+      'In the evenings — often in army camps — he wrote notes to himself in Greek. They weren’t meant for anyone else. He reminded himself to be patient with difficult people, not to waste time, and to do his duty without complaining.',
+      'We now call those notes the “Meditations”. They have become one of the most-read books of practical philosophy in the world — written by a man who was talking only to himself.',
+    ],
+    lesson: 'Even the most powerful people need reminders. Writing to yourself every day is how you become the person you’re trying to be.',
+    act: 'Tonight in your evening check-in, write one reminder to your future self.',
+  },
+  {
+    t: 'The last human freedom', kind: 'True story',
+    teaser: 'A psychiatrist survived the Nazi camps and came out with one idea that has helped millions.',
+    body: [
+      'Viktor Frankl was an Austrian psychiatrist. During World War II he was imprisoned in Nazi concentration camps, including Auschwitz. He lost his wife, parents and brother.',
+      'In the camps he noticed something. Prisoners who held on to a reason to live — a person to see again, work to finish — often found strength others didn’t.',
+      'After the war he wrote “Man’s Search for Meaning”. His core idea: everything can be taken from a person except one thing — the freedom to choose their attitude in any situation.',
+    ],
+    lesson: 'Purpose is protection. When you know your “why”, you can endure almost any “how”.',
+    act: 'Read your “why” in Settings out loud today. If you don’t have one yet, write it.',
+  },
+  {
+    t: 'The boy from the streets of General Santos', kind: 'True story',
+    teaser: 'He left home as a teenager with almost nothing. He became the only boxer to win world titles in eight weight divisions.',
+    body: [
+      'Manny Pacquiao grew up in deep poverty in Mindanao in the Philippines. As a teenager he left home and went to Manila, working odd jobs and at times sleeping on the streets.',
+      'He started boxing to earn money for his family. He was small and unknown, but he trained relentlessly.',
+      'Over the following decades he won world championships in eight different weight divisions — something no other boxer has done — and became a national hero.',
+    ],
+    lesson: 'Hunger plus discipline beats talent that doesn’t work. Your starting point doesn’t decide your ceiling.',
+    act: 'Do one workout today even if you don’t feel like it. Discipline is a decision, not a feeling.',
+  },
+  {
+    t: 'Gold with water jugs', kind: 'True story',
+    teaser: 'Stranded during the pandemic, a Filipina weightlifter trained with whatever she could find — and made history.',
+    body: [
+      'Hidilyn Diaz grew up in Zamboanga City, where she started lifting weights as a girl, sometimes using homemade equipment.',
+      'Before the Tokyo Olympics, the pandemic left her stuck in Malaysia, far from home. She kept training anyway, with improvised equipment when proper gear wasn’t available.',
+      'In 2021 she won the gold medal in weightlifting — the first Olympic gold medal in the Philippines’ history.',
+    ],
+    lesson: 'You don’t need perfect conditions. You need to keep showing up with what you have.',
+    act: 'Do a no-equipment workout in Grow → Fitness today. No gym needed.',
+  },
+  {
+    t: 'Two years to live', kind: 'True story',
+    teaser: 'At 21, a young physicist was told he had about two years left. He lived for more than fifty.',
+    body: [
+      'Stephen Hawking was a student at Cambridge when he was diagnosed with motor neurone disease (ALS). Doctors expected him to live only a couple more years.',
+      'The disease slowly took his ability to walk, then to speak. He communicated through a computer, choosing words with tiny movements.',
+      'He kept working. He became one of the most famous scientists in the world, wrote best-selling books about the universe, and lived to 76 — and was famous for his sense of humor.',
+    ],
+    lesson: 'Limits are real, but they are not the whole story. Focus on what you can still do — and keep laughing.',
+    act: 'List three things you CAN do today that you usually take for granted.',
+  },
+  {
+    t: 'The word at the water pump', kind: 'True story',
+    teaser: 'A deaf and blind child had no way to understand language — until one moment at a well.',
+    body: [
+      'Helen Keller lost her sight and hearing after an illness when she was about 19 months old. As a young child she was frustrated and often uncontrollable, cut off from the world.',
+      'When she was six, a teacher named Anne Sullivan came to live with the family. Sullivan spelled words into Helen’s hand, but Helen didn’t connect them to things.',
+      'One day at a water pump, Sullivan held Helen’s hand under the cold water and spelled “w-a-t-e-r” into the other. Helen suddenly understood that everything had a name. She learned dozens of words that same day.',
+      'She went on to graduate from college and became a famous author and activist.',
+    ],
+    lesson: 'Breakthroughs often come after long stretches where nothing seems to work. Patience is part of the method.',
+    act: 'Be patient with yourself (or someone else) who is learning something slowly today.',
+  },
+  {
+    t: 'The impossible mile', kind: 'True story',
+    teaser: 'For years, people said a human couldn’t run a mile in under four minutes. Then a medical student did it.',
+    body: [
+      'Running a mile in under four minutes was long seen as a barrier many believed the human body couldn’t break.',
+      'Roger Bannister was a British medical student who trained around his studies. On 6 May 1954, in Oxford, he ran a mile in 3 minutes 59.4 seconds.',
+      'Just weeks later, another runner beat his time. Within a few years, many others had run under four minutes too.',
+    ],
+    lesson: 'Many limits live in belief, not biology. Once you see it’s possible, the impossible becomes normal.',
+    act: 'Pick one “I could never…” belief about yourself. Take the smallest step to test it.',
+  },
+  {
+    t: 'Gold in the cracks', kind: 'Parable',
+    teaser: 'In Japan, broken bowls are sometimes repaired with gold. The cracks become the most beautiful part.',
+    body: [
+      'Kintsugi is a Japanese art of repairing broken pottery with lacquer mixed with gold or silver.',
+      'Instead of hiding the cracks, the repair highlights them. The bowl becomes stronger in its history — and often more valuable than before it broke.',
+      'The idea behind it: damage and repair are part of an object’s story, not something to be ashamed of.',
+    ],
+    lesson: 'Your slips, failures and recoveries don’t make you less. Repaired with care, they become your strength — and your story.',
+    act: 'If you slipped recently, log it honestly — then write what you learned. That’s your gold.',
+  },
+  {
+    t: 'The tortoise and the hare', kind: 'Fable',
+    teaser: 'You know how it ends. But do you live like you know?',
+    body: [
+      'A hare mocked a tortoise for being slow. Tired of the teasing, the tortoise challenged him to a race.',
+      'The hare shot ahead and was soon so far in front that he decided to rest. He lay down under a tree and fell asleep.',
+      'The tortoise never stopped. Step after slow step, he passed the sleeping hare. When the hare woke up and sprinted to the finish, the tortoise was already there.',
+    ],
+    lesson: 'Consistency beats bursts. A daily check-in is the tortoise. A motivated weekend is the hare.',
+    act: 'Do your morning and evening check-ins today — even quick ones. Be the tortoise.',
+  },
+  {
+    t: 'The crow and the pitcher', kind: 'Fable',
+    teaser: 'A thirsty crow finds water it can’t reach. Its solution is one pebble at a time.',
+    body: [
+      'A crow, half-dead with thirst, found a pitcher with a little water at the bottom. Its beak couldn’t reach it.',
+      'It tried to tip the pitcher over, but it was too heavy.',
+      'Then the crow had an idea. It picked up a pebble and dropped it in. Then another. And another. Slowly the water rose, until it could drink.',
+    ],
+    lesson: 'Big problems are often solved with small, repeated actions. Pebble by pebble.',
+    act: 'Break your biggest goal into a “pebble” you can drop in today — 15 minutes or less.',
+  },
+  {
+    t: 'The lion and the mouse', kind: 'Fable',
+    teaser: 'A lion spares a tiny mouse. He laughs when it promises to repay him.',
+    body: [
+      'A lion caught a mouse that had run across his paw. The mouse begged for its life and promised to help the lion one day. The lion laughed — how could a mouse help a lion? — but let it go.',
+      'Later, the lion was caught in a hunter’s net. He roared and struggled but couldn’t escape.',
+      'The mouse heard him, ran over and gnawed through the ropes until the lion was free.',
+    ],
+    lesson: 'No act of kindness is wasted, and no person is too small to matter.',
+    act: 'Do one small kind thing for someone today without expecting anything back.',
+  },
+  {
+    t: 'The wind and the sun', kind: 'Fable',
+    teaser: 'The wind and the sun argue about who is stronger. A traveler’s coat settles it.',
+    body: [
+      'The North Wind and the Sun argued about who was stronger. They agreed: whoever could make a traveler take off his coat would win.',
+      'The Wind blew as hard as it could. The harder it blew, the tighter the traveler wrapped his coat around himself.',
+      'Then the Sun shone gently and warmly. Soon the traveler grew hot and took his coat off by himself.',
+    ],
+    lesson: 'Warmth persuades where force fails — with other people, and with yourself.',
+    act: 'Replace one harsh thought about yourself today with what a kind coach would say.',
+  },
+  {
+    t: 'Maybe', kind: 'Parable',
+    teaser: 'A farmer’s horse runs away. “Such bad luck,” say the neighbors. His answer: “Maybe.”',
+    body: [
+      'An old farmer’s horse ran away. His neighbors said, “What terrible luck.” The farmer said, “Maybe.”',
+      'The next day the horse came back with three wild horses. “What wonderful luck,” the neighbors said. “Maybe,” said the farmer.',
+      'His son tried to ride one of the wild horses, fell, and broke his leg. “How unlucky,” said the neighbors. “Maybe.”',
+      'Soon soldiers came to the village to take young men to war. They passed over the son because of his broken leg. “How lucky,” said the neighbors. The farmer smiled: “Maybe.”',
+    ],
+    lesson: 'You rarely know what an event really means while it’s happening. Don’t let one moment decide your mood for the whole day.',
+    act: 'When something “bad” happens today, say “maybe” — and wait before reacting.',
+  },
+  {
+    t: 'Empty your cup', kind: 'Zen story',
+    teaser: 'A professor visits a Zen master to learn. The master just keeps pouring tea.',
+    body: [
+      'A learned professor visited a Zen master to ask about Zen. Instead of listening, he talked at length about his own ideas.',
+      'The master served tea. He poured into the professor’s cup until it was full — and kept pouring. Tea spilled across the table.',
+      '“Stop! It’s overflowing!” said the professor. “Like this cup,” the master said, “you are full of your own opinions. How can I show you anything unless you first empty your cup?”',
+    ],
+    lesson: 'You can’t learn what you think you already know. Curiosity makes room for growth.',
+    act: 'In one conversation today, only ask questions and listen — no opinions.',
+  },
+  {
+    t: 'The monk who put her down', kind: 'Zen story',
+    teaser: 'Two monks reach a flooded river where a woman is stuck. One carries her across. The other carries something heavier.',
+    body: [
+      'Two monks were walking when they came to a muddy, flooded crossing. A young woman stood there, unable to get across.',
+      'Monks were not supposed to touch women. Still, the older monk picked her up, carried her across and set her down. The two monks walked on in silence.',
+      'Hours later the younger monk burst out: “How could you carry that woman?” The older monk replied: “I put her down at the river. Why are you still carrying her?”',
+    ],
+    lesson: 'Holding on to resentments, embarrassments and old arguments is a heavy load you choose to keep carrying.',
+    act: 'Name one thing you keep replaying in your head. Decide to “put it down” today.',
+  },
+  {
+    t: 'The man who deleted the app', kind: 'Light story',
+    teaser: 'Marco checked his phone 140 times a day. One Sunday, he ran an experiment.',
+    body: [
+      'Marco didn’t think he had a problem. He just “checked quickly” — on the jeepney, in the bathroom, in bed. His screen-time report said almost six hours a day.',
+      'One Sunday he deleted his two favorite apps “just for a week.” The first two days were strange. His hand kept reaching for his pocket. He felt bored, then restless, then oddly calm.',
+      'By Wednesday he had read half a book. By Friday he’d called his lola for the first time in months and cooked dinner twice.',
+      'He didn’t reinstall the apps. He said the strangest part wasn’t what he gained — it was realizing how much of his life had been happening without him.',
+    ],
+    lesson: 'Boredom is the doorway, not the enemy. Push through the first few restless days and your attention comes back.',
+    act: 'Move your most-used social app off your home screen today. Just one.',
+  },
+  {
+    t: 'The last bet', kind: 'Light story',
+    teaser: 'Ramon always told himself the next bet would win it all back. This is the story of the night he stopped.',
+    body: [
+      'Ramon started with small bets on his phone. It felt exciting — and when he won, he felt brilliant. When he lost, he bet more to win it back.',
+      'One night he realized he had lost his whole month’s salary. He sat in the dark doing the math and felt sick.',
+      'This time, he didn’t bet again. He told his older sister everything. Together they set up self-exclusion on the betting apps, and he asked his bank to block gambling transactions. She helped him manage his money for a while.',
+      'The urges didn’t disappear overnight. But each one he surfed got a little weaker. A year later, he had an emergency fund for the first time in his life.',
+    ],
+    lesson: 'The house always wins over time — the only winning move is to stop playing. And you don’t have to do it alone.',
+    act: 'If gambling is part of your life, tell one person you trust today. Use the Urge button when it hits.',
+  },
+  {
+    t: 'One percent', kind: 'Light story',
+    teaser: 'Ana didn’t transform her life in one dramatic month. She did something far less exciting — and far more effective.',
+    body: [
+      'Every January, Ana tried to change everything at once: gym every day, no sugar, wake at 5 AM. By February, she’d quit everything.',
+      'One year she tried something different. She picked one tiny habit: drink a glass of water right after waking. That’s it.',
+      'A month later she added a 10-minute walk. Then making her bed. Then writing three priorities each morning.',
+      'None of it felt dramatic. But after a year, she was healthier, calmer and more productive than any January version of herself had ever been.',
+    ],
+    lesson: 'Tiny habits, stacked patiently, beat dramatic restarts. Getting 1% better each day adds up to something huge.',
+    act: 'Pick ONE tiny habit to add this week — so small it feels almost silly.',
+  },
+  {
+    t: 'Laughing at the wake', kind: 'Light story',
+    teaser: 'At his grandfather’s wake, Jun was terrified to give a speech. Then he remembered the jokes.',
+    body: [
+      'Jun’s grandfather had been the funniest man in the family. When he passed away, everyone asked Jun to speak, and Jun dreaded it. What could he say?',
+      'The night before, he wrote down every joke and silly story he remembered his grandfather telling.',
+      'At the wake, his voice shook at first. Then he told the story about Lolo pretending to be a tour guide in his own backyard. The room laughed — and cried — together.',
+      'Afterwards, aunts he barely knew hugged him. “That was exactly him,” they said.',
+    ],
+    lesson: 'Humor isn’t the opposite of depth. Sharing laughter is one of the deepest ways people connect — even in sadness.',
+    act: 'Write down one funny memory with someone you love, and share it with them or your family.',
+  },
+];

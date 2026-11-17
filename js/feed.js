@@ -5,7 +5,7 @@ import { clamp } from './util.js';
 
 export const FEED_BASE = {
   wisdom: 3, challenge: 3, eq: 2, joke: 3, comedy: 2, glow: 2, avoid: 1.5, money: 1.5,
-  prompt: 1, quiz: 2.5, poll: 1.5, breathe: 0.8, you: 1, fact: 2.5, word: 1.5,
+  prompt: 1, quiz: 2.5, poll: 1.5, breathe: 0.8, you: 1, fact: 2.5, word: 1.5, story: 2.5,
 };
 export const PREF_MIN = -10, PREF_MAX = 15;
 /** Share of picks that ignore preferences, so the feed keeps surprising you instead of collapsing into one kind. */
@@ -16,6 +16,7 @@ export const weightFor = (kind, prefs = {}) => FEED_BASE[kind] * Math.exp(clamp(
 /** Topic filters shown above the feed: [id, label, kinds (null = everything), icon]. */
 export const TOPICS = [
   ['all', 'All', null, 'sparkles'],
+  ['stories', 'Stories', ['story'], 'bookOpen'],
   ['laugh', 'Laugh', ['joke', 'comedy'], 'smile'],
   ['wisdom', 'Wisdom', ['wisdom'], 'sparkle'],
   ['learn', 'Learn', ['fact', 'word', 'quiz'], 'bulb'],
@@ -37,7 +38,7 @@ export function pickKind(prefs = {}, rand = Math.random, last = null, allowed = 
 }
 
 /** Engagement signals → preference deltas. */
-export const SIGNAL = { like: 3, unlike: -3, save: 4, share: 3, reflect: 4, claim: 3, answer: 1 };
+export const SIGNAL = { like: 3, unlike: -3, save: 4, share: 3, reflect: 4, claim: 3, answer: 1, read: 4 };
 export function nudge(prefs, kind, delta) {
   if (!(kind in FEED_BASE) || !delta) return prefs;
   prefs[kind] = clamp((prefs[kind] || 0) + delta, PREF_MIN, PREF_MAX);

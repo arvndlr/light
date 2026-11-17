@@ -18,7 +18,7 @@ import { dayPlan } from './plan.js';
 import { figureSVG, hasFigure, poseCount, animateFigures } from './figures.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '2.8.0';
+const APP_VERSION = '2.9.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
@@ -437,9 +437,10 @@ const KIND_META = {
   breathe: { tag: 'Reset', handle: 'light.calm', tags: '#breathe #calm', bg: 'g-blue', ic: 'wind', fx: ['🫧', '🌊', '☁️'] },
   you: { tag: 'Your progress', handle: 'you', tags: '#yourjourney', bg: 'g-gold', ic: 'trophy', fx: ['🔥', '🏆', '⭐'] },
   fact: { tag: 'Did you know?', handle: 'light.science', tags: '#science #health', bg: 'g-cyan', ic: 'bulb', fx: ['🔬', '🧬', '💡'] },
+  story: { tag: 'Story', handle: 'light.stories', tags: '#inspiration #mindset', bg: 'g-sunset', ic: 'bookOpen', fx: ['📖', '🌅', '✨'] },
   word: { tag: 'Word of the day', handle: 'light.words', tags: '#vocabulary #communication', bg: 'g-rose', ic: 'book', fx: ['📖', '✍️', '🗣️'] },
 };
-const poolFor = (k) => ({ wisdom: C.wisdom, challenge: C.challenges, eq: C.eq, joke: C.jokes, comedy: C.comedy, glow: C.glow.do, avoid: C.glow.avoid, money: C.money, prompt: C.prompts, quiz: C.quiz, poll: C.polls, breathe: [1], fact: C.facts, word: C.words })[k];
+const poolFor = (k) => ({ wisdom: C.wisdom, challenge: C.challenges, eq: C.eq, joke: C.jokes, comedy: C.comedy, glow: C.glow.do, avoid: C.glow.avoid, money: C.money, prompt: C.prompts, quiz: C.quiz, poll: C.polls, breathe: [1], fact: C.facts, word: C.words, story: C.stories })[k];
 
 /** Personal cards built from your own data — the feed talks about YOU, not strangers. */
 function youCard() {
@@ -489,6 +490,7 @@ function itemText(it) {
     case 'you': return `${d.title}. ${d.body}`;
     case 'breathe': return 'A 30-second breathing reset.';
     case 'word': return `${d.w}: ${d.d} — “${d.ex}”`;
+    case 'story': return `${d.t} — ${d.teaser}`;
     default: return String(d);
   }
 }
@@ -533,6 +535,12 @@ function reelHTML(it, i) {
     }
     case 'poll': body = `<div class="r-label">Pick one</div><div class="r-text">${words(d.q)}</div><div class="r-opts two">${d.o.map((o, j) => `<button class="r-opt" data-act="poll" data-j="${j}">${esc(o.t)}</button>`).join('')}</div><div class="r-why" hidden></div>`; break;
     case 'fact': body = `<div class="r-text">${words(d)}</div>`; break;
+    case 'story': {
+      const read = !!S.storiesRead[it.id];
+      body = `<div class="r-label">${esc(d.kind)} · ${storyMins(d)} min read${read ? ' · read ✓' : ''}</div><div class="r-title r-story-t">${esc(d.t)}</div><div class="r-text sm">${words(d.teaser)}</div>
+        <button class="r-cta" data-act="read-story">${icon('bookOpen', 18)} ${read ? 'Read again' : 'Read full story'}</button>`;
+      break;
+    }
     case 'word': body = `<div class="r-word">${esc(d.w)}</div><div class="r-text sm">${words(d.d)}</div><div class="r-example">“${esc(d.ex)}”</div><div class="r-sub">Use it once today — new words stick when you say them.</div>`; break;
     case 'breathe': body = `<div class="r-breath" aria-hidden="true"><span>Breathe</span></div><div class="r-sub">In for 4 · out for 6. Let your shoulders drop.</div>`; break;
     case 'you': body = `<div class="r-big">${d.big}</div><div class="r-title">${esc(d.title)}</div><div class="r-text sm">${words(d.body)}</div>${d.progress != null ? `<div class="xpbar" style="margin-top:16px"><i style="width:${d.progress * 100}%"></i></div>` : ''}${d.action ? `<button class="r-cta" data-act="${d.action.act}">${esc(d.action.label)}</button>` : ''}`; break;
@@ -628,6 +636,55 @@ function setLike(r, it, on) {
   btn.classList.toggle('on', on); btn.setAttribute('aria-pressed', on);
   $('.r-ic', btn).innerHTML = icon('heart', 26, on ? 'filled' : '');
   if (on) { btn.classList.remove('bump'); void btn.offsetWidth; btn.classList.add('bump'); buzz(10); }
+}
+const storyMins = (d) => Math.max(1, Math.round([d.teaser, ...d.body].join(' ').split(/\s+/).length / 200));
+/** Full-story reading view. Finishing (or reading for 20s+) marks it read: +5 XP, and the feed learns you like stories. */
+function openStory(it) {
+  const d = it.data, saved = S.saved.some((x) => x.id === it.id), done = !!S.storiesRead[it.id];
+  feed.menu = it; feed.storyAt = Date.now();
+  openModal(`<article class="story">
+    <div class="row between"><span class="g-kick" style="--tint:var(--amber)">${icon('bookOpen', 14)} ${esc(d.kind)} · ${storyMins(d)} min read</span><button class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
+    <h2 class="story-t">${esc(d.t)}</h2>
+    <p class="story-lead">${esc(d.teaser)}</p>
+    ${d.body.map((x) => `<p>${esc(x)}</p>`).join('')}
+    <div class="story-box" style="--tint:var(--violet)"><div class="g-kick">${icon('bulb', 14)} The lesson</div><p>${esc(d.lesson)}</p></div>
+    <div class="story-box" style="--tint:var(--good)"><div class="g-kick">${icon('target', 14)} Try this today</div><p>${esc(d.act)}</p></div>
+    <div class="grid story-actions">
+      <button class="btn" data-act="story-save" aria-pressed="${saved}">${icon('bookmark', 18, saved ? 'filled' : '')} <span>${saved ? 'Saved' : 'Save'}</span></button>
+      <button class="btn" data-act="story-reflect">${icon('pen', 18)} Reflect</button>
+    </div>
+    <button class="btn primary block" style="margin-top:10px" data-act="story-done">${icon('check', 18)} ${done ? 'Done' : 'Finished reading · +5 XP'}</button>
+  </article>`, { label: d.t, onClose: () => { if (Date.now() - (feed.storyAt || 0) > 20000) markStoryRead(it, false); render(); } });
+}
+function markStoryRead(it, celebrate) {
+  if (!it || it.kind !== 'story' || S.storiesRead[it.id]) return;
+  S.storiesRead[it.id] = today();
+  nudge(S.feedPrefs, 'story', SIGNAL.read);
+  persist();
+  if (celebrate) { toast(`${icon('bookOpen', 16)} Story read · +5 XP`); buzz(15); }
+  const r = $(`.reel[data-i="${feed.items.indexOf(it)}"]`);
+  if (r) { const lbl = $('.r-label', r); if (lbl && !lbl.textContent.includes('read ✓')) lbl.textContent += ' · read ✓'; const b = $('[data-act="read-story"]', r); if (b) b.innerHTML = `${icon('bookOpen', 18)} Read again`; }
+}
+function openReflect(it) {
+  const prompt = itemText(it);
+  openModal(`<form data-form="reflect" data-kind="${it.kind}" novalidate><div class="row between"><h2>💬 Reflect</h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
+    <div class="card small" style="margin:12px 0">${esc(prompt)}</div>
+    <label class="lbl" for="rf-text">What does this mean for you? How will you use it today?</label>
+    <textarea id="rf-text" placeholder="Write freely…" maxlength="2000"></textarea><input type="hidden" id="rf-prompt" value="${esc(prompt)}">
+    <button class="btn primary block" style="margin-top:12px" type="submit">Save to journal · +10 XP</button></form>`, { label: 'Reflect', onClose: render });
+  $('#rf-text').focus();
+}
+function toggleSave(it) {
+  const i = S.saved.findIndex((x) => x.id === it.id);
+  if (i >= 0) S.saved.splice(i, 1); else { S.saved.push({ id: it.id, tag: KIND_META[it.kind].tag, body: itemText(it) }); nudge(S.feedPrefs, it.kind, SIGNAL.save); }
+  persist();
+  const on = i < 0;
+  const tab = $('.feed-tabs [data-v="saved"]'); // keep the Saved tab's counter live
+  if (tab) tab.innerHTML = `Saved${S.saved.length ? ` <span class="ft-count">${S.saved.length}</span>` : ''}`;
+  const rb = $(`.reel[data-i="${feed.items.indexOf(it)}"] [data-act="feed-save"]`);
+  if (rb) { rb.classList.toggle('on', on); rb.setAttribute('aria-pressed', on); rb.innerHTML = `<span class="r-ic">${icon('bookmark', 24, on ? 'filled' : '')}</span><span>${on ? 'Saved' : 'Save'}</span>`; }
+  toast(on ? '📌 Saved — find it in Feed → Saved' : 'Removed from saved');
+  return on;
 }
 function openFeedMenu(it) {
   feed.menu = it;
@@ -1436,26 +1493,12 @@ const A = {
     $$('[data-claims]').forEach((e) => { e.textContent = `${S.claims[k]}/${CLAIM_CAP} today`; });
   },
   like: (el) => { const { r, it } = reelOf(el); if (it) { const on = !S.feedLikes[it.id]; setLike(r, it, on); if (on) burst(el); } },
-  'feed-save': (el) => {
-    const { it } = reelOf(el); if (!it) return;
-    const i = S.saved.findIndex((s) => s.id === it.id);
-    if (i >= 0) S.saved.splice(i, 1); else { S.saved.push({ id: it.id, tag: KIND_META[it.kind].tag, body: itemText(it) }); nudge(S.feedPrefs, it.kind, SIGNAL.save); }
-    persist();
-    const on = i < 0;
-    el.classList.toggle('on', on); el.setAttribute('aria-pressed', on);
-    el.innerHTML = `<span class="r-ic">${icon('bookmark', 24, on ? 'filled' : '')}</span><span>${on ? 'Saved' : 'Save'}</span>`;
-    toast(on ? '📌 Saved — find it in Grow → Journal' : 'Removed from saved');
-  },
-  reflect: (el) => {
-    const { it } = reelOf(el); if (!it) return;
-    const prompt = itemText(it);
-    openModal(`<form data-form="reflect" data-kind="${it.kind}" novalidate><div class="row between"><h2>💬 Reflect</h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
-      <div class="card small" style="margin:12px 0">${esc(prompt)}</div>
-      <label class="lbl" for="rf-text">What does this mean for you? How will you use it today?</label>
-      <textarea id="rf-text" placeholder="Write freely…" maxlength="2000"></textarea><input type="hidden" id="rf-prompt" value="${esc(prompt)}">
-      <button class="btn primary block" style="margin-top:12px" type="submit">Save to journal · +10 XP</button></form>`, { label: 'Reflect', onClose: render });
-    $('#rf-text').focus();
-  },
+  'feed-save': (el) => { const { it } = reelOf(el); if (it) toggleSave(it); },
+  reflect: (el) => { const { it } = reelOf(el); if (it) openReflect(it); },
+  'read-story': (el) => { const { it } = reelOf(el); if (it) openStory(it); },
+  'story-done': () => { markStoryRead(feed.menu, true); closeModal(); },
+  'story-save': (el) => { const on = toggleSave(feed.menu); el.setAttribute('aria-pressed', on); el.innerHTML = `${icon('bookmark', 18, on ? 'filled' : '')} <span>${on ? 'Saved' : 'Save'}</span>`; },
+  'story-reflect': () => { const it = feed.menu; markStoryRead(it, false); closeModal(); openReflect(it); },
   quiz: (el) => {
     const { r, it } = reelOf(el); if (!it || $('.r-opt[disabled]', r)) return;
     const j = +el.dataset.j, ok = j === it.data.a, first = !(it.id in S.quiz);

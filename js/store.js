@@ -27,10 +27,11 @@ export const DEFAULTS = () => ({
   feedLikes: {}, // card id -> date liked
   quiz: {},      // quiz card id -> answered correctly (first try)
   feedSeen: {},  // card id -> last shown (ms); prevents repeats across sessions
+  storiesRead: {}, // story card id -> date finished
   timer: null,  // running focus session { start, dur, label }
 });
 
-const OBJECT_KEYS = ['days', 'badges', 'claims', 'reviews', 'chests', 'feedPrefs', 'feedLikes', 'quiz', 'feedSeen'];
+const OBJECT_KEYS = ['days', 'badges', 'claims', 'reviews', 'chests', 'feedPrefs', 'feedLikes', 'quiz', 'feedSeen', 'storiesRead'];
 const ARRAY_KEYS = ['tx', 'jokes', 'journal', 'saved', 'sos', 'focusLog', 'workouts'];
 const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
 

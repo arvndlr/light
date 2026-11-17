@@ -1,8 +1,8 @@
 // Offline cache for Light. Bump VERSION when files change.
-const VERSION = 'light-v2.8.0';
+const VERSION = 'light-v2.9.0';
 const FILES = [
   './', './index.html', './css/styles.css', './js/app.js', './js/content.js', './js/core.js', './js/store.js',
-  './js/util.js', './js/charts.js', './js/feed.js', './js/content-extra.js', './js/icons.js', './js/fitness.js', './js/plan.js', './js/figures.js',
+  './js/util.js', './js/charts.js', './js/feed.js', './js/content-extra.js', './js/icons.js', './js/fitness.js', './js/plan.js', './js/figures.js', './js/stories.js',
   './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png',
 ];
 

@@ -150,7 +150,7 @@ export function scores(k) {
 export const rangeScores = (keys) => keys.map(scores).filter(Boolean);
 
 // ---------- XP & levels ----------
-export const XP = { checkin: 50, glass: 5, waterBonus: 10, hygItem: 3, priority: 10, exercise: 20, deepWork: 15, clean: 15, eq: 15, funny: 10, claim: 10, joke: 10, journal: 10, urge: 20, badge: 50, review: 100, focus: 5, quiz: 5, workout: 25 };
+export const XP = { checkin: 50, glass: 5, waterBonus: 10, hygItem: 3, priority: 10, exercise: 20, deepWork: 15, clean: 15, eq: 15, funny: 10, claim: 10, joke: 10, journal: 10, urge: 20, badge: 50, review: 100, focus: 5, quiz: 5, workout: 25, story: 5 };
 export function computeXP() {
   return cached('xp', () => {
     let xp = 0;
@@ -179,6 +179,7 @@ export function computeXP() {
     xp += sum(Object.values(S.chests).map((c) => c.xp || 0));
     xp += Object.values(S.quiz).filter(Boolean).length * XP.quiz;
     xp += (S.workouts || []).filter((w) => !w.partial).length * XP.workout;
+    xp += Object.keys(S.storiesRead || {}).length * XP.story;
     return xp;
   });
 }
@@ -231,6 +232,7 @@ export const BADGES = [
   { id: 'glow7', ic: '✨', n: 'Glow Up', d: 'Full hygiene (AM + PM) on 7 days', test: () => Object.values(S.days).filter((d) => hygRatio(d) === 1).length >= 7 },
   { id: 'money30', ic: '📒', n: 'Money Aware', d: 'Log 30 transactions', test: () => S.tx.length >= 30 },
   { id: 'saver', ic: '🏦', n: 'Goal Getter', d: 'Reach your savings goal', test: () => S.settings.savingsGoal > 0 && savedTotal() >= S.settings.savingsGoal },
+  { id: 'reader5', ic: '📖', n: 'Bookworm', d: 'Read 5 full stories in the feed', test: () => Object.keys(S.storiesRead || {}).length >= 5 },
   { id: 'journal5', ic: '📓', n: 'Deep Thinker', d: 'Write 5 journal entries', test: () => S.journal.length >= 5 },
   { id: 'lvl5', ic: '🔦', n: 'Torchbearer', d: 'Reach level 5', test: () => levelOf(computeXP()) >= 5 },
   { id: 'lvl10', ic: '🗼', n: 'Lighthouse', d: 'Reach level 10', test: () => levelOf(computeXP()) >= 10 },

@@ -69,3 +69,14 @@ test('pruneSeen keeps the newest entries', () => {
 test('topKinds lists positive preferences in order', () => {
   assert.deepEqual(topKinds({ joke: 5, quiz: 9, eq: -2 }), ['quiz', 'joke']);
 });
+
+import CONTENT from '../js/content.js';
+test('stories are complete and have their own feed topic', () => {
+  assert.ok(CONTENT.stories.length >= 20);
+  for (const s of CONTENT.stories) {
+    for (const k of ['t', 'kind', 'teaser', 'lesson', 'act']) assert.ok(typeof s[k] === 'string' && s[k].trim(), `${s.t}: ${k}`);
+    assert.ok(Array.isArray(s.body) && s.body.length >= 3, `${s.t}: body`);
+  }
+  assert.deepEqual(topicKinds('stories'), ['story']);
+  assert.ok('story' in FEED_BASE);
+});
