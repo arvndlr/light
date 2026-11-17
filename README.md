@@ -39,6 +39,7 @@ Data lives in the browser on each device. Your laptop and phone do **not** sync 
 | **Stats** | Life Score + 6 areas (Health & Sleep, Physical, Mental, Career, Money, EQ & Joy) with trends, charts, **1-year "Future You" projection**, and "Know yourself" pattern insights on your bad habits |
 | **Today → Right now** | A plan for the current part of your day (built from your wake/bed times): wake-up, deep work, midday, afternoon, evening, wind-down, sleep — each with suggestions that tick themselves off from your data, plus a full-day timeline |
 | **Grow → Fitness** | 31 no-equipment home exercises (how-to, form tips, reps per level), 8 routines, a weekly plan, time-aware "recommended right now", and a guided interval player with voice cues |
+| **Grow → Health** | Immunity habits, asthma basics, triggers (incl. Philippine context), exercising with asthma, foods, myths vs facts, emergency warning signs, guided breathing exercises, and optional asthma tracking (daily reliever/symptom/night log, 7-day control check, inhaler reminders in Today’s plan). General information — not medical advice. |
 | **Grow** | Comedy gym + joke notebook, EQ lab, glow-up do/avoid guide, Freedom center (streaks, urge log, gambling help), journal, badges |
 | **Focus timer** | 15/25/50/90-min sessions that log focused minutes automatically, keep running if you close the app, and notify you when done |
 | **Weekly review** | Every Fri–Sun: your week in numbers, best day, wins, goal progress sliders, one habit to improve and a commitment shown all next week |
@@ -63,7 +64,7 @@ Settings → **Add reminders to my calendar** downloads a calendar file with dai
 ## Development
 
 ```bash
-npm test        # 56 unit tests for the core logic (Node 20+, no dependencies)
+npm test        # 61 unit tests for the core logic (Node 20+, no dependencies)
 npm start       # serve on http://localhost:5173
 ```
 
@@ -83,6 +84,7 @@ When you change any file, bump `VERSION` in `sw.js` so installed apps pick up th
 - `js/plan.js`: time-of-day plan for Today (unit-tested)
 - `js/figures.js`: animated exercise demo figures (pose + IK engine; preview all at `tools/figure-sheet.html`)
 - `js/stories.js`: inspiring stories (true stories, fables, parables, originals)
+- `js/health.js`: immunity & asthma content + 7-day asthma control check (unit-tested)
 - `js/charts.js`: tiny SVG charts (rings, lines, bars, heatmap)
 - `js/util.js`: date & text helpers
 - `js/content.js` + `js/content-extra.js`: wisdom, lessons, jokes, quizzes, facts, words, tips (edit freely to add your own!)

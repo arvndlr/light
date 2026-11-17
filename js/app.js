@@ -15,10 +15,11 @@ import { ring, lineChart, barChart, heatmap } from './charts.js';
 import { icon, ico, iconize } from './icons.js';
 import { LEVELS, GROUPS, EXERCISES, WORKOUTS, WEEK_PLAN, exercise, workout, workoutSteps, workoutMinutes, suggestWorkout, levelInfo } from './fitness.js';
 import { dayPlan } from './plan.js';
+import { DISCLAIMER, RED_FLAGS, EMERGENCY, IMMUNITY, ASTHMA_BASICS, TRIGGERS, EXERCISE_TIPS, FOODS, MYTHS, BREATHING, breathing, SYMPTOMS, asthmaControl } from './health.js';
 import { figureSVG, hasFigure, poseCount, animateFigures } from './figures.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '2.9.0';
+const APP_VERSION = '3.0.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
@@ -112,7 +113,7 @@ function render({ full = false } = {}) {
   }
 }
 // ---------- Routing: the URL remembers where you are (refresh, back button) ----------
-const GROW_TABS = ['fitness', 'comedy', 'eq', 'glow', 'freedom', 'journal', 'badges'];
+const GROW_TABS = ['fitness', 'health', 'comedy', 'eq', 'glow', 'freedom', 'journal', 'badges'];
 function routeFromHash() {
   const [tab, sub] = location.hash.replace(/^#\/?/, '').split('/');
   const r = { tab: TABS.some((t) => t[0] === tab) ? tab : 'today' };
@@ -783,6 +784,7 @@ function viewProjection() {
 // ----- Grow -----
 const GROW_META = {
   fitness: { ic: 'dumbbell', n: 'Fitness', tint: 'var(--amber)', sub: 'Build your physique at home — no gym needed' },
+  health: { ic: 'lungs', n: 'Health', tint: 'var(--cyan)', sub: 'Stronger immunity and easier breathing' },
   comedy: { ic: 'mic', n: 'Comedy', tint: 'var(--pink)', sub: 'Become the funniest version of you' },
   eq: { ic: 'heart', n: 'EQ', tint: 'var(--violet)', sub: 'Understand feelings — yours and theirs' },
   glow: { ic: 'sparkle', n: 'Glow-up', tint: 'var(--teal)', sub: 'Look sharp, feel sharp' },
@@ -800,7 +802,7 @@ function viewGrow() {
   const meta = GROW_META[UI.grow] || GROW_META.comedy;
   const refl = Object.values(S.days).filter((d) => d.evening?.eq?.trim()).length;
   const got = BADGES.filter((b) => S.badges[b.id]).length;
-  const body = { fitness: growFitness, comedy: growComedy, eq: growEQ, glow: growGlow, freedom: growFreedom, journal: growJournal, badges: growBadges }[UI.grow]();
+  const body = { fitness: growFitness, health: growHealth, comedy: growComedy, eq: growEQ, glow: growGlow, freedom: growFreedom, journal: growJournal, badges: growBadges }[UI.grow]();
   const stat = (ic, v, l, tab) => `<button class="gstat" data-act="growtab" data-v="${tab}"><span class="hstat-ic">${icon(ic, 16)}</span><strong>${v}</strong><span>${l}</span></button>`;
   return `<header class="page-head"><h1>Grow</h1><p class="muted small">${esc(meta.sub)}</p></header>
   <div class="grow-stats">
@@ -846,6 +848,93 @@ function growFitness() {
   <div class="card">${S.workouts.length ? [...S.workouts].reverse().slice(0, 8).map((x) => { const w = workout(x.id); return `<div class="tx"><div class="cat" aria-hidden="true">${w?.ic || '💪'}</div><div class="grow"><div>${esc(w?.n || 'Workout')}${x.partial ? ' <span class="pill">partial</span>' : ''}</div><div class="tiny muted">${fmtDate(x.date)} · ${x.mins} min · ${levelInfo(x.level).n}</div></div></div>`; }).join('')
     : `<div class="empty"><div class="empty-ic">${icon('dumbbell', 30)}</div>Your finished workouts will show up here. Start with the Morning wake-up — it only takes a few minutes.</div>`}</div>
   <div class="card soft small muted" style="--tint:var(--amber)">${icon('heart', 16)} Warm up, move with control and stop if anything hurts sharply. If you have a health condition, check with a doctor before starting a new routine.</div>`;
+}
+function growHealth() {
+  const st = S.settings, d = S.days[today()] || {}, a = d.asthma || {};
+  const week = lastN(7);
+  const ctl = asthmaControl(week.map((x) => S.days[x]?.asthma?.logged ? S.days[x].asthma : undefined));
+  const li = (x) => `<div class="quest"><div class="q-ic" aria-hidden="true">${x.ic}</div><div class="grow"><strong class="small">${esc(x.t)}</strong><div class="tiny muted hl-b">${esc(x.b)}</div></div></div>`;
+  const msg = { unknown: ['Log a few days to see your weekly asthma check.', 'var(--muted)'], good: ['Looks well controlled this week — keep doing what you’re doing.', 'var(--good)'], check: ['Your asthma may not be well controlled this week. Talk to your doctor about your treatment and action plan.', 'var(--amber)'] }[ctl.status];
+  const dots = week.map((x) => { const l = S.days[x]?.asthma; const lv = l?.logged ? Math.max(l.sym || 0, l.night ? 2 : 0) : -1; return `<div class="wk-dot as-${lv}"><i>${lv === 0 ? icon('check', 12) : ''}</i><span>${fmtDate(x, { weekday: 'narrow' })}</span></div>`; }).join('');
+  const asthmaCards = st.asthma ? `
+  ${secH('🫁', 'Today’s asthma check', a.logged ? '<span class="pill good">logged</span>' : '<span class="tiny muted">30 seconds</span>')}
+  <section class="card">
+    <div class="lbl" style="margin-top:0">Reliever puffs today</div>
+    <div class="stepper"><button class="round-btn minus" data-act="asthma-puff" data-s="-1" aria-label="One less puff">−</button><div class="v" aria-live="polite">${a.puffs || 0}</div><button class="round-btn" data-act="asthma-puff" data-s="1" aria-label="One more puff">+</button></div>
+    <div class="lbl">Symptoms today (wheeze, cough, tight chest, breathless)</div>
+    <div class="chips" role="radiogroup" aria-label="Symptoms">${SYMPTOMS.map((n, i) => `<button role="radio" aria-checked="${a.sym === i}" class="chip ${a.sym === i ? 'on' : ''}" data-act="asthma-sym" data-v="${i}">${n}</button>`).join('')}</div>
+    <button class="check ${a.night ? 'on' : ''}" data-act="asthma-night" style="margin-top:12px" aria-pressed="${!!a.night}"><span class="box" aria-hidden="true">${a.night ? '✓' : ''}</span><span>Asthma woke me up last night</span></button>
+    ${a.sym === 3 ? `<div class="insight small" style="border-left-color:var(--bad);margin-top:12px"><strong>Severe symptoms:</strong> follow your action plan now. If it isn’t helping, get emergency help — call 911.</div>` : ''}
+  </section>
+  <section class="card">
+    <div class="row between"><strong>Last 7 days</strong><span class="tiny muted">${ctl.logged}/7 logged</span></div>
+    <div class="wk-dots as-dots">${dots}</div>
+    <div class="as-stats">
+      <div class="hstat"><strong>${ctl.relieverDays}</strong><span>reliever days</span></div>
+      <div class="hstat"><strong>${ctl.symptomDays}</strong><span>symptom days</span></div>
+      <div class="hstat"><strong>${ctl.nightDays}</strong><span>night wakings</span></div>
+    </div>
+    <p class="small" style="margin-top:12px;color:${msg[1]};font-weight:650">${msg[0]}</p>
+    <p class="tiny muted" style="margin-top:4px">A common guideline check: symptoms or reliever use on more than 2 days a week, or any night waking, means it’s worth reviewing your treatment.</p>
+  </section>` : `
+  <section class="card soft" style="--tint:var(--cyan);margin-top:12px">
+    <strong>Do you have asthma?</strong>
+    <p class="small muted" style="margin-top:4px">Turn on asthma tracking for a 30-second daily check, a weekly control summary, and inhaler reminders in Today’s plan.</p>
+    <button class="btn primary" style="margin-top:12px" data-act="asthma-on">${icon('lungs', 18)} Turn on asthma tracking</button>
+  </section>`;
+  return growHero('var(--cyan)', `${icon('lungs', 14)} Immunity & easy breathing`, 'Breathe easier, get sick less', esc(DISCLAIMER)) + `
+  <section class="card red-flags">
+    <div class="g-kick" style="--tint:var(--bad)">${icon('bell', 14)} Get emergency help if…</div>
+    <ul class="g-list" style="margin-top:10px">${RED_FLAGS.map((t) => listItem('x', esc(t), 'bad')).join('')}</ul>
+    <p class="small" style="margin-top:10px;font-weight:650">${esc(EMERGENCY)}</p>
+  </section>
+  ${asthmaCards}
+  ${secH('🌊', 'Breathing exercises')}
+  <div class="grid g3 br-grid">${BREATHING.map((b) => `<button class="card routine" data-act="breathe-start" data-b="${b.id}"><span class="r-emoji" aria-hidden="true">${b.ic}</span><strong>${b.n}</strong><span class="tiny muted">${b.mins} min · in ${b.inhale}s, out ${b.exhale}s</span></button>`).join('')}</div>
+  ${secH('🛡️', 'Daily immunity habits')}
+  <div class="card">${IMMUNITY.map(li).join('')}</div>
+  ${secH('📝', 'Asthma basics')}
+  <div class="card">${ASTHMA_BASICS.map(li).join('')}</div>
+  ${secH('🧭', 'Know your triggers', '<span class="tiny muted">notice which ones affect you</span>')}
+  <div class="grid trig-grid">${TRIGGERS.map((x) => `<div class="card trig"><span class="trig-e" aria-hidden="true">${x.ic}</span><strong class="small">${esc(x.t)}</strong><span class="tiny muted">${esc(x.b)}</span></div>`).join('')}</div>
+  ${secH('🏃', 'Exercising with asthma')}
+  <div class="card"><ul class="g-list">${EXERCISE_TIPS.map((t) => listItem('check', esc(t), 'good')).join('')}</ul>
+    <button class="btn sm" style="margin-top:12px" data-act="growtab" data-v="fitness">${icon('dumbbell', 16)} Home workouts</button></div>
+  <div class="grid duo">
+    <section>${secH('🥗', 'Eat more')}<div class="card"><ul class="g-list">${FOODS.more.map((t) => listItem('check', esc(t), 'good')).join('')}</ul></div></section>
+    <section>${secH('🚫', 'Eat less')}<div class="card"><ul class="g-list">${FOODS.less.map((t) => listItem('ban', esc(t), 'bad')).join('')}</ul></div></section>
+  </div>
+  ${secH('💡', 'Myths vs facts')}
+  <div class="card acc">${MYTHS.map((x) => `<details><summary>Myth: ${esc(x.m)}</summary><p class="small"><strong>Fact:</strong> ${esc(x.f)}</p></details>`).join('')}</div>
+  <div class="card soft small muted" style="--tint:var(--cyan)">${icon('heart', 16)} ${esc(DISCLAIMER)}${st.asthma ? ` <button class="btn sm ghost" data-act="asthma-off">Turn off asthma tracking</button>` : ''}</div>`;
+}
+// ---------- Guided breathing exercise ----------
+let brTimer = null;
+function openBreathingEx(id) {
+  const b = breathing(id); if (!b) return;
+  const total = b.mins * 60000, start = Date.now(), cycle = (b.inhale + b.hold + b.exhale) * 1000;
+  openModal(`<div class="center"><div class="row between"><h2>${esc(b.n)}</h2><button class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
+    <p class="small muted" style="margin-top:8px;text-align:left">${esc(b.d)}</p>
+    <div class="breath bx" id="bx" aria-live="polite"><span id="bx-t">Breathe in</span></div>
+    <div class="big-num" id="bx-left">${b.mins}:00</div><div class="tiny muted">remaining</div>
+    <p class="tiny muted" style="margin-top:14px">Stop if you feel dizzy or more breathless, and use your reliever as your action plan says.</p></div>`, { label: b.n, onClose: () => clearInterval(brTimer) });
+  let phase = '';
+  const tick = () => {
+    const el = $('#bx'); if (!el) { clearInterval(brTimer); return; }
+    const t = Date.now() - start, left = Math.max(0, total - t);
+    $('#bx-left').textContent = `${Math.floor(left / 60000)}:${pad(Math.floor(left / 1000) % 60)}`;
+    if (left <= 0) { clearInterval(brTimer); el.className = 'breath bx'; $('#bx-t').textContent = 'Well done'; toast(`${icon('lungs', 16)} Breathing exercise complete`); buzz(30); return; }
+    const c = t % cycle;
+    const [p, dur] = c < b.inhale * 1000 ? ['in', b.inhale] : c < (b.inhale + b.hold) * 1000 ? ['hold', b.hold] : ['out', b.exhale];
+    if (p !== phase) {
+      phase = p;
+      el.style.transitionDuration = `${dur}s`;
+      el.className = `breath bx ${p === 'out' ? 'out' : 'in'}`;
+      $('#bx-t').textContent = p === 'in' ? 'Breathe in' : p === 'hold' ? 'Hold gently' : id === 'pursed' ? 'Out through pursed lips' : 'Breathe out slowly';
+      if (p === 'in') buzz(8);
+    }
+  };
+  clearInterval(brTimer); brTimer = setInterval(tick, 100); tick();
 }
 function growComedy() {
   const c = daily(C.comedy), n = S.jokes.length;
@@ -1434,6 +1523,13 @@ const A = {
   'set-theme': (el) => { S.settings.theme = el.dataset.v; save(); applyTheme(); markRadio('set-theme', el); },
   'set-accent': (el) => { S.settings.accent = el.dataset.v; save(); applyTheme(); markRadio('set-accent', el); buzz(); },
   'start-workout': (el) => openWorkout(el.dataset.w),
+  'breathe-start': (el) => openBreathingEx(el.dataset.b),
+  'go-health': () => go('grow', { grow: 'health' }),
+  'asthma-on': () => { S.settings.asthma = true; persist(); render(); toast(`${icon('lungs', 16)} Asthma tracking on — reminders added to Today’s plan`); },
+  'asthma-off': () => { S.settings.asthma = false; persist(); render(); toast('Asthma tracking off'); },
+  'asthma-puff': (el) => { const d = day(); d.asthma = { ...(d.asthma || {}), logged: true }; d.asthma.puffs = Math.max(0, (d.asthma.puffs || 0) + +el.dataset.s); persist(); render(); },
+  'asthma-sym': (el) => { const d = day(); d.asthma = { ...(d.asthma || {}), logged: true, sym: +el.dataset.v }; persist(); buzz(8); render(); },
+  'asthma-night': () => { const d = day(); d.asthma = { ...(d.asthma || {}), logged: true }; d.asthma.night = !d.asthma.night; persist(); render(); },
   'wp-pause': () => {
     if (!wp) return;
     if (wp.paused) { wp.endsAt = Date.now() + wp.left; wp.paused = false; } else { wp.left = wpLeft(); wp.paused = true; try { speechSynthesis.cancel(); } catch { /* */ } }

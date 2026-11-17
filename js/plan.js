@@ -37,6 +37,7 @@ export function dayPlan(now = new Date()) {
     { id: 'wake', ic: '🌅', title: 'Wake up strong', items: [
       { id: 'water1', ic: '💧', t: 'Drink a glass of water', s: 'Rehydrate after sleep', act: 'water+', done: water >= 1 },
       { id: 'hygam', ic: '🪥', t: 'Morning hygiene routine', act: 'hyg-am', done: hygRatio(d, 'hygAM') === 1 },
+      ...(st.asthma ? [manual('inhaler', '🫁', 'Preventer inhaler, as prescribed', 'Even on days you feel fine · rinse your mouth after')] : []),
       manual('sun', '☀️', 'Get 5–10 min of sunlight', 'Sets your body clock for better sleep'),
       { id: 'morning', ic: '🌅', t: 'Morning check-in', s: '10 minutes to plan your day', act: 'open-morning', done: !!d.morning },
       wItem(workout('wake')),
@@ -66,6 +67,7 @@ export function dayPlan(now = new Date()) {
     { id: 'winddown', ic: '🌙', title: 'Wind down', items: [
       { id: 'evening', ic: '📝', t: 'Evening check-in', s: 'Close the day honestly', act: 'open-evening', done: !!d.evening },
       { id: 'hygpm', ic: '🪥', t: 'Night routine', act: 'hyg-pm', done: hygRatio(d, 'hygPM') === 1 },
+      ...(st.asthma ? [{ id: 'asthmalog', ic: '🫁', t: 'Log today’s asthma check', s: 'Reliever puffs, symptoms, night waking', act: 'go-health', done: !!d.asthma?.logged }] : []),
       wItem(workout('night')),
       manual('screens', '📵', 'Screens off 30 min before bed', 'Charge your phone outside the bedroom'),
       manual('read', '📓', 'Read or journal for 10 minutes'),

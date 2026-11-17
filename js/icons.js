@@ -73,6 +73,7 @@ const P = {
   skip: '<path d="M5.5 5.5v13l9-6.5z"/><path d="M18.5 5v14"/>',
   bellOff: '<path d="M8.6 5.6A6 6 0 0 1 18 11v5.5l1.5 2H10M6 11v5.5l-1.5 2H8"/><path d="M10 21h4M3.5 3.5l17 17"/>',
   compassPlan: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.5 2"/><path d="M12 3.5v1.5M20.5 12H19M12 20.5V19M3.5 12H5"/>',
+  lungs: '<path d="M12 3.5v7.5M12 11l-2.2 2M12 11l2.2 2"/><path d="M9.6 8.2C7 8.2 4.5 11.4 4.5 15.6c0 2.6 1.2 4 3 4 1.9 0 2.6-1.3 2.6-3.1v-6.3c0-1.3-.2-2-.5-2z"/><path d="M14.4 8.2c2.6 0 5.1 3.2 5.1 7.4 0 2.6-1.2 4-3 4-1.9 0-2.6-1.3-2.6-3.1v-6.3c0-1.3.2-2 .5-2z"/>',
   chevronUp: '<path d="M6 15l6-6 6 6"/>',
   more: '<circle cx="5.5" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.3" fill="currentColor" stroke="none"/>',
   thumbDown: '<path d="M7.5 13.5V4M7.5 13.5l3.6 6.2a1.9 1.9 0 0 0 3.5-1.3L13.8 15h4.6a2 2 0 0 0 2-2.4l-1.3-6.7A2.4 2.4 0 0 0 16.7 4H7.5M7.5 4H5a1.5 1.5 0 0 0-1.5 1.5v6.5A1.5 1.5 0 0 0 5 13.5h2.5"/>',
@@ -99,7 +100,7 @@ const EMOJI = {
   '🏃': 'activity', '📝': 'pen', '📵': 'phoneOff', '📱': 'phone', '🎲': 'dice', '🍔': 'burger', '🥤': 'cup',
   '💪': 'dumbbell', '💼': 'briefcase', '🍚': 'bowl', '🚌': 'bus', '🛍': 'bag', '🎮': 'gamepad', '💊': 'pill',
   '👨‍👩‍👧': 'users', '👤': 'user', '📦': 'box', '🏦': 'bank', '📈': 'trending', '⛔': 'ban', '🚫': 'ban',
-  '🫁': 'wind', '🎨': 'palette', '🔔': 'bell', '🪥': 'sparkle', '🪞': 'sparkle', '✅': 'checkCircle',
+  '🫁': 'lungs', '🍳': 'bowl', '🧼': 'droplet', '💉': 'shield', '🚭': 'ban', '🎒': 'bag', '🩺': 'heart', '🎨': 'palette', '🔔': 'bell', '🪥': 'sparkle', '🪞': 'sparkle', '✅': 'checkCircle',
   '🌊': 'wind', '🦵': 'dumbbell', '⚡': 'activity', '🧘': 'sparkle', '🥗': 'bowl', '🏋': 'dumbbell', '🧭': 'compassPlan', '📜': 'clock', '🎭': 'mic', '🌍': 'compass', '⬇': 'download', '🔒': 'lock', '💸': 'wallet',
 };
 const norm = (e) => String(e).replace(/️/g, '');
