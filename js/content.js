@@ -1,4 +1,5 @@
 // Light — content library. All text is original or paraphrased from ancient public-domain thinkers.
+import EXTRA from './content-extra.js';
 const CONTENT = {
   wisdom: [
     { q: "You have power over your mind, not outside events. Realize this, and you will find strength.", a: "Marcus Aurelius" },
@@ -222,5 +223,11 @@ CONTENT.polls = [
   { q: 'Best reward after a hard day?', o: [{ t: '🍔 Food', r: 'Make it a healthy favorite. Reward without regret.' }, { t: '🎮 Fun', r: 'Set a timer so fun stays fun.' }] },
   { q: 'You learn best by…', o: [{ t: '📚 Reading', r: '10 pages a day is about 15 books a year.' }, { t: '🎧 Listening', r: 'Turn your walks into classes: podcast plus steps.' }] },
 ];
+
+// Merge the expanded library (arrays are concatenated; nested glow lists too).
+for (const [k, v] of Object.entries(EXTRA)) {
+  if (Array.isArray(v)) CONTENT[k] = [...(CONTENT[k] || []), ...v];
+  else for (const [k2, v2] of Object.entries(v)) CONTENT[k][k2] = [...(CONTENT[k][k2] || []), ...v2];
+}
 
 export default CONTENT;

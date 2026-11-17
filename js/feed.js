@@ -5,7 +5,7 @@ import { clamp } from './util.js';
 
 export const FEED_BASE = {
   wisdom: 3, challenge: 3, eq: 2, joke: 3, comedy: 2, glow: 2, avoid: 1.5, money: 1.5,
-  prompt: 1, quiz: 2.5, poll: 1.5, breathe: 0.8, you: 1,
+  prompt: 1, quiz: 2.5, poll: 1.5, breathe: 0.8, you: 1, fact: 2.5, word: 1.5,
 };
 export const PREF_MIN = -10, PREF_MAX = 15;
 /** Share of picks that ignore preferences, so the feed keeps surprising you instead of collapsing into one kind. */
@@ -41,6 +41,28 @@ export function splitJoke(text) {
   const cut = last.index + last[0].length;
   const a = text.slice(0, cut).trim(), b = text.slice(cut).trim();
   return a.length >= 6 && b.length >= 6 ? [a, b] : null;
+}
+
+/**
+ * Choose which item of a pool to show. `seen` maps "kind:index" -> last-shown timestamp and is
+ * saved across sessions, so you only see a repeat after every item of that kind has been shown —
+ * and then the one you saw longest ago comes back first.
+ */
+export function pickIndex(n, kind, seen = {}, rand = Math.random) {
+  const unseen = [];
+  let oldest = 0, oldestT = Infinity;
+  for (let i = 0; i < n; i++) {
+    const t = seen[`${kind}:${i}`];
+    if (t == null) unseen.push(i);
+    else if (t < oldestT) { oldestT = t; oldest = i; }
+  }
+  return unseen.length ? unseen[Math.floor(rand() * unseen.length)] : oldest;
+}
+/** Keep the seen-map bounded (newest entries win). */
+export function pruneSeen(seen, max = 2000) {
+  const e = Object.entries(seen);
+  if (e.length <= max) return seen;
+  return Object.fromEntries(e.sort((a, b) => b[1] - a[1]).slice(0, max));
 }
 
 /** Top kinds by preference, for showing "what Light thinks you like". */

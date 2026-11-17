@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { FEED_BASE, pickKind, nudge, dwellSignal, splitJoke, weightFor, topKinds, PREF_MAX } from '../js/feed.js';
+import { FEED_BASE, pickKind, nudge, dwellSignal, splitJoke, weightFor, topKinds, PREF_MAX, pickIndex, pruneSeen } from '../js/feed.js';
 
 // Deterministic PRNG for distribution tests.
 const prng = (seed = 1) => () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
@@ -43,6 +43,20 @@ test('dwell time maps to signals', () => {
 test('jokes split into setup and punchline', () => {
   assert.deepEqual(splitJoke("I'm reading a book on anti-gravity. Impossible to put down."), ["I'm reading a book on anti-gravity.", 'Impossible to put down.']);
   assert.equal(splitJoke('I have a joke about procrastination, but I\'ll tell it later.'), null);
+});
+test('pickIndex never repeats until the whole pool has been seen', () => {
+  const seen = {}, r = prng(11), n = 25;
+  const got = new Set();
+  for (let t = 1; t <= n; t++) { const i = pickIndex(n, 'joke', seen, r); assert.ok(!got.has(i), `repeat at ${t}`); got.add(i); seen[`joke:${i}`] = t; }
+  assert.equal(got.size, n);
+  // Pool exhausted: the least-recently-seen item comes back first.
+  const first = [...got][0];
+  assert.equal(pickIndex(n, 'joke', seen, r), first);
+});
+test('pruneSeen keeps the newest entries', () => {
+  const seen = Object.fromEntries(Array.from({ length: 10 }, (_, i) => [`a:${i}`, i]));
+  const p = pruneSeen(seen, 3);
+  assert.deepEqual(Object.keys(p).sort(), ['a:7', 'a:8', 'a:9']);
 });
 test('topKinds lists positive preferences in order', () => {
   assert.deepEqual(topKinds({ joke: 5, quiz: 9, eq: -2 }), ['quiz', 'joke']);

@@ -12,9 +12,9 @@ import {
   projection, insights, buildICS, heatmapKeys,
 } from './core.js';
 import { ring, lineChart, barChart, heatmap } from './charts.js';
-import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, topKinds } from './feed.js';
+import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, topKinds, pickIndex, pruneSeen } from './feed.js';
 
-const APP_VERSION = '2.1.0';
+const APP_VERSION = '2.2.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
@@ -109,8 +109,23 @@ function render({ full = false } = {}) {
 const go = (tab, extra = {}) => {
   if (UI.tab === 'feed' && tab !== 'feed') { const prev = feed.items[feed.active]; if (prev && prev.kind !== 'pause') nudge(S.feedPrefs, prev.kind, dwellSignal(Date.now() - feed.activeAt)); save(); }
   Object.assign(UI, extra, { tab }); render({ full: true }); window.scrollTo(0, 0);
-  if (tab !== 'feed') $('#view').focus({ preventScroll: true });
+  const v = $('#view');
+  v.classList.remove('view-enter'); void v.offsetWidth; v.classList.add('view-enter'); // page-enter animation on tab change only
+  if (tab !== 'feed') v.focus({ preventScroll: true });
 };
+
+// ---------- Theme ----------
+const ACCENTS = [['sunrise', 'Sunrise'], ['ocean', 'Ocean'], ['aurora', 'Aurora'], ['forest', 'Forest']];
+const prefersLight = window.matchMedia('(prefers-color-scheme: light)');
+function applyTheme() {
+  const t = S.settings.theme || 'dark';
+  const resolved = t === 'auto' ? (prefersLight.matches ? 'light' : 'dark') : t;
+  const root = document.documentElement;
+  root.dataset.theme = resolved;
+  root.dataset.accent = S.settings.accent || 'sunrise';
+  $('meta[name="theme-color"]')?.setAttribute('content', resolved === 'light' ? '#f5f4f0' : '#080b16');
+}
+prefersLight.addEventListener?.('change', () => { if (S.settings.theme === 'auto') applyTheme(); });
 
 // ----- Onboarding -----
 function viewOnboard() {
@@ -140,6 +155,27 @@ function viewOnboard() {
 }
 
 // ----- Today -----
+/** The single most useful thing to do right now — one decision instead of a wall of options. */
+function nextUp() {
+  const k = today(), d = S.days[k] || {}, st = S.settings, h = hour();
+  if (S.timer) return null;
+  if (!d.morning && h < 14) return { ic: '🌅', kick: 'Next up', t: 'Morning check-in', s: '10 minutes to set up a great day', act: 'open-morning', cta: 'Start' };
+  if (h >= 18 && !d.evening) return { ic: '🌙', kick: 'Next up', t: 'Evening check-in', s: 'Close the day honestly · up to 200 XP', act: 'open-evening', cta: 'Start' };
+  const p = d.morning?.priorities?.find((x) => x.t?.trim() && !x.done);
+  if (p && h < 20) return { ic: '🎯', kick: 'Focus on', t: p.t, s: 'Start a focus session and protect it', act: 'focus', cta: 'Focus' };
+  if ((d.water || 0) < st.waterTarget) return { ic: '💧', kick: 'Quick win', t: `Drink a glass of water (${d.water || 0}/${st.waterTarget})`, s: '+5 XP · takes 30 seconds', act: 'water+', cta: '+1' };
+  if (h >= 20 && hygRatio(d, 'hygPM') < 1) return { ic: '🪥', kick: 'Wind down', t: 'Night routine', s: 'Look after future-you', act: 'hyg-pm', cta: 'Open' };
+  if (!jokesOn(k) && !d.evening?.funny) return { ic: '😂', kick: 'Comedy rep', t: 'Write one joke today', s: daily(C.comedy).p, act: 'go-comedy', cta: 'Write' };
+  return { ic: '✨', kick: 'All caught up', t: 'You’re winning today', s: 'Explore the feed or go live your life', act: 'tab', tab: 'feed', cta: 'Feed' };
+}
+function nextUpHTML() {
+  const n = nextUp();
+  if (!n) return '';
+  return `<button class="card next-up" data-act="${n.act}" ${n.tab ? `data-tab="${n.tab}"` : ''}>
+    <span class="nu-ic" aria-hidden="true">${n.ic}</span>
+    <span class="grow"><span class="nu-kick">${n.kick}</span><strong class="nu-t">${esc(n.t)}</strong><span class="nu-s">${esc(n.s)}</span></span>
+    <span class="nu-cta">${n.cta} →</span></button>`;
+}
 function focusCardHTML() {
   if (S.timer) {
     return `<button class="card focus-live" data-act="focus"><span class="big" aria-hidden="true">⏱️</span><span class="grow" style="text-align:left"><strong>Focusing: ${esc(S.timer.label || 'Deep work')}</strong><br><span class="small muted"><span data-timer-text>${timerLeftText()}</span> left · tap to open</span></span></button>`;
@@ -163,13 +199,14 @@ function viewToday() {
   const lr = latestReview();
 
   return `
-  <header class="row between">
-    <div><div class="muted small">${fmtDate(k, { weekday: 'long', month: 'long', day: 'numeric' })}</div><h1>${greet}, ${esc(firstName())}</h1></div>
+  <header class="today-head">
+    <button class="avatar" data-act="settings" aria-label="Profile and settings">${esc((firstName()[0] || '✨').toUpperCase())}</button>
+    <div class="grow"><div class="muted small">${fmtDate(k, { weekday: 'long', month: 'long', day: 'numeric' })}</div><h1>${greet}, ${esc(firstName())}</h1></div>
     <button class="icon-btn" data-act="settings" aria-label="Settings">⚙️</button>
   </header>
 
-  <section class="card hero" style="margin-top:14px" aria-label="Your progress today">
-    <div class="orb-wrap"><div class="orb" style="opacity:${0.45 + pct / 180}"></div>
+  <section class="card hero" style="margin-top:16px" aria-label="Your progress today">
+    <div class="orb-wrap"><div class="orb" style="opacity:${0.72 + pct / 360}"></div>
       <div class="orb-ring">${ring(pct, 'var(--gold)', 120, 6, '', `${pct}% of today's quests done`)}</div><div class="orb-num" aria-hidden="true">${pct}%</div></div>
     <div class="grow">
       <div class="row between wrap"><strong>Level ${lvl} · ${titleOf(lvl)}</strong><span class="pill gold" title="Check-in streak">🔥 ${streak} day${streak === 1 ? '' : 's'}</span></div>
@@ -180,7 +217,7 @@ function viewToday() {
 
   ${chestReady() ? `<button class="card chest-card" data-act="chest"><span class="chest-ic" aria-hidden="true">🎁</span><span class="grow" style="text-align:left"><strong>Daily reward unlocked!</strong><br><span class="small muted">You completed both check-ins. Open your chest.</span></span><span class="pill gold">Open</span></button>` : ''}
   ${missedYesterday ? `<button class="card banner-btn" data-act="open-evening-y"><span aria-hidden="true">🕰️</span> <span><strong>Yesterday's evening check-in is missing.</strong> <span class="small muted">Log it now so your stats stay true.</span></span></button>` : ''}
-  ${h >= 18 && !d.evening ? `<div class="banner" style="margin-top:14px"><strong>🌙 Time for your evening check-in.</strong><div class="small muted">Close the day honestly — it takes 10 minutes and earns up to 200 XP.</div></div>` : ''}
+  ${nextUpHTML()}
   ${reviewDue() ? `<button class="card banner-btn" data-act="open-weekly"><span aria-hidden="true">🗓️</span> <span><strong>Your weekly review is ready.</strong> <span class="small muted">See your week, update goals, pick one thing to improve · +100 XP</span></span></button>` : ''}
 
   <div class="grid" style="margin-top:14px">
@@ -223,7 +260,7 @@ function viewToday() {
       <div class="q-ic" aria-hidden="true">${x.done ? '✅' : x.ic}</div><div class="grow q-t small">${x.t}${x.done ? '<span class="sr-only"> (done)</span>' : ''}</div><div class="q-xp">+${x.xp} XP</div></${tag}>`;
   }).join('')}</div>
 
-  <div class="sec"><h2>🪥 Hygiene</h2>
+  <div class="sec" id="hyg-sec"><h2>🪥 Hygiene</h2>
     <div class="seg" role="tablist" style="min-width:180px"><button role="tab" aria-selected="${hygTab === 'hygAM'}" class="${hygTab === 'hygAM' ? 'on' : ''}" data-act="hygtab" data-v="hygAM">☀️ Morning</button><button role="tab" aria-selected="${hygTab === 'hygPM'}" class="${hygTab === 'hygPM' ? 'on' : ''}" data-act="hygtab" data-v="hygPM">🌙 Night</button></div></div>
   <div class="card">${st[hygTab].map((it) => { const on = d[hygTab]?.[it]; return `<button class="check ${on ? 'on' : ''}" data-act="hyg" data-l="${hygTab}" data-item="${esc(it)}" aria-pressed="${!!on}"><span class="box" aria-hidden="true">${on ? '✓' : ''}</span><span>${esc(it)}</span></button>`; }).join('')}</div>
 
@@ -283,7 +320,7 @@ function viewMoney() {
   <div class="sec"><h2>📊 Where it goes</h2></div>
   <div class="card">${cats.length ? cats.map(([c, v]) => { const ci = catInfo(c); return `<div class="bar-row"><span class="small bar-lbl">${ci[1]} ${ci[2]}</span><span class="bar"><i style="width:${(v / maxCat) * 100}%;background:${BAD_CATS.includes(c) ? 'var(--bad)' : 'var(--amber)'}"></i></span><span class="small bar-val">${cur(v)}</span></div>`; }).join('') : '<div class="empty">No spending logged this month yet.</div>'}</div>
 
-  <div class="card"><div class="small muted" style="margin-bottom:6px">Daily spending — last 14 days (line = daily budget)</div>${barChart(days14, { color: '#ff9f43', target: st.budget / 30, fmt: (v) => cur(Math.round(v)), label: 'Daily spending, last 14 days' })}</div>
+  <div class="card"><div class="small muted" style="margin-bottom:6px">Daily spending — last 14 days (line = daily budget)</div>${barChart(days14, { color: 'var(--amber)', target: st.budget / 30, fmt: (v) => cur(Math.round(v)), label: 'Daily spending, last 14 days' })}</div>
 
   <div class="sec"><h2>🧾 This month</h2><span class="muted small">${list.length} entries</span></div>
   <div class="card">${list.length ? list.map((t) => { const ci = catInfo(t.cat); return `<div class="tx"><div class="cat" aria-hidden="true">${ci[1]}</div><div class="grow"><div>${esc(t.note || ci[2])}</div><div class="tiny muted">${fmtDate(t.date)} · ${ci[2]}</div></div>
@@ -295,7 +332,7 @@ function viewMoney() {
 
 // ----- Feed: immersive, personalized "For You" reels (algorithm in feed.js) -----
 const FEED_BATCH = 6, CLAIM_CAP = 15, TIME_CHECK_EVERY = 25;
-const feed = { items: [], seen: new Set(), counters: {}, active: -1, activeAt: 0, lastKind: null, views: 0, startedAt: 0, obs: null, tap: { t: 0, i: -1 } };
+const feed = { items: [], active: -1, activeAt: 0, lastKind: null, views: 0, startedAt: 0, obs: null, tap: { t: 0, i: -1 } };
 const KIND_META = {
   wisdom: { tag: 'Wisdom', handle: 'light.wisdom', tags: '#mindset #stoic', bg: 'g-gold', fx: ['✨', '🌟', '💫'] },
   challenge: { tag: 'Real-life challenge', handle: 'light.challenge', tags: '#discipline #irl', bg: 'g-green', fx: ['💪', '🔥', '⚡'] },
@@ -310,8 +347,10 @@ const KIND_META = {
   poll: { tag: 'This or that', handle: 'light.you', tags: '#knowyourself', bg: 'g-violet', fx: ['🤔', '⚖️', '👀'] },
   breathe: { tag: 'Reset', handle: 'light.calm', tags: '#breathe #calm', bg: 'g-blue', fx: ['🫧', '🌊', '☁️'] },
   you: { tag: 'Your progress', handle: 'you', tags: '#yourjourney', bg: 'g-gold', fx: ['🔥', '🏆', '⭐'] },
+  fact: { tag: 'Did you know?', handle: 'light.science', tags: '#science #health', bg: 'g-cyan', fx: ['🔬', '🧬', '💡'] },
+  word: { tag: 'Word of the day', handle: 'light.words', tags: '#vocabulary #communication', bg: 'g-rose', fx: ['📖', '✍️', '🗣️'] },
 };
-const poolFor = (k) => ({ wisdom: C.wisdom, challenge: C.challenges, eq: C.eq, joke: C.jokes, comedy: C.comedy, glow: C.glow.do, avoid: C.glow.avoid, money: C.money, prompt: C.prompts, quiz: C.quiz, poll: C.polls, breathe: [1] })[k];
+const poolFor = (k) => ({ wisdom: C.wisdom, challenge: C.challenges, eq: C.eq, joke: C.jokes, comedy: C.comedy, glow: C.glow.do, avoid: C.glow.avoid, money: C.money, prompt: C.prompts, quiz: C.quiz, poll: C.polls, breathe: [1], fact: C.facts, word: C.words })[k];
 
 /** Personal cards built from your own data — the feed talks about YOU, not strangers. */
 function youCard() {
@@ -334,14 +373,11 @@ function nextItem() {
     const kind = pickKind(S.feedPrefs, Math.random, feed.lastKind);
     feed.lastKind = kind;
     if (kind === 'you') { const y = youCard(); if (y) return y; continue; }
-    const pool = poolFor(kind), n = pool.length;
-    let c = feed.counters[kind] ?? Math.floor(Math.random() * n), tries = 0;
-    while (feed.seen.has(`${kind}:${c % n}`) && tries < n) { c++; tries++; }
-    if (tries >= n) for (let i = 0; i < n; i++) feed.seen.delete(`${kind}:${i}`); // whole pool seen: start over
-    const idx = c % n;
-    feed.counters[kind] = c + 1;
-    feed.seen.add(`${kind}:${idx}`);
-    return { kind, id: `${kind}:${idx}`, data: pool[idx] };
+    const pool = poolFor(kind);
+    const idx = pickIndex(pool.length, kind, S.feedSeen);
+    const id = `${kind}:${idx}`;
+    S.feedSeen[id] = Date.now(); // remembered across sessions — no repeats until a kind's whole pool is seen
+    return { kind, id, data: pool[idx] };
   }
   return { kind: 'wisdom', id: 'wisdom:0', data: C.wisdom[0] };
 }
@@ -354,6 +390,7 @@ function itemText(it) {
     case 'quiz': case 'poll': return d.q;
     case 'you': return `${d.title}. ${d.body}`;
     case 'breathe': return 'A 30-second breathing reset.';
+    case 'word': return `${d.w}: ${d.d} — “${d.ex}”`;
     default: return String(d);
   }
 }
@@ -388,6 +425,8 @@ function reelHTML(it, i) {
       break;
     }
     case 'poll': body = `<div class="r-kicker">This or that?</div><div class="r-text">${words(d.q)}</div><div class="r-opts two">${d.o.map((o, j) => `<button class="r-opt" data-act="poll" data-j="${j}">${esc(o.t)}</button>`).join('')}</div><div class="r-why" hidden></div>`; break;
+    case 'fact': body = `<div class="r-kicker">Did you know?</div><div class="r-text">${words(d)}</div>`; break;
+    case 'word': body = `<div class="r-kicker">Word of the day</div><div class="r-word">${esc(d.w)}</div><div class="r-text sm">${words(d.d)}</div><div class="r-sub r-example">“${esc(d.ex)}”</div><div class="r-sub tiny">Use it once today — new words stick when you say them.</div>`; break;
     case 'breathe': body = `<div class="r-kicker">30-second reset</div><div class="r-breath" aria-hidden="true"><span>Breathe</span></div><div class="r-sub">In for 4 · out for 6. Let your shoulders drop.</div>`; break;
     case 'you': body = `<div class="r-big">${d.big}</div><div class="r-title">${esc(d.title)}</div><div class="r-text sm">${words(d.body)}</div>${d.progress != null ? `<div class="xpbar" style="margin-top:16px"><i style="width:${d.progress * 100}%"></i></div>` : ''}${d.action ? `<button class="r-cta" data-act="${d.action.act}">${esc(d.action.label)}</button>` : ''}`; break;
     default: body = `<div class="r-text">${words(d)}</div>`;
@@ -426,6 +465,7 @@ function appendReels(n) {
 }
 function feedInit() {
   Object.assign(feed, { items: [], active: -1, views: 0, startedAt: Date.now(), lastKind: null });
+  S.feedSeen = pruneSeen(S.feedSeen);
   feed.obs?.disconnect();
   feed.obs = 'IntersectionObserver' in window
     ? new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) activateReel(+e.target.dataset.i); }, { root: $('#feed-stage'), threshold: 0.6 })
@@ -486,7 +526,7 @@ function viewStats() {
   const dAvg = (arr, id) => (arr.length ? Math.round(avg(arr.map((s) => s[id]))) : null);
   const overall = dAvg(sc, 'overall');
   const st = S.settings, dom = UI.domain;
-  const domInfo = DOMAINS.find((d) => d.id === dom) || { name: 'Overall', hex: '#ffd166' };
+  const domInfo = DOMAINS.find((d) => d.id === dom) || { name: 'Overall', hex: 'var(--accent)' };
   const lbl = (k) => fmtDate(k, { day: 'numeric' });
   const pts = keys.map((k) => ({ label: lbl(k), v: scores(k)?.[dom] ?? null }));
   const k14 = keys.slice(-14);
@@ -512,7 +552,7 @@ function viewStats() {
 
   <div class="sec"><h2>🗓️ Your year in light</h2><span class="tiny muted">daily Life Score</span></div>
   <div class="card">${heatmap(heatmapKeys(26), (k) => scores(k)?.overall ?? null)}
-    <div class="legend" style="margin-top:8px"><span>Less</span>${['var(--bg2)', '#463723', '#6e5230', '#a8783a', '#e0a94a', '#ffd166'].map((c) => `<i style="background:${c}"></i>`).join('')}<span>More</span></div></div>
+    <div class="legend" style="margin-top:8px"><span>Less</span>${[0, 1, 2, 3, 4, 5].map((n) => `var(--heat-${n})`).map((c) => `<i style="background:${c}"></i>`).join('')}<span>More</span></div></div>
 
   <div class="sec"><h2>🔮 Future You — 1 year projection</h2></div>
   ${viewProjection()}
@@ -525,13 +565,13 @@ function viewStats() {
   <div class="card">${reviews.length ? reviews.map(([wk, r]) => `<div class="insight small" style="border-left-color:var(--gold)"><strong>Week of ${fmtDate(wk, { month: 'short', day: 'numeric' })}</strong>${r.avg != null ? ` · score ${r.avg}` : ''}${r.focusHabit ? ` · focus: ${esc(r.focusHabit)}` : ''}${r.proud ? `<br>🏆 ${esc(r.proud)}` : ''}${r.nextWeek ? `<br>➡️ ${esc(r.nextWeek)}` : ''}</div>`).join('') : '<div class="empty">Weekly reviews turn data into direction. Do your first one this weekend.</div>'}</div>
 
   <div class="sec"><h2>⏱️ Focused work</h2><span class="muted small">goal 60 min/day</span></div>
-  <div class="card">${barChart(focusPts, { color: '#ffd166', target: 60, fmt: (v) => v + ' min', label: 'Focused minutes, last 14 days' })}</div>
+  <div class="card">${barChart(focusPts, { color: 'var(--accent)', target: 60, fmt: (v) => v + ' min', label: 'Focused minutes, last 14 days' })}</div>
   <div class="sec"><h2>😴 Sleep</h2><span class="muted small">goal ${st.sleepTarget}h</span></div>
-  <div class="card">${barChart(sleepPts, { color: '#6ea8ff', target: st.sleepTarget, max: Math.max(10, st.sleepTarget + 2), fmt: (v) => v + 'h', label: 'Sleep hours, last 14 days' })}</div>
+  <div class="card">${barChart(sleepPts, { color: 'var(--blue)', target: st.sleepTarget, max: Math.max(10, st.sleepTarget + 2), fmt: (v) => v + 'h', label: 'Sleep hours, last 14 days' })}</div>
   <div class="sec"><h2>💧 Water</h2><span class="muted small">goal ${st.waterTarget} glasses</span></div>
-  <div class="card">${barChart(waterPts, { color: '#4fd1c5', target: st.waterTarget, max: Math.max(st.waterTarget + 2, ...waterPts.map((p) => p.v)), label: 'Glasses of water, last 14 days' })}</div>
+  <div class="card">${barChart(waterPts, { color: 'var(--teal)', target: st.waterTarget, max: Math.max(st.waterTarget + 2, ...waterPts.map((p) => p.v)), label: 'Glasses of water, last 14 days' })}</div>
   <div class="sec"><h2>🙂 Mood</h2></div>
-  <div class="card">${lineChart(moodPts, { color: '#b48cff', max: 5, min: 1, ticks: [1, 3, 5], label: 'Mood over time' })}</div>`;
+  <div class="card">${lineChart(moodPts, { color: 'var(--violet)', max: 5, min: 1, ticks: [1, 3, 5], label: 'Mood over time' })}</div>`;
 }
 function viewProjection() {
   const p = projection();
@@ -584,7 +624,7 @@ function growEQ() {
 }
 function growGlow() {
   const hyg = lastN(14).map((k) => ({ label: fmtDate(k, { day: 'numeric' }), v: Math.round(hygRatio(S.days[k]) * 100) }));
-  return `<div class="card" style="margin-top:14px"><div class="small muted" style="margin-bottom:6px">Hygiene completion — last 14 days (%)</div>${barChart(hyg, { color: '#4fd1c5', max: 100, target: 100, fmt: (v) => v + '%', label: 'Hygiene completion, last 14 days' })}</div>
+  return `<div class="card" style="margin-top:14px"><div class="small muted" style="margin-bottom:6px">Hygiene completion — last 14 days (%)</div>${barChart(hyg, { color: 'var(--teal)', max: 100, target: 100, fmt: (v) => v + '%', label: 'Hygiene completion, last 14 days' })}</div>
   <div class="grid"><div class="card streak"><div class="ic" aria-hidden="true">🍔</div><div class="n">${habitStreak('fastfood').current}</div><div class="tiny muted">days without fast food</div></div>
     <div class="card streak"><div class="ic" aria-hidden="true">🥤</div><div class="n">${habitStreak('soda').current}</div><div class="tiny muted">days without soda</div></div></div>
   <div class="sec"><h2>✅ Do this to stay handsome</h2></div>
@@ -947,6 +987,12 @@ let installEvt = null;
 function openSettings() {
   const st = S.settings, p = S.profile, bk = backupInfo();
   openModal(`<div class="row between"><h2>⚙️ Settings</h2><button class="icon-btn" data-act="modal-close" aria-label="Close">✕</button></div>
+    <div class="sec" style="margin-top:14px"><h2>🎨 Appearance</h2><span class="tiny muted">changes apply instantly</span></div>
+    <div class="card stack">
+      <div class="seg" role="radiogroup" aria-label="Theme">${[['auto', '🌗 Auto'], ['dark', '🌙 Dark'], ['light', '☀️ Light']].map(([v, n]) => `<button type="button" role="radio" aria-checked="${st.theme === v}" class="${st.theme === v ? 'on' : ''}" data-act="set-theme" data-v="${v}">${n}</button>`).join('')}</div>
+      <div class="swatches" role="radiogroup" aria-label="Accent color">${ACCENTS.map(([v, n]) => `<button type="button" role="radio" aria-checked="${st.accent === v}" class="swatch ${st.accent === v ? 'on' : ''}" data-act="set-accent" data-v="${v}" data-accent-preview="${v}"><i aria-hidden="true"></i><span>${n}</span></button>`).join('')}</div>
+    </div>
+    <div class="sec"><h2>👤 You & your goals</h2></div>
     <form data-form="settings" novalidate>
     <label class="lbl" for="s-name">Name</label><input type="text" id="s-name" value="${esc(p.name)}" maxlength="40">
     <div class="lbl">Goals</div>${[0, 1, 2].map((i) => `<input type="text" id="s-g${i}" aria-label="Goal ${i + 1}" value="${esc(p.goals[i]?.t || '')}" style="margin-bottom:6px" placeholder="Goal ${i + 1}" maxlength="100">`).join('')}
@@ -993,6 +1039,7 @@ function download(name, text, type) {
 }
 
 // ---------- Actions ----------
+function markRadio(act, el) { $$(`[data-act="${act}"]`).forEach((b) => { b.classList.toggle('on', b === el); b.setAttribute('aria-checked', b === el); }); }
 function addCelebrate(el, msg) { burst(el); buzz(); toast(msg); }
 function removeWithUndo(arr, idx, label) {
   const [item] = arr.splice(idx, 1);
@@ -1029,6 +1076,9 @@ const A = {
   'go-comedy': () => go('grow', { grow: 'comedy' }),
   'go-freedom': () => go('grow', { grow: 'freedom' }),
   settings: () => openSettings(),
+  'set-theme': (el) => { S.settings.theme = el.dataset.v; save(); applyTheme(); markRadio('set-theme', el); },
+  'set-accent': (el) => { S.settings.accent = el.dataset.v; save(); applyTheme(); markRadio('set-accent', el); buzz(); },
+  'hyg-pm': () => { UI.hyg = 'hygPM'; render(); $('#hyg-sec')?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' }); },
   'modal-close': () => closeModal(),
   sos: () => openSOS(),
   'sos-type': (el) => { sosType = el.dataset.v; renderSOS(1); },
@@ -1118,7 +1168,7 @@ const A = {
       else { await navigator.clipboard.writeText(text); toast('Copied to clipboard 📋'); }
     } catch { /* user cancelled */ }
   },
-  refeed: () => { feed.seen.clear(); feed.counters = {}; render({ full: true }); toast('🔄 Fresh feed'); },
+  refeed: () => { save(); render({ full: true }); toast('🔄 Fresh cards'); },
   // Stats
   range: (el) => { UI.range = +el.dataset.v; render(); },
   domain: (el) => { UI.domain = el.dataset.v; render(); },
@@ -1134,12 +1184,12 @@ const A = {
   'restore-auto': () => {
     const b = backupInfo(); if (!b?.data) return;
     if (!confirm(`Restore your data to how it was on ${fmtDate(b.date)}? Changes since then will be lost.`)) return;
-    replaceState(b.data); wiz = null; closeModal(); render(); toast('Snapshot restored ✓');
+    replaceState(b.data); wiz = null; applyTheme(); closeModal(); render(); toast('Snapshot restored ✓');
   },
   reset: () => {
     if (!confirm('Erase ALL Light data on this device? This cannot be undone. (Export a backup first if unsure.)')) return;
     if (!confirm('Really erase everything?')) return;
-    resetState(); wiz = null; closeModal(); render();
+    resetState(); wiz = null; applyTheme(); closeModal(); render();
   },
   install: async () => { if (!installEvt) return; installEvt.prompt(); await installEvt.userChoice; installEvt = null; closeModal(); },
 };
@@ -1227,7 +1277,7 @@ document.addEventListener('change', (e) => {
       const data = JSON.parse(r.result);
       if (!data || typeof data !== 'object' || !data.days || !data.settings) throw new Error('bad');
       if (S.profile && !confirm('Replace the data on this device with this backup?')) return;
-      replaceState(data); wiz = null; closeModal(); render(); toast('Backup restored ✓');
+      replaceState(data); wiz = null; applyTheme(); closeModal(); render(); toast('Backup restored ✓');
     } catch { toast('That file is not a valid Light backup.'); }
   };
   r.readAsText(f);
@@ -1271,8 +1321,10 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 navigator.storage?.persist?.().catch(() => {});
 
 let lastDay = today();
+// Flush feed memory/preferences when the app is backgrounded or closed (mobile apps rarely get a clean "unload").
+window.addEventListener('pagehide', () => { if (S.profile) save(); });
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState !== 'visible') return;
+  if (document.visibilityState === 'hidden') { if (S.profile) save(); return; }
   if (S.timer && timerLeftMs() <= 0) finishFocus(true);
   if (today() !== lastDay && !modalOpen()) { lastDay = today(); snapshotDaily(); render(); }
 });
@@ -1285,6 +1337,7 @@ window.addEventListener('unhandledrejection', (e) => onErr(e.reason));
 window.__light = { get state() { return S; }, scores, computeXP, render, version: APP_VERSION };
 
 // ---------- Boot ----------
+applyTheme();
 snapshotDaily();
 if (S.profile && awardBadges().length) save();
 render();

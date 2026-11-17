@@ -35,13 +35,17 @@ Data lives in the browser on each device. Your laptop and phone do **not** sync 
 | --- | --- |
 | **Today** | Level/XP orb, 10-min morning & evening check-ins, daily wisdom + EQ lesson + glow-up tip, goals & top 3 priorities, personalized recommendations, water tracker, daily quests, AM/PM hygiene, freedom streaks, joke of the day |
 | **Money** | Quick expense/income logging, monthly budget ring, safe-to-spend per day, category breakdown, 14-day chart, cost of fast food/soda/gambling per year |
-| **Feed** | TikTok-style full-screen reels: swipe up (or arrow keys), double-tap to like, save, reflect, share. A "For You" algorithm learns from likes, saves and how long you stay on each card. Card types: wisdom, quizzes, this-or-that polls, jokes with punchline reveal, EQ & comedy lessons, glow-up tips, breathing resets, real-life challenges, and cards about your own progress |
+| **Feed** | TikTok-style full-screen reels: swipe up (or arrow keys), double-tap to like, save, reflect, share. A "For You" algorithm learns from likes, saves and how long you stay on each card. It remembers what you have seen (across sessions), so nothing repeats until a whole category is exhausted — 550+ cards in total. Card types: wisdom, did-you-know science facts, word of the day, quizzes, this-or-that polls, jokes with punchline reveal, EQ & comedy lessons, glow-up tips, breathing resets, real-life challenges, and cards about your own progress |
 | **Stats** | Life Score + 6 areas (Health & Sleep, Physical, Mental, Career, Money, EQ & Joy) with trends, charts, **1-year "Future You" projection**, and "Know yourself" pattern insights on your bad habits |
 | **Grow** | Comedy gym + joke notebook, EQ lab, glow-up do/avoid guide, Freedom center (streaks, urge log, gambling help), journal, badges |
 | **Focus timer** | 15/25/50/90-min sessions that log focused minutes automatically, keep running if you close the app, and notify you when done |
 | **Weekly review** | Every Fri–Sun: your week in numbers, best day, wins, goal progress sliders, one habit to improve and a commitment shown all next week |
 | **Daily reward chest** | Complete both check-ins to open a chest: common, rare or legendary XP + a quote or joke |
 | **Urge? button** | 90-second urge-surfing breathing, your "why", healthy alternatives; log "I beat it" (+XP) or an honest slip |
+
+## Look & feel
+
+Settings → **Appearance**: Auto / Dark / Light mode and four accent colors (Sunrise, Ocean, Aurora, Forest). The Today screen opens with a smart **Next up** card that always shows the single most useful thing to do right now.
 
 ## Reminders
 
@@ -57,7 +61,7 @@ Settings → **Add reminders to my calendar** downloads a calendar file with dai
 ## Development
 
 ```bash
-npm test        # 36 unit tests for the core logic (Node 20+, no dependencies)
+npm test        # 38 unit tests for the core logic (Node 20+, no dependencies)
 npm start       # serve on http://localhost:5173
 ```
 
@@ -74,7 +78,7 @@ When you change any file, bump `VERSION` in `sw.js` so installed apps pick up th
 - `js/feed.js`: "For You" feed algorithm (pure, unit-tested)
 - `js/charts.js`: tiny SVG charts (rings, lines, bars, heatmap)
 - `js/util.js`: date & text helpers
-- `js/content.js`: wisdom, lessons, jokes, tips (edit freely to add your own!)
+- `js/content.js` + `js/content-extra.js`: wisdom, lessons, jokes, quizzes, facts, words, tips (edit freely to add your own!)
 - `tests/core.test.js`: unit tests
 - `sw.js`, `manifest.webmanifest`, `icons/`: offline + installable app support
 - `tools/make-icons.cjs`: regenerates the PNG icons (`npm run icons`)

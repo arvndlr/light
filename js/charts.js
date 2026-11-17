@@ -11,7 +11,7 @@ export function ring(pct, color, size = 64, stroke = 7, inner = '', label = '') 
   </svg>`;
 }
 
-export function lineChart(pts, { color = '#ffd166', max = 100, min = 0, h = 150, ticks = [0, 50, 100], label = 'Line chart' } = {}) {
+export function lineChart(pts, { color = 'var(--accent)', max = 100, min = 0, h = 150, ticks = [0, 50, 100], label = 'Line chart' } = {}) {
   const W = 600, padL = 26, padB = 20, padT = 8, iw = W - padL - 6, ih = h - padB - padT;
   const x = (i) => padL + (pts.length < 2 ? iw / 2 : (i / (pts.length - 1)) * iw);
   const y = (v) => padT + ih - ((v - min) / (max - min)) * ih;
@@ -26,7 +26,7 @@ export function lineChart(pts, { color = '#ffd166', max = 100, min = 0, h = 150,
   </svg>`;
 }
 
-export function barChart(pts, { color = '#ffd166', target = null, max = null, h = 150, fmt = (v) => v, label = 'Bar chart' } = {}) {
+export function barChart(pts, { color = 'var(--accent)', target = null, max = null, h = 150, fmt = (v) => v, label = 'Bar chart' } = {}) {
   const W = 600, padB = 20, padT = 14, ih = h - padB - padT;
   const mx = max || Math.max(1, target || 0, ...pts.map((p) => p.v)) * 1.1;
   const bw = W / pts.length;
@@ -34,7 +34,7 @@ export function barChart(pts, { color = '#ffd166', target = null, max = null, h 
   return `<svg class="chart" viewBox="0 0 ${W} ${h}" role="img" aria-label="${esc(label)}">
     ${pts.map((p, i) => `<rect x="${i * bw + bw * 0.18}" y="${y(p.v)}" width="${bw * 0.64}" height="${Math.max(0, padT + ih - y(p.v))}" rx="4" fill="${color}" opacity="${p.v ? 1 : 0.25}"><title>${esc(p.label)}: ${esc(fmt(round1(p.v)))}</title></rect>
       <text x="${i * bw + bw / 2}" y="${h - 4}" text-anchor="middle">${esc(p.label)}</text>`).join('')}
-    ${target ? `<line x1="0" x2="${W}" y1="${y(target)}" y2="${y(target)}" stroke="#ffd166" stroke-dasharray="5 5" stroke-width="1.5"/>` : ''}
+    ${target ? `<line x1="0" x2="${W}" y1="${y(target)}" y2="${y(target)}" stroke="var(--accent)" stroke-dasharray="5 5" stroke-width="1.5"/>` : ''}
   </svg>`;
 }
 
@@ -43,7 +43,7 @@ export function heatmap(grid, valueOf) {
   const cell = 13, gap = 3, padT = 16, padL = 22;
   const W = padL + grid.length * (cell + gap), H = padT + 7 * (cell + gap);
   const t = today();
-  const color = (v) => (v == null ? 'var(--bg2)' : v >= 80 ? '#ffd166' : v >= 65 ? '#e0a94a' : v >= 50 ? '#a8783a' : v >= 35 ? '#6e5230' : '#463723');
+  const color = (v) => (v == null ? 'var(--heat-0)' : v >= 80 ? 'var(--heat-5)' : v >= 65 ? 'var(--heat-4)' : v >= 50 ? 'var(--heat-3)' : v >= 35 ? 'var(--heat-2)' : 'var(--heat-1)');
   const labels = [];
   grid.forEach((wk, w) => { const m = wk[6].slice(0, 7); if (!labels.length || labels[labels.length - 1].m !== m) labels.push({ m, w, k: wk[6] }); });
   if (labels.length > 1 && labels[1].w - labels[0].w < 3) labels.shift(); // a sliver of a month at the left edge gets no label

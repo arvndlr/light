@@ -12,6 +12,7 @@ export const DEFAULTS = () => ({
   settings: {
     currency: '₱', waterTarget: 8, sleepTarget: 8, bedTime: '22:30', wakeTime: '06:30', budget: 15000,
     socialLimit: 15, weightUnit: 'kg', savingsGoal: 0, savingsName: 'Emergency fund', haptics: true,
+    theme: 'dark', accent: 'sunrise', // theme: 'auto' | 'dark' | 'light'
     hygAM: ['Brush teeth', 'Wash face', 'Shower', 'Sunscreen', 'Deodorant', 'Groom hair'],
     hygPM: ['Wash face', 'Brush teeth', 'Floss', 'Moisturize', 'Lay out tomorrow\'s clothes', 'Screens off 30 min before bed'],
   },
@@ -22,10 +23,11 @@ export const DEFAULTS = () => ({
   feedPrefs: {}, // card kind -> learned preference score (see feed.js)
   feedLikes: {}, // card id -> date liked
   quiz: {},      // quiz card id -> answered correctly (first try)
+  feedSeen: {},  // card id -> last shown (ms); prevents repeats across sessions
   timer: null,  // running focus session { start, dur, label }
 });
 
-const OBJECT_KEYS = ['days', 'badges', 'claims', 'reviews', 'chests', 'feedPrefs', 'feedLikes', 'quiz'];
+const OBJECT_KEYS = ['days', 'badges', 'claims', 'reviews', 'chests', 'feedPrefs', 'feedLikes', 'quiz', 'feedSeen'];
 const ARRAY_KEYS = ['tx', 'jokes', 'journal', 'saved', 'sos', 'focusLog'];
 const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
 

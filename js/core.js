@@ -9,12 +9,12 @@ import {
 
 // ---------- Static definitions ----------
 export const DOMAINS = [
-  { id: 'health', name: 'Health & Sleep', ic: '😴', color: 'var(--blue)', hex: '#6ea8ff' },
-  { id: 'physical', name: 'Physical', ic: '💪', color: 'var(--good)', hex: '#3ddc97' },
-  { id: 'mental', name: 'Mental', ic: '🧠', color: 'var(--violet)', hex: '#b48cff' },
-  { id: 'career', name: 'Career', ic: '🎯', color: 'var(--gold)', hex: '#ffd166' },
-  { id: 'money', name: 'Money', ic: '💰', color: 'var(--amber)', hex: '#ff9f43' },
-  { id: 'eq', name: 'EQ & Joy', ic: '❤️', color: 'var(--pink)', hex: '#ff7eb6' },
+  { id: 'health', name: 'Health & Sleep', ic: '😴', color: 'var(--blue)', hex: 'var(--blue)' },
+  { id: 'physical', name: 'Physical', ic: '💪', color: 'var(--good)', hex: 'var(--good)' },
+  { id: 'mental', name: 'Mental', ic: '🧠', color: 'var(--violet)', hex: 'var(--violet)' },
+  { id: 'career', name: 'Career', ic: '🎯', color: 'var(--gold)', hex: 'var(--accent)' },
+  { id: 'money', name: 'Money', ic: '💰', color: 'var(--amber)', hex: 'var(--amber)' },
+  { id: 'eq', name: 'EQ & Joy', ic: '❤️', color: 'var(--pink)', hex: 'var(--pink)' },
 ];
 export const HABITS = [
   { id: 'social', name: 'Social media', ic: '📵', cat: null },
