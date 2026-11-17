@@ -852,3 +852,82 @@ body.feed-mode #nav { --glass: rgba(6, 8, 16, .55); --line-strong: rgba(255, 255
 @media (max-width: 340px) { .hyg-grid { grid-template-columns: 1fr; } }
 
 @media (min-width: 700px) { .swipe-hint { display: none; } }
+
+
+/* =====================================================================
+   Fitness & "Right now" plan (v2.6)
+   ===================================================================== */
+/* Right-now plan on Today */
+.plan-card { padding: 16px; background: radial-gradient(120% 100% at 100% 0%, var(--accent-soft), transparent 55%), var(--surface); }
+.plan-head { display: flex; align-items: center; gap: 12px; }
+.plan-ic { width: 46px; height: 46px; border-radius: 15px; color: var(--accent-text); background: var(--accent-soft) !important; }
+.plan-head strong { font-size: 1.08rem; }
+.plan-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 10px 2px;
+  border-bottom: 1px solid var(--line); transition: background .2s;
+}
+.plan-item:last-of-type { border-bottom: 0; }
+.plan-item .q-ic { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; flex: none; background: var(--surface-2); color: var(--accent-text); }
+.plan-item .q-ic .i { width: 20px; height: 20px; }
+.plan-item.done .q-ic { background: var(--good-soft); color: var(--good); }
+.pi-t { display: block; font-size: .92rem; font-weight: 650; }
+.pi-s { display: block; font-size: .76rem; color: var(--muted); margin-top: 1px; }
+.plan-item.done .pi-t { color: var(--faint); text-decoration: line-through; }
+.pi-go { flex: none; width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; color: var(--accent-text); background: var(--accent-soft); }
+.plan-item:hover .pi-go { background: var(--accent); color: var(--accent-ink); }
+.plan-day { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 4px; }
+.plan-day summary { display: flex; align-items: center; gap: 8px; padding: 10px 2px 4px; font-size: .84rem; color: var(--muted); cursor: pointer; list-style: none; }
+.plan-day summary::-webkit-details-marker { display: none; }
+.plan-day summary strong { color: var(--text); }
+.plan-day summary .i { display: inline-block; color: var(--accent-text); }
+.pd-more { margin-left: auto; font-size: .76rem; font-weight: 700; color: var(--accent-text); }
+.plan-day[open] .pd-more { opacity: .6; }
+.plan-tl { list-style: none; margin: 10px 0 2px; padding: 0 0 0 8px; display: grid; gap: 12px; }
+.plan-tl li { display: flex; gap: 12px; position: relative; opacity: .8; }
+.plan-tl li.past { opacity: .5; }
+.plan-tl li.now { opacity: 1; }
+.plan-tl li.now strong { color: var(--accent-text); }
+.plan-tl li.now::before { content: ""; position: absolute; left: -10px; top: 4px; width: 4px; height: calc(100% - 6px); border-radius: 4px; background: var(--accent); }
+.pt-time { flex: none; width: 66px; font-size: .78rem; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pt-items { display: block; margin-top: 2px; line-height: 1.4; }
+
+/* Fitness: week dots, routines, library */
+.wk-dots { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 14px; position: relative; }
+.wk-dot { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: .7rem; font-weight: 700; color: var(--muted); }
+.wk-dot i { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); border: 1px solid var(--line); color: #fff; }
+.wk-dot.on i { background: var(--amber); border-color: transparent; box-shadow: 0 4px 12px color-mix(in srgb, var(--amber) 40%, transparent); }
+.wk-dot.today span { color: var(--text); }
+.wk-dot.today i { outline: 2px solid color-mix(in srgb, var(--amber) 55%, transparent); outline-offset: 2px; }
+.today-wo { margin-top: 12px; background: radial-gradient(130% 110% at 100% 0%, color-mix(in srgb, var(--amber) 16%, transparent), transparent 60%), var(--surface); border-color: color-mix(in srgb, var(--amber) 28%, var(--line)); }
+.today-wo .btn .i { display: inline-block; }
+.r-emoji { width: 44px; height: 44px; flex: none; border-radius: 14px; display: grid; place-items: center; font-size: 1.4rem; background: var(--surface-2); }
+.r-emoji.big { width: 56px; height: 56px; font-size: 1.8rem; border-radius: 18px; }
+.chip.sm { padding: 5px 10px; font-size: .76rem; }
+.grid.routines { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 700px) { .grid.routines { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.routine { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px; text-align: left; }
+.routine strong { font-size: .95rem; line-height: 1.2; }
+.routine-done { display: inline-flex; align-items: center; gap: 4px; font-size: .7rem; font-weight: 700; color: var(--good); }
+.routine-done .i { display: inline-block; }
+.fit-groups { margin-top: 2px; }
+.ex-g { display: block; font-size: .72rem; font-weight: 600; color: var(--muted); margin-top: 1px; }
+.acc summary .pill { flex: none; }
+.how { margin: 4px 0 8px; padding-left: 20px; display: grid; gap: 5px; }
+.how li::marker { color: var(--accent-text); font-weight: 800; }
+.tip { color: var(--muted); padding-bottom: 6px; }
+.tip .i { display: inline-block; vertical-align: -2px; color: var(--accent-text); }
+
+/* Workout player */
+.wp-phase { margin-top: 8px; text-align: center; font-size: .78rem; font-weight: 850; letter-spacing: 1.5px; text-transform: uppercase; }
+.wp-phase.prep { color: var(--blue); } .wp-phase.work { color: var(--amber); } .wp-phase.rest { color: var(--good); }
+.wp-name { text-align: center; font-size: 1.6rem; font-weight: 850; letter-spacing: -.02em; margin-top: 2px; }
+.wp-ring { --wp-c: var(--amber); width: 200px; height: 200px; margin: 14px auto; }
+.wp-ring.rest { --wp-c: var(--good); } .wp-ring.prep { --wp-c: var(--blue); }
+.wp-ring .ring-arc { transition: stroke-dashoffset .25s linear; }
+.wp-ring .focus-time { font-size: 3.2rem; }
+.wp-next { text-align: center; margin-top: 8px; color: var(--muted); }
+#wp .how { max-width: 420px; margin: 6px auto 6px; }
+#wp .tip { text-align: center; }
+#wp .btn .i, #wp .tip .i { display: inline-block; }
+.wp-done h2 { margin-top: 6px; }
+.wp-done .empty-ic { color: var(--amber); background: color-mix(in srgb, var(--amber) 15%, transparent); }

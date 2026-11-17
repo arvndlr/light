@@ -51,7 +51,7 @@ const P = {
   dice: '<rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="8.8" cy="8.8" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="15.2" cy="15.2" r="1.1" fill="currentColor" stroke="none"/>',
   burger: '<path d="M4.5 11a7.5 6 0 0 1 15 0z"/><path d="M3.5 14.5h17M4.5 17.5h15a0 0 0 0 1 0 0 2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2z"/>',
   cup: '<path d="M6 7.5h12M7.3 7.5 8.8 21h6.4l1.5-13.5M12 7.5l1.8-4.5H17"/>',
-  dumbbell: '<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/>',
+  dumbbell: '<rect x="2.5" y="9" width="3" height="6" rx="1"/><rect x="5.5" y="6" width="3.5" height="12" rx="1.2"/><rect x="15" y="6" width="3.5" height="12" rx="1.2"/><rect x="18.5" y="9" width="3" height="6" rx="1"/><path d="M9 12h6"/>',
   briefcase: '<rect x="3" y="7" width="18" height="13" rx="2.8"/><path d="M9 7V5.5A2 2 0 0 1 11 3.5h2a2 2 0 0 1 2 2V7M3 12.5h18"/>',
   bowl: '<path d="M3.5 11.5h17c0 4.4-3.8 8-8.5 8s-8.5-3.6-8.5-8z"/><path d="M9.5 8c0-1 .9-1.5.9-2.5M13.5 8c0-1 .9-1.5.9-2.5"/>',
   bus: '<rect x="4.5" y="3" width="15" height="15" rx="3"/><path d="M4.5 11h15M8 18v3M16 18v3M8 14.5h.01M16 14.5h.01"/>',
@@ -68,6 +68,11 @@ const P = {
   palette: '<path d="M12 3.5a8.5 8.5 0 0 0 0 17c1 0 1.5-.7 1.5-1.4 0-.9-.8-1.4-.8-2.3 0-.8.7-1.3 1.5-1.3h2.3a4 4 0 0 0 4-4c0-4.4-3.8-8-8.5-8z"/><circle cx="7.8" cy="11" r="1" fill="currentColor" stroke="none"/><circle cx="10.5" cy="7.5" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="7.8" r="1" fill="currentColor" stroke="none"/>',
   bell: '<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 21h4"/>',
   download: '<path d="M12 3.5v11M7.5 10 12 14.5 16.5 10M5 20.5h14"/>',
+  play: '<path d="M7.5 4.8v14.4a1 1 0 0 0 1.5.9l11-7.2a1 1 0 0 0 0-1.8L9 3.9a1 1 0 0 0-1.5.9z"/>',
+  pause: '<rect x="6.5" y="4.5" width="3.5" height="15" rx="1.2"/><rect x="14" y="4.5" width="3.5" height="15" rx="1.2"/>',
+  skip: '<path d="M5.5 5.5v13l9-6.5z"/><path d="M18.5 5v14"/>',
+  bellOff: '<path d="M8.6 5.6A6 6 0 0 1 18 11v5.5l1.5 2H10M6 11v5.5l-1.5 2H8"/><path d="M10 21h4M3.5 3.5l17 17"/>',
+  compassPlan: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.5 2"/><path d="M12 3.5v1.5M20.5 12H19M12 20.5V19M3.5 12H5"/>',
   chevronUp: '<path d="M6 15l6-6 6 6"/>',
   more: '<circle cx="5.5" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.3" fill="currentColor" stroke="none"/>',
   thumbDown: '<path d="M7.5 13.5V4M7.5 13.5l3.6 6.2a1.9 1.9 0 0 0 3.5-1.3L13.8 15h4.6a2 2 0 0 0 2-2.4l-1.3-6.7A2.4 2.4 0 0 0 16.7 4H7.5M7.5 4H5a1.5 1.5 0 0 0-1.5 1.5v6.5A1.5 1.5 0 0 0 5 13.5h2.5"/>',
@@ -95,7 +100,7 @@ const EMOJI = {
   '💪': 'dumbbell', '💼': 'briefcase', '🍚': 'bowl', '🚌': 'bus', '🛍': 'bag', '🎮': 'gamepad', '💊': 'pill',
   '👨‍👩‍👧': 'users', '👤': 'user', '📦': 'box', '🏦': 'bank', '📈': 'trending', '⛔': 'ban', '🚫': 'ban',
   '🫁': 'wind', '🎨': 'palette', '🔔': 'bell', '🪥': 'sparkle', '🪞': 'sparkle', '✅': 'checkCircle',
-  '🌊': 'wind', '📜': 'clock', '🎭': 'mic', '🌍': 'compass', '⬇': 'download', '🔒': 'lock', '💸': 'wallet',
+  '🌊': 'wind', '🦵': 'dumbbell', '⚡': 'activity', '🧘': 'sparkle', '🥗': 'bowl', '🏋': 'dumbbell', '🧭': 'compassPlan', '📜': 'clock', '🎭': 'mic', '🌍': 'compass', '⬇': 'download', '🔒': 'lock', '💸': 'wallet',
 };
 const norm = (e) => String(e).replace(/️/g, '');
 export const iconFor = (e) => EMOJI[norm(e)];

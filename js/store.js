@@ -14,12 +14,14 @@ export const DEFAULTS = () => ({
     socialLimit: 15, weightUnit: 'kg', savingsGoal: 0, savingsName: 'Emergency fund', haptics: true,
     theme: 'dark', accent: 'sunrise', // theme: 'auto' | 'dark' | 'light'
     feedHint: true, // show "swipe up" hint until the first swipe
+    fitLevel: 'beginner', fitVoice: true, // home workouts
     hygAM: ['Brush teeth', 'Wash face', 'Shower', 'Sunscreen', 'Deodorant', 'Groom hair'],
     hygPM: ['Wash face', 'Brush teeth', 'Floss', 'Moisturize', 'Lay out tomorrow\'s clothes', 'Screens off 30 min before bed'],
   },
   days: {},     // 'YYYY-MM-DD' -> { water, exercise, deepWork, hygAM, hygPM, morning, evening }
   tx: [],       // { id, date, type: 'out'|'in'|'save', amount, cat, note }
   jokes: [], journal: [], saved: [], sos: [], focusLog: [],
+  workouts: [], // { id, date, mins, level, partial? }
   badges: {}, claims: {}, reviews: {}, chests: {},
   feedPrefs: {}, // card kind -> learned preference score (see feed.js)
   feedLikes: {}, // card id -> date liked
@@ -29,7 +31,7 @@ export const DEFAULTS = () => ({
 });
 
 const OBJECT_KEYS = ['days', 'badges', 'claims', 'reviews', 'chests', 'feedPrefs', 'feedLikes', 'quiz', 'feedSeen'];
-const ARRAY_KEYS = ['tx', 'jokes', 'journal', 'saved', 'sos', 'focusLog'];
+const ARRAY_KEYS = ['tx', 'jokes', 'journal', 'saved', 'sos', 'focusLog', 'workouts'];
 const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
 
 /** Upgrade any older (or partially corrupt) document to the current schema. Never throws. */

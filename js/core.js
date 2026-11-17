@@ -150,7 +150,7 @@ export function scores(k) {
 export const rangeScores = (keys) => keys.map(scores).filter(Boolean);
 
 // ---------- XP & levels ----------
-export const XP = { checkin: 50, glass: 5, waterBonus: 10, hygItem: 3, priority: 10, exercise: 20, deepWork: 15, clean: 15, eq: 15, funny: 10, claim: 10, joke: 10, journal: 10, urge: 20, badge: 50, review: 100, focus: 5, quiz: 5 };
+export const XP = { checkin: 50, glass: 5, waterBonus: 10, hygItem: 3, priority: 10, exercise: 20, deepWork: 15, clean: 15, eq: 15, funny: 10, claim: 10, joke: 10, journal: 10, urge: 20, badge: 50, review: 100, focus: 5, quiz: 5, workout: 25 };
 export function computeXP() {
   return cached('xp', () => {
     let xp = 0;
@@ -178,6 +178,7 @@ export function computeXP() {
     xp += S.focusLog.length * XP.focus;
     xp += sum(Object.values(S.chests).map((c) => c.xp || 0));
     xp += Object.values(S.quiz).filter(Boolean).length * XP.quiz;
+    xp += (S.workouts || []).filter((w) => !w.partial).length * XP.workout;
     return xp;
   });
 }
@@ -220,6 +221,8 @@ export const BADGES = [
   { id: 'social30', ic: '🕊️', n: 'Unhooked', d: '30 days social-media free', test: () => daysTracked() >= 30 && habitStreak('social').current >= 30 },
   { id: 'gamble30', ic: '🛡️', n: 'House Never Wins', d: '30 days gambling-free', test: () => daysTracked() >= 30 && habitStreak('gambling').current >= 30 },
   { id: 'clean14', ic: '🥗', n: 'Clean Fuel', d: '14 days without fast food or soda', test: () => daysTracked() >= 14 && Math.min(habitStreak('fastfood').current, habitStreak('soda').current) >= 14 },
+  { id: 'fit1', ic: '🏋️', n: 'First Sweat', d: 'Finish your first home workout', test: () => (S.workouts || []).some((w) => !w.partial) },
+  { id: 'fit10', ic: '🥇', n: 'Home Athlete', d: 'Finish 10 home workouts', test: () => (S.workouts || []).filter((w) => !w.partial).length >= 10 },
   { id: 'focus10', ic: '⏱️', n: 'Deep Worker', d: 'Complete 10 focus sessions', test: () => S.focusLog.length >= 10 },
   { id: 'review4', ic: '🗓️', n: 'Self-Aware', d: 'Do 4 weekly reviews', test: () => Object.keys(S.reviews).length >= 4 },
   { id: 'joke10', ic: '🎤', n: 'Open Mic', d: 'Write 10 jokes', test: () => S.jokes.length >= 10 },

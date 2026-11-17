@@ -3,7 +3,7 @@
 import C from './content.js';
 import { S, save, day, snapshotDaily, backupInfo, replaceState, resetState, DEFAULTS } from './store.js';
 import {
-  $, $$, esc, pad, parseKey, addDays, today, clamp, avg, sum, uid, hour, lastN, fmtDate, round1, daily, weekStart,
+  minutesOf, $, $$, esc, pad, parseKey, addDays, today, clamp, avg, sum, uid, hour, lastN, fmtDate, round1, daily, weekStart,
 } from './util.js';
 import {
   DOMAINS, HABITS, CATS_OUT, CATS_IN, CATS_SAVE, BAD_CATS, catInfo, cur, goals, sleepHours, hygRatio, txOn, spentOn,
@@ -13,9 +13,11 @@ import {
 } from './core.js';
 import { ring, lineChart, barChart, heatmap } from './charts.js';
 import { icon, ico, iconize } from './icons.js';
+import { LEVELS, GROUPS, EXERCISES, WORKOUTS, WEEK_PLAN, exercise, workout, workoutSteps, workoutMinutes, suggestWorkout, levelInfo } from './fitness.js';
+import { dayPlan } from './plan.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '2.5.0';
+const APP_VERSION = '2.6.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
@@ -74,7 +76,7 @@ function persist() {
 }
 
 // ---------- Rendering ----------
-const UI = { tab: 'today', range: 30, domain: 'overall', grow: 'comedy', hyg: null, mType: 'out', mCat: 'food' };
+const UI = { tab: 'today', range: 30, domain: 'overall', grow: 'fitness', hyg: null, fitGroup: 'All', mType: 'out', mCat: 'food' };
 const TABS = [['today', 'sun', 'Today'], ['money', 'wallet', 'Money'], ['feed', 'sparkles', 'Feed'], ['stats', 'chart', 'Stats'], ['grow', 'sprout', 'Grow']];
 const firstName = () => (S.profile?.name || 'friend').split(' ')[0];
 
@@ -108,7 +110,7 @@ function render({ full = false } = {}) {
   }
 }
 // ---------- Routing: the URL remembers where you are (refresh, back button) ----------
-const GROW_TABS = ['comedy', 'eq', 'glow', 'freedom', 'journal', 'badges'];
+const GROW_TABS = ['fitness', 'comedy', 'eq', 'glow', 'freedom', 'journal', 'badges'];
 function routeFromHash() {
   const [tab, sub] = location.hash.replace(/^#\/?/, '').split('/');
   const r = { tab: TABS.some((t) => t[0] === tab) ? tab : 'today' };
@@ -207,6 +209,28 @@ const secH = (ic, title, right = '', id = '') => `<div class="sec"${id ? ` id="$
 const MILESTONES = [3, 7, 14, 30, 60, 90, 180, 365];
 const nextMilestone = (n) => MILESTONES.find((m) => m > n) || n + 100;
 
+const fmtClock = (m) => new Date(2000, 0, 1, Math.floor(m / 60), m % 60).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+/** Time-of-day plan built from your wake/bed times (see plan.js). */
+function planHTML() {
+  const p = dayPlan();
+  const cur = p.blocks[p.current];
+  if (!cur) return '';
+  const nxt = p.blocks[p.current + 1] || p.blocks[0];
+  const item = (x) => `<button class="plan-item ${x.done ? 'done' : ''}" data-act="${x.act}" data-k="${x.id}"${x.w ? ` data-w="${x.w}"` : ''}${x.tab ? ` data-tab="${x.tab}"` : ''}>
+      <span class="q-ic" aria-hidden="true">${x.done ? '✅' : x.ic}</span>
+      <span class="grow"><span class="pi-t">${esc(x.t)}</span>${x.s && !x.done ? `<span class="pi-s">${esc(x.s)}</span>` : ''}</span>
+      <span class="pi-go" aria-hidden="true">${x.done ? '' : icon(x.act === 'plan-tick' ? 'check' : 'arrowRight', 16)}</span></button>`;
+  const pct = Math.round((cur.doneCount / cur.items.length) * 100);
+  return `${secH('🧭', 'Right now', `<span class="tiny muted">${fmtClock(cur.from)} – ${fmtClock(cur.to)}</span>`)}
+  <section class="card plan-card">
+    <div class="plan-head"><span class="nu-ic plan-ic">${ico(cur.ic, 24)}</span><div class="grow"><strong>${cur.title}</strong><div class="tiny muted">${cur.doneCount} of ${cur.items.length} done</div></div><span class="pill gold">${pct}%</span></div>
+    <div class="xpbar thin" style="margin:10px 0 6px"><i style="width:${pct}%"></i></div>
+    ${cur.items.map(item).join('')}
+    <details class="plan-day"><summary>${icon('calendar', 15)} Coming up: <strong>${nxt.title}</strong> at ${fmtClock(nxt.from)}<span class="pd-more">Full day</span></summary>
+      <ol class="plan-tl">${p.blocks.map((b) => `<li class="${b.current ? 'now' : b.past ? 'past' : ''}"><span class="pt-time">${fmtClock(b.from)}</span><span class="grow"><strong>${b.title}</strong><span class="tiny muted"> · ${b.doneCount}/${b.items.length}</span><span class="pt-items tiny muted">${b.items.map((x) => esc(x.t)).join(' · ')}</span></span></li>`).join('')}</ol>
+    </details>
+  </section>`;
+}
 function viewToday() {
   const k = today(), d = S.days[k] || {}, st = S.settings, y = addDays(k, -1);
   const xp = computeXP(), lvl = levelOf(xp), lo = xpFor(lvl), hi = xpFor(lvl + 1);
@@ -259,6 +283,8 @@ function viewToday() {
   ${chestReady() ? `<button class="card chest-card" data-act="chest"><span class="chest-ic" aria-hidden="true">🎁</span><span class="grow" style="text-align:left"><strong>Daily reward unlocked!</strong><br><span class="small muted">You completed both check-ins. Open your chest.</span></span><span class="pill gold">Open</span></button>` : ''}
   ${missedYesterday ? `<button class="card banner-btn" data-act="open-evening-y"><span class="ico" aria-hidden="true">🕰️</span> <span><strong>Yesterday's evening check-in is missing.</strong> <span class="small muted">Log it now so your stats stay true.</span></span></button>` : ''}
   ${reviewDue() ? `<button class="card banner-btn" data-act="open-weekly"><span class="ico" aria-hidden="true">🗓️</span> <span><strong>Your weekly review is ready.</strong> <span class="small muted">See your week, update goals, pick one thing to improve · +100 XP</span></span></button>` : ''}
+
+  ${planHTML()}
 
   <nav class="quick" aria-label="Quick actions">
     <button class="qa" data-act="water+"><span class="qa-ic" style="--qa:var(--blue)">${icon('droplet', 20)}</span>Water</button>
@@ -697,6 +723,7 @@ function viewProjection() {
 
 // ----- Grow -----
 const GROW_META = {
+  fitness: { ic: 'dumbbell', n: 'Fitness', tint: 'var(--amber)', sub: 'Build your physique at home — no gym needed' },
   comedy: { ic: 'mic', n: 'Comedy', tint: 'var(--pink)', sub: 'Become the funniest version of you' },
   eq: { ic: 'heart', n: 'EQ', tint: 'var(--violet)', sub: 'Understand feelings — yours and theirs' },
   glow: { ic: 'sparkle', n: 'Glow-up', tint: 'var(--teal)', sub: 'Look sharp, feel sharp' },
@@ -714,17 +741,52 @@ function viewGrow() {
   const meta = GROW_META[UI.grow] || GROW_META.comedy;
   const refl = Object.values(S.days).filter((d) => d.evening?.eq?.trim()).length;
   const got = BADGES.filter((b) => S.badges[b.id]).length;
-  const body = { comedy: growComedy, eq: growEQ, glow: growGlow, freedom: growFreedom, journal: growJournal, badges: growBadges }[UI.grow]();
+  const body = { fitness: growFitness, comedy: growComedy, eq: growEQ, glow: growGlow, freedom: growFreedom, journal: growJournal, badges: growBadges }[UI.grow]();
   const stat = (ic, v, l, tab) => `<button class="gstat" data-act="growtab" data-v="${tab}"><span class="hstat-ic">${icon(ic, 16)}</span><strong>${v}</strong><span>${l}</span></button>`;
   return `<header class="page-head"><h1>Grow</h1><p class="muted small">${esc(meta.sub)}</p></header>
   <div class="grow-stats">
     ${stat('mic', S.jokes.length, 'jokes', 'comedy')}
     ${stat('heart', refl, 'reflections', 'eq')}
-    ${stat('bookOpen', S.journal.length, 'entries', 'journal')}
+    ${stat('dumbbell', S.workouts.filter((w) => !w.partial).length, 'workouts', 'fitness')}
     ${stat('trophy', `${got}/${BADGES.length}`, 'badges', 'badges')}
   </div>
   <div class="grow-tabs" role="tablist" aria-label="Grow sections">${GROW_TABS.map((id) => { const m = GROW_META[id]; return `<button role="tab" aria-selected="${UI.grow === id}" class="gt ${UI.grow === id ? 'on' : ''}" style="--tint:${m.tint}" data-act="growtab" data-v="${id}">${icon(m.ic, 16)}${m.n}</button>`; }).join('')}</div>
   <div class="grow-body">${body}</div>`;
+}
+function growFitness() {
+  const st = S.settings, lvl = st.fitLevel || 'beginner', k = today(), li = LEVELS.findIndex((l) => l.id === lvl);
+  const week = lastN(7);
+  const done7 = S.workouts.filter((x) => week.includes(x.date) && !x.partial);
+  const mins7 = sum(week.map((x) => S.days[x]?.exercise || 0));
+  const now = new Date();
+  const doneToday = S.workouts.filter((x) => x.date === k && !x.partial).map((x) => x.id);
+  const sug = suggestWorkout({ weekday: now.getDay(), minutesNow: now.getHours() * 60 + now.getMinutes(), wake: minutesOf(st.wakeTime), bed: minutesOf(st.bedTime), doneIds: doneToday });
+  const grp = UI.fitGroup || 'All';
+  const dots = week.map((x) => {
+    const ok = S.workouts.some((w) => w.date === x && !w.partial) || (S.days[x]?.exercise || 0) >= 20;
+    return `<div class="wk-dot ${ok ? 'on' : ''} ${x === k ? 'today' : ''}"><i>${ok ? icon('check', 13) : ''}</i><span>${fmtDate(x, { weekday: 'narrow' })}</span></div>`;
+  }).join('');
+  const lvlSeg = `<div class="seg" role="radiogroup" aria-label="Fitness level">${LEVELS.map((l) => `<button role="radio" aria-checked="${lvl === l.id}" class="${lvl === l.id ? 'on' : ''}" data-act="fit-level" data-v="${l.id}">${l.n}</button>`).join('')}</div>`;
+  const routineCard = (w) => `<button class="card routine" data-act="start-workout" data-w="${w.id}"><span class="r-emoji" aria-hidden="true">${w.ic}</span><strong>${w.n}</strong><span class="tiny muted">${workoutMinutes(w, lvl)} min · ${w.focus}</span>${doneToday.includes(w.id) ? `<span class="routine-done">${icon('check', 12)} done today</span>` : ''}</button>`;
+  const exList = EXERCISES.filter((e) => grp === 'All' || e.g === grp);
+  return growHero('var(--amber)', `${icon('dumbbell', 14)} This week`, `${done7.length} workout${done7.length === 1 ? '' : 's'} · ${mins7} min`, 'Aim for 3–5 workouts a week. No equipment needed.',
+      `<div class="wk-dots">${dots}</div><div class="lbl" style="margin-top:14px">Your level</div>${lvlSeg}`) + `
+  ${sug ? `<section class="card today-wo">
+      <div class="g-kick" style="--tint:var(--amber)">${icon('timer', 14)} Recommended right now</div>
+      <div class="row" style="margin-top:10px"><span class="r-emoji big" aria-hidden="true">${sug.ic}</span><div class="grow"><h2>${sug.n}</h2><div class="small muted">${workoutMinutes(sug, lvl)} min${sug.rounds > 1 ? ` · ${sug.rounds} rounds` : ''} · ${sug.focus}</div></div></div>
+      <p class="small" style="margin-top:10px">${esc(sug.desc)}</p>
+      <div class="chips" style="margin-top:10px">${sug.moves.map((m) => `<span class="chip sm">${esc(exercise(m).n)}</span>`).join('')}</div>
+      <button class="btn primary block" style="margin-top:14px" data-act="start-workout" data-w="${sug.id}">${icon('play', 18)} Start guided workout</button></section>`
+    : `<div class="card soft" style="--tint:var(--good)"><strong>${icon('checkCircle', 16)} Training done for today.</strong><p class="small muted" style="margin-top:4px">Recovery is where muscles grow. Sleep well tonight.</p></div>`}
+  ${secH('🏋️', 'Routines', `<span class="pill">${WORKOUTS.length}</span>`)}
+  <div class="grid routines">${WORKOUTS.map(routineCard).join('')}</div>
+  ${secH('📚', 'Exercise library', `<span class="pill">${exList.length}</span>`)}
+  <div class="chips fit-groups">${['All', ...GROUPS].map((g) => `<button class="chip ${grp === g ? 'on' : ''}" data-act="fit-group" data-v="${esc(g)}">${esc(g)}</button>`).join('')}</div>
+  <div class="card acc" style="margin-top:10px">${exList.map((e) => `<details><summary><span class="grow">${esc(e.n)}<span class="ex-g">${esc(e.g)}</span></span><span class="pill gold">${esc(e.reps[li])}</span></summary><ol class="how">${e.how.map((x) => `<li>${esc(x)}</li>`).join('')}</ol><p class="small tip">${icon('bulb', 14)} ${esc(e.tip)}</p></details>`).join('')}</div>
+  ${secH('📜', 'Recent workouts', S.workouts.length ? `<span class="pill">${S.workouts.length}</span>` : '')}
+  <div class="card">${S.workouts.length ? [...S.workouts].reverse().slice(0, 8).map((x) => { const w = workout(x.id); return `<div class="tx"><div class="cat" aria-hidden="true">${w?.ic || '💪'}</div><div class="grow"><div>${esc(w?.n || 'Workout')}${x.partial ? ' <span class="pill">partial</span>' : ''}</div><div class="tiny muted">${fmtDate(x.date)} · ${x.mins} min · ${levelInfo(x.level).n}</div></div></div>`; }).join('')
+    : `<div class="empty"><div class="empty-ic">${icon('dumbbell', 30)}</div>Your finished workouts will show up here. Start with the Morning wake-up — it only takes a few minutes.</div>`}</div>
+  <div class="card soft small muted" style="--tint:var(--amber)">${icon('heart', 16)} Warm up, move with control and stop if anything hurts sharply. If you have a health condition, check with a doctor before starting a new routine.</div>`;
 }
 function growComedy() {
   const c = daily(C.comedy), n = S.jokes.length;
@@ -1069,6 +1131,84 @@ setInterval(() => {
   if (timerLeftMs() <= 0) finishFocus(true);
 }, 1000);
 
+// ---------- Guided home workout (interval timer with voice cues) ----------
+let wp = null, wpTimer = null;
+function speak(text) {
+  if (!wp?.voice || !text || !('speechSynthesis' in window)) return;
+  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.rate = 1.05; speechSynthesis.speak(u); } catch { /* unsupported */ }
+}
+const wpLeft = () => (wp.paused ? wp.left : Math.max(0, wp.endsAt - Date.now()));
+function openWorkout(id) {
+  const w = workout(id); if (!w) return;
+  const level = S.settings.fitLevel || 'beginner';
+  const steps = workoutSteps(w, level);
+  wp = { w, level, steps, i: 0, endsAt: Date.now() + steps[0].secs * 1000, paused: false, left: 0, start: Date.now(), voice: S.settings.fitVoice !== false, done: null, cue: false };
+  openModal('<div id="wp"></div>', { label: `${w.n} workout`, onClose: () => { clearInterval(wpTimer); try { speechSynthesis.cancel(); } catch { /* */ } wp = null; render(); } });
+  renderWP();
+  speak(`${w.n}. Get ready: ${exercise(steps[0].ex).n}`);
+  clearInterval(wpTimer); wpTimer = setInterval(tickWP, 250);
+}
+function renderWP() {
+  const host = $('#wp'); if (!host || !wp) return;
+  if (wp.done) {
+    host.innerHTML = `<div class="center wp-done"><div class="empty-ic" style="width:84px;height:84px">${icon('trophy', 44)}</div>
+      <h2>${wp.done.full ? 'Workout complete!' : 'Workout saved'}</h2>
+      <p class="muted">${esc(wp.w.n)} · ${wp.done.mins} min added to today${wp.done.full ? ' · +25 XP' : ''}</p>
+      <p class="small" style="margin:14px 0">${wp.done.full ? 'Drink a glass of water and stretch for a minute. Your future self says thanks.' : 'Every minute counts. Finish the full routine next time for bonus XP.'}</p>
+      <button class="btn primary block" data-act="modal-close">Done</button></div>`;
+    return;
+  }
+  const st = wp.steps[wp.i], ex = exercise(st.ex), L = levelInfo(wp.level);
+  const works = wp.steps.filter((x) => x.phase === 'work').length;
+  const workIdx = wp.steps.slice(0, wp.i + 1).filter((x) => x.phase === 'work').length;
+  const next = wp.steps.slice(wp.i + 1).find((x) => x.phase === 'work');
+  const phase = { prep: 'Get ready', work: 'Go!', rest: 'Rest' }[st.phase];
+  host.innerHTML = `<div class="row between">
+      <div><div class="tiny muted">${esc(wp.w.n)} · ${L.n}</div><strong>Round ${st.round}/${wp.w.rounds} · move ${Math.max(workIdx, 1)}/${works}</strong></div>
+      <div class="row"><button class="icon-btn" data-act="wp-voice" aria-label="${wp.voice ? 'Mute voice cues' : 'Turn on voice cues'}">${icon(wp.voice ? 'bell' : 'bellOff', 18)}</button><button class="icon-btn" data-act="wp-end" aria-label="End workout">${icon('x', 18)}</button></div></div>
+    <div class="prog" style="margin:12px 0 6px"><i style="width:${(wp.i / wp.steps.length) * 100}%"></i></div>
+    <div class="wp-phase ${st.phase}">${phase}</div>
+    <div class="wp-name">${st.phase === 'rest' ? '<span class="muted">Next:</span> ' : ''}${esc(ex.n)}</div>
+    <div class="focus-ring wp-ring ${st.phase}" id="wp-ring">${ring(100, 'var(--wp-c)', 200, 12)}<div class="focus-time" id="wp-time" aria-live="off">${Math.ceil(wpLeft() / 1000)}</div></div>
+    <ol class="how small">${ex.how.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>
+    <p class="tiny muted tip">${icon('bulb', 12)} ${esc(ex.tip)}</p>
+    ${next && st.phase === 'work' ? `<div class="wp-next tiny">Up next: <strong>${esc(exercise(next.ex).n)}</strong></div>` : ''}
+    <div class="grid" style="margin-top:14px"><button class="btn" data-act="wp-pause">${icon(wp.paused ? 'play' : 'pause', 18)} ${wp.paused ? 'Resume' : 'Pause'}</button><button class="btn primary" data-act="wp-skip">${icon('skip', 18)} Skip</button></div>`;
+  updateWP();
+}
+function updateWP() {
+  const st = wp.steps[wp.i], left = wpLeft();
+  const t = $('#wp-time'); if (t) t.textContent = Math.ceil(left / 1000);
+  const arc = $('#wp-ring .ring-arc');
+  if (arc) { const c = +arc.getAttribute('stroke-dasharray'); arc.setAttribute('stroke-dashoffset', c * (1 - left / (st.secs * 1000))); }
+}
+function tickWP() {
+  if (!wp || wp.done || wp.paused) return;
+  const left = wpLeft();
+  updateWP();
+  if (left <= 3000 && !wp.cue) { wp.cue = true; buzz(15); }
+  if (left <= 0) advanceWP();
+}
+function advanceWP() {
+  wp.i++; wp.cue = false;
+  if (wp.i >= wp.steps.length) { finishWP(true); return; }
+  const st = wp.steps[wp.i];
+  wp.endsAt = Date.now() + st.secs * 1000; wp.paused = false;
+  buzz([40, 30, 40]);
+  renderWP();
+  speak(st.phase === 'rest' ? `Rest. Next up: ${exercise(st.ex).n}` : exercise(st.ex).n);
+}
+function finishWP(full) {
+  const mins = Math.max(1, Math.round((Date.now() - wp.start) / 60000));
+  S.workouts.push({ id: wp.w.id, date: today(), mins, level: wp.level, ...(full ? {} : { partial: true }) });
+  const d = day(); d.exercise = (d.exercise || 0) + mins;
+  persist();
+  wp.done = { mins, full };
+  clearInterval(wpTimer);
+  if (full) { speak('Workout complete. Great job!'); burst(); buzz([60, 40, 60, 40, 120]); }
+  renderWP();
+}
+
 // ---------- Urge surfing ----------
 let sosTimer = null, sosType = null;
 function openSOS() { sosType = null; openModal('<div id="sos-body"></div>', { label: 'Urge help', onClose: () => clearInterval(sosTimer) }); renderSOS(0); }
@@ -1227,6 +1367,27 @@ const A = {
   settings: () => openSettings(),
   'set-theme': (el) => { S.settings.theme = el.dataset.v; save(); applyTheme(); markRadio('set-theme', el); },
   'set-accent': (el) => { S.settings.accent = el.dataset.v; save(); applyTheme(); markRadio('set-accent', el); buzz(); },
+  'start-workout': (el) => openWorkout(el.dataset.w),
+  'wp-pause': () => {
+    if (!wp) return;
+    if (wp.paused) { wp.endsAt = Date.now() + wp.left; wp.paused = false; } else { wp.left = wpLeft(); wp.paused = true; try { speechSynthesis.cancel(); } catch { /* */ } }
+    renderWP();
+  },
+  'wp-skip': () => { if (wp && !wp.done) advanceWP(); },
+  'wp-end': () => {
+    if (!wp) return;
+    if (wp.done || Date.now() - wp.start < 120000) { closeModal(); return; }
+    if (confirm('End the workout and log the minutes you did?')) finishWP(false);
+  },
+  'wp-voice': () => { wp.voice = !wp.voice; S.settings.fitVoice = wp.voice; save(); if (!wp.voice) { try { speechSynthesis.cancel(); } catch { /* */ } } renderWP(); },
+  'fit-level': (el) => { S.settings.fitLevel = el.dataset.v; save(); render(); },
+  'fit-group': (el) => { UI.fitGroup = el.dataset.v; render(); },
+  'plan-tick': (el) => {
+    const d = day(); d.plan ||= {};
+    const k = el.dataset.k; d.plan[k] = !d.plan[k];
+    persist(); if (d.plan[k]) addCelebrate(el, 'Nice — ticked off ✓'); render();
+  },
+  'hyg-am': () => { UI.hyg = 'hygAM'; render(); $('#hyg-sec')?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' }); },
   'hyg-pm': () => { UI.hyg = 'hygPM'; render(); $('#hyg-sec')?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' }); },
   'modal-close': () => closeModal(),
   sos: () => openSOS(),
@@ -1504,6 +1665,15 @@ window.addEventListener('unhandledrejection', (e) => onErr(e.reason));
 
 // Debug/testing hook (harmless in production).
 window.__light = { get state() { return S; }, scores, computeXP, render, version: APP_VERSION };
+
+// Keep the "Right now" plan current: re-render Today when the time block changes.
+let lastBlock = null;
+setInterval(() => {
+  if (!S.profile || UI.tab !== 'today' || modalOpen() || document.visibilityState !== 'visible') return;
+  const id = dayPlan().blocks.find((b) => b.current)?.id;
+  if (lastBlock && id !== lastBlock) render();
+  lastBlock = id;
+}, 60000);
 
 // Back/forward buttons and manual URL edits move between pages.
 const onRoute = () => {

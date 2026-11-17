@@ -37,6 +37,8 @@ Data lives in the browser on each device. Your laptop and phone do **not** sync 
 | **Money** | Quick expense/income logging, monthly budget ring, safe-to-spend per day, category breakdown, 14-day chart, cost of fast food/soda/gambling per year |
 | **Feed** | TikTok-style full-screen reels with **For You / Saved** tabs, topic filters (Laugh, Wisdom, Learn, Mind, Glow-up, Money), a "•••" menu (More like this / Not interested / Copy) and vivid animated color themes per topic: swipe up (or arrow keys), double-tap to like, save, reflect, share. A "For You" algorithm learns from likes, saves and how long you stay on each card. It remembers what you have seen (across sessions), so nothing repeats until a whole category is exhausted — 550+ cards in total. Card types: wisdom, did-you-know science facts, word of the day, quizzes, this-or-that polls, jokes with punchline reveal, EQ & comedy lessons, glow-up tips, breathing resets, real-life challenges, and cards about your own progress |
 | **Stats** | Life Score + 6 areas (Health & Sleep, Physical, Mental, Career, Money, EQ & Joy) with trends, charts, **1-year "Future You" projection**, and "Know yourself" pattern insights on your bad habits |
+| **Today → Right now** | A plan for the current part of your day (built from your wake/bed times): wake-up, deep work, midday, afternoon, evening, wind-down, sleep — each with suggestions that tick themselves off from your data, plus a full-day timeline |
+| **Grow → Fitness** | 31 no-equipment home exercises (how-to, form tips, reps per level), 8 routines, a weekly plan, time-aware "recommended right now", and a guided interval player with voice cues |
 | **Grow** | Comedy gym + joke notebook, EQ lab, glow-up do/avoid guide, Freedom center (streaks, urge log, gambling help), journal, badges |
 | **Focus timer** | 15/25/50/90-min sessions that log focused minutes automatically, keep running if you close the app, and notify you when done |
 | **Weekly review** | Every Fri–Sun: your week in numbers, best day, wins, goal progress sliders, one habit to improve and a commitment shown all next week |
@@ -61,7 +63,7 @@ Settings → **Add reminders to my calendar** downloads a calendar file with dai
 ## Development
 
 ```bash
-npm test        # 42 unit tests for the core logic (Node 20+, no dependencies)
+npm test        # 49 unit tests for the core logic (Node 20+, no dependencies)
 npm start       # serve on http://localhost:5173
 ```
 
@@ -77,6 +79,8 @@ When you change any file, bump `VERSION` in `sw.js` so installed apps pick up th
 - `js/store.js`: saving, schema migrations, daily snapshot
 - `js/feed.js`: "For You" feed algorithm (pure, unit-tested)
 - `js/icons.js`: the app's line-icon set (open `tools/icon-sheet.html` to preview them all)
+- `js/fitness.js`: exercises, routines, interval logic (unit-tested)
+- `js/plan.js`: time-of-day plan for Today (unit-tested)
 - `js/charts.js`: tiny SVG charts (rings, lines, bars, heatmap)
 - `js/util.js`: date & text helpers
 - `js/content.js` + `js/content-extra.js`: wisdom, lessons, jokes, quizzes, facts, words, tips (edit freely to add your own!)
