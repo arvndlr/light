@@ -15,9 +15,10 @@ import { ring, lineChart, barChart, heatmap } from './charts.js';
 import { icon, ico, iconize } from './icons.js';
 import { LEVELS, GROUPS, EXERCISES, WORKOUTS, WEEK_PLAN, exercise, workout, workoutSteps, workoutMinutes, suggestWorkout, levelInfo } from './fitness.js';
 import { dayPlan } from './plan.js';
+import { figureSVG, hasFigure, poseCount, animateFigures } from './figures.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '2.6.0';
+const APP_VERSION = '2.7.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
@@ -100,6 +101,7 @@ function render({ full = false } = {}) {
     if (UI.tab === 'feed' && !full && $('#feed-stage')) return;
     view.innerHTML = iconize(({ today: viewToday, money: viewMoney, feed: viewFeed, stats: viewStats, grow: viewGrow })[UI.tab]());
     if (UI.tab === 'feed') feedInit();
+    animateFigures();
   } catch (err) {
     // Error boundary: never leave the user with a blank screen, and never touch their data.
     console.error(err);
@@ -782,7 +784,7 @@ function growFitness() {
   <div class="grid routines">${WORKOUTS.map(routineCard).join('')}</div>
   ${secH('📚', 'Exercise library', `<span class="pill">${exList.length}</span>`)}
   <div class="chips fit-groups">${['All', ...GROUPS].map((g) => `<button class="chip ${grp === g ? 'on' : ''}" data-act="fit-group" data-v="${esc(g)}">${esc(g)}</button>`).join('')}</div>
-  <div class="card acc" style="margin-top:10px">${exList.map((e) => `<details><summary><span class="grow">${esc(e.n)}<span class="ex-g">${esc(e.g)}</span></span><span class="pill gold">${esc(e.reps[li])}</span></summary><ol class="how">${e.how.map((x) => `<li>${esc(x)}</li>`).join('')}</ol><p class="small tip">${icon('bulb', 14)} ${esc(e.tip)}</p></details>`).join('')}</div>
+  <div class="card acc" style="margin-top:10px">${exList.map((e) => `<details><summary><span class="grow">${esc(e.n)}<span class="ex-g">${esc(e.g)}</span></span><span class="pill gold">${esc(e.reps[li])}</span></summary>${hasFigure(e.id) ? `<div class="ex-fig">${figureDemo(e.id, e.n)}</div>` : ''}<ol class="how">${e.how.map((x) => `<li>${esc(x)}</li>`).join('')}</ol><p class="small tip">${icon('bulb', 14)} ${esc(e.tip)}</p></details>`).join('')}</div>
   ${secH('📜', 'Recent workouts', S.workouts.length ? `<span class="pill">${S.workouts.length}</span>` : '')}
   <div class="card">${S.workouts.length ? [...S.workouts].reverse().slice(0, 8).map((x) => { const w = workout(x.id); return `<div class="tx"><div class="cat" aria-hidden="true">${w?.ic || '💪'}</div><div class="grow"><div>${esc(w?.n || 'Workout')}${x.partial ? ' <span class="pill">partial</span>' : ''}</div><div class="tiny muted">${fmtDate(x.date)} · ${x.mins} min · ${levelInfo(x.level).n}</div></div></div>`; }).join('')
     : `<div class="empty"><div class="empty-ic">${icon('dumbbell', 30)}</div>Your finished workouts will show up here. Start with the Morning wake-up — it only takes a few minutes.</div>`}</div>
@@ -1131,6 +1133,12 @@ setInterval(() => {
   if (timerLeftMs() <= 0) finishFocus(true);
 }, 1000);
 
+/** Exercise demo: animated, or (with "reduce motion" on) the key poses side by side. */
+function figureDemo(id, name) {
+  const label = `${esc(name)} demonstration`;
+  if (!reducedMotion()) return figureSVG(id, { label });
+  return `<div class="fig-steps" role="img" aria-label="${label}">${Array.from({ length: poseCount(id) }, (_, i) => figureSVG(id, { still: true, pose: i })).join(`<span class="fig-arrow" aria-hidden="true">${icon('arrowRight', 16)}</span>`)}</div>`;
+}
 // ---------- Guided home workout (interval timer with voice cues) ----------
 let wp = null, wpTimer = null;
 function speak(text) {
@@ -1169,12 +1177,13 @@ function renderWP() {
     <div class="prog" style="margin:12px 0 6px"><i style="width:${(wp.i / wp.steps.length) * 100}%"></i></div>
     <div class="wp-phase ${st.phase}">${phase}</div>
     <div class="wp-name">${st.phase === 'rest' ? '<span class="muted">Next:</span> ' : ''}${esc(ex.n)}</div>
-    <div class="focus-ring wp-ring ${st.phase}" id="wp-ring">${ring(100, 'var(--wp-c)', 200, 12)}<div class="focus-time" id="wp-time" aria-live="off">${Math.ceil(wpLeft() / 1000)}</div></div>
+    <div class="wp-stage ${hasFigure(st.ex) ? 'has-fig' : ''}">${hasFigure(st.ex) ? `<div class="wp-fig">${figureDemo(st.ex, ex.n)}</div>` : ''}<div class="focus-ring wp-ring ${st.phase}" id="wp-ring">${ring(100, 'var(--wp-c)', 200, 12)}<div class="focus-time" id="wp-time" aria-live="off">${Math.ceil(wpLeft() / 1000)}</div></div></div>
     <ol class="how small">${ex.how.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>
     <p class="tiny muted tip">${icon('bulb', 12)} ${esc(ex.tip)}</p>
     ${next && st.phase === 'work' ? `<div class="wp-next tiny">Up next: <strong>${esc(exercise(next.ex).n)}</strong></div>` : ''}
     <div class="grid" style="margin-top:14px"><button class="btn" data-act="wp-pause">${icon(wp.paused ? 'play' : 'pause', 18)} ${wp.paused ? 'Resume' : 'Pause'}</button><button class="btn primary" data-act="wp-skip">${icon('skip', 18)} Skip</button></div>`;
   updateWP();
+  animateFigures();
 }
 function updateWP() {
   const st = wp.steps[wp.i], left = wpLeft();

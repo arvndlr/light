@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Light figures</title>
+  <style>
+    body { margin: 0; padding: 20px; font: 13px system-ui, sans-serif; background: #080b16; color: #f3f5ff; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 14px; }
+    .cell { padding: 10px; border-radius: 16px; background: #10152a; }
+    .cell h3 { margin: 0 0 6px; font-size: 14px; }
+    .fig { width: 100%; height: auto; display: block; color: #ffb443; }
+    .fig polyline, .fig line { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .fig-ground { stroke: rgba(255, 255, 255, .15); stroke-width: 1.5; }
+    .fig-body { stroke: currentColor; stroke-width: 6; }
+    .fig-limb { stroke: currentColor; stroke-width: 4.5; }
+    .fig-far { stroke: currentColor; stroke-width: 4.5; opacity: .38; }
+    .fig-head { fill: currentColor; }
+  </style>
+</head>
+<body>
+  <div class="grid" id="g"></div>
+  <script type="module">
+    import { FIGURES, figureSVG } from '../js/figures.js';
+    document.getElementById('g').innerHTML = Object.keys(FIGURES).map((id) => `<div class="cell"><h3>${id}</h3>${figureSVG(id)}<div style="display:flex;gap:8px">${FIGURES[id].poses.map((_, i) => `<div style="flex:1">${figureSVG(id, { still: true, pose: i })}</div>`).join('')}</div></div>`).join('');
+  </script>
+</body>
+</html>

@@ -63,7 +63,7 @@ Settings → **Add reminders to my calendar** downloads a calendar file with dai
 ## Development
 
 ```bash
-npm test        # 49 unit tests for the core logic (Node 20+, no dependencies)
+npm test        # 54 unit tests for the core logic (Node 20+, no dependencies)
 npm start       # serve on http://localhost:5173
 ```
 
@@ -81,6 +81,7 @@ When you change any file, bump `VERSION` in `sw.js` so installed apps pick up th
 - `js/icons.js`: the app's line-icon set (open `tools/icon-sheet.html` to preview them all)
 - `js/fitness.js`: exercises, routines, interval logic (unit-tested)
 - `js/plan.js`: time-of-day plan for Today (unit-tested)
+- `js/figures.js`: animated exercise demo figures (pose + IK engine; preview all at `tools/figure-sheet.html`)
 - `js/charts.js`: tiny SVG charts (rings, lines, bars, heatmap)
 - `js/util.js`: date & text helpers
 - `js/content.js` + `js/content-extra.js`: wisdom, lessons, jokes, quizzes, facts, words, tips (edit freely to add your own!)

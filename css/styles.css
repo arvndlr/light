@@ -931,3 +931,23 @@ body.feed-mode #nav { --glass: rgba(6, 8, 16, .55); --line-strong: rgba(255, 255
 #wp .btn .i, #wp .tip .i { display: inline-block; }
 .wp-done h2 { margin-top: 6px; }
 .wp-done .empty-ic { color: var(--amber); background: color-mix(in srgb, var(--amber) 15%, transparent); }
+
+/* ---------- Exercise demo figures (v2.7) ---------- */
+.fig { display: block; width: 100%; height: auto; color: var(--amber); }
+.fig polyline, .fig line { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.fig-ground { stroke: var(--line-strong); stroke-width: 1.5; }
+.fig-body { stroke: currentColor; stroke-width: 6; }
+.fig-limb { stroke: currentColor; stroke-width: 4.5; }
+.fig-far { stroke: currentColor; stroke-width: 4.5; opacity: .35; }
+.fig-head { fill: currentColor; }
+.ex-fig { margin: 2px 0 8px; padding: 6px 10px 2px; border-radius: 16px; max-width: 340px;
+  background: radial-gradient(100% 120% at 50% 100%, color-mix(in srgb, var(--amber) 10%, transparent), transparent 70%), var(--surface-2); }
+.wp-stage { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0; }
+.wp-stage .wp-ring { margin: 0; flex: none; }
+.wp-stage.has-fig .wp-fig { flex: 1; max-width: 260px; padding: 6px 8px 2px; border-radius: 18px; background: var(--surface-2); }
+.wp-stage.has-fig .wp-ring { width: 120px; height: 120px; }
+.wp-stage.has-fig .wp-ring svg { width: 120px; height: 120px; }
+.wp-stage.has-fig .focus-time { font-size: 2.2rem; }
+.fig-steps { display: flex; align-items: center; gap: 2px; }
+.fig-steps .fig { flex: 1; min-width: 0; }
+.fig-arrow { flex: none; color: var(--muted); }
