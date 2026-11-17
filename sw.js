@@ -1,7 +1,8 @@
 // Offline cache for Light. Bump VERSION when files change.
-const VERSION = 'light-v1';
+const VERSION = 'light-v2.0.0';
 const FILES = [
-  './', './index.html', './css/styles.css', './js/app.js', './js/content.js',
+  './', './index.html', './css/styles.css', './js/app.js', './js/content.js', './js/core.js', './js/store.js',
+  './js/util.js', './js/charts.js',
   './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png',
 ];
 
@@ -27,5 +28,16 @@ self.addEventListener('fetch', (e) => {
         return res;
       })
       .catch(() => caches.match(e.request).then((r) => r || caches.match('./index.html')))
+  );
+});
+
+// Tapping a notification (e.g. "focus session complete") opens the app.
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const c = list.find((w) => 'focus' in w);
+      return c ? c.focus() : self.clients.openWindow('./');
+    })
   );
 });

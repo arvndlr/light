@@ -1,5 +1,5 @@
 // Light — content library. All text is original or paraphrased from ancient public-domain thinkers.
-window.LIGHT_CONTENT = {
+const CONTENT = {
   wisdom: [
     { q: "You have power over your mind, not outside events. Realize this, and you will find strength.", a: "Marcus Aurelius" },
     { q: "We suffer more often in imagination than in reality.", a: "Seneca" },
@@ -194,3 +194,4 @@ window.LIGHT_CONTENT = {
     other: ["Breathe 10 slow breaths", "Change rooms", "Drink water", "Move your body for 2 minutes", "Write down what you're feeling"],
   },
 };
+export default CONTENT;

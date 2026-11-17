@@ -38,13 +38,42 @@ Data lives in the browser on each device. Your laptop and phone do **not** sync 
 | **Feed** | Endless, healthy scroll: wisdom, EQ lessons, comedy techniques, jokes, glow-up tips, money tips, reflection prompts and real-life challenges (claim XP) |
 | **Stats** | Life Score + 6 areas (Health & Sleep, Physical, Mental, Career, Money, EQ & Joy) with trends, charts, **1-year "Future You" projection**, and "Know yourself" pattern insights on your bad habits |
 | **Grow** | Comedy gym + joke notebook, EQ lab, glow-up do/avoid guide, Freedom center (streaks, urge log, gambling help), journal, badges |
+| **Focus timer** | 15/25/50/90-min sessions that log focused minutes automatically, keep running if you close the app, and notify you when done |
+| **Weekly review** | Every Fri–Sun: your week in numbers, best day, wins, goal progress sliders, one habit to improve and a commitment shown all next week |
+| **Daily reward chest** | Complete both check-ins to open a chest: common, rare or legendary XP + a quote or joke |
 | **Urge? button** | 90-second urge-surfing breathing, your "why", healthy alternatives; log "I beat it" (+XP) or an honest slip |
+
+## Reminders
+
+Settings → **Add reminders to my calendar** downloads a calendar file with daily morning/evening check-in alarms and a Sunday weekly review. Open it on your phone to add them to Google/Apple/Outlook calendar. These are reliable even when the app is closed.
+
+## Safety nets
+
+- **Undo** on every delete.
+- **Automatic daily snapshot**: Settings → *Restore automatic snapshot* rolls back to how your data looked at the start of the day.
+- **Schema migrations**: older saved data is upgraded automatically; corrupt fields are repaired instead of crashing.
+- **Error boundary**: if a screen fails, you see a recovery card (with Export backup) instead of a blank page.
+
+## Development
+
+```bash
+npm test        # 28 unit tests for the core logic (Node 20+, no dependencies)
+npm start       # serve on http://localhost:5173
+```
+
+Tests also run automatically on GitHub for every push (`.github/workflows/test.yml`).
+When you change any file, bump `VERSION` in `sw.js` so installed apps pick up the update (users see a "new version ready" prompt).
 
 ## Files
 
 - `index.html`: app shell
 - `css/styles.css`: styles
-- `js/app.js`: all app logic
+- `js/app.js`: UI — screens, check-in wizards, focus timer, modals, actions
+- `js/core.js`: domain logic — scores, streaks, XP, quests, badges, projection, insights, reminders (pure, unit-tested)
+- `js/store.js`: saving, schema migrations, daily snapshot
+- `js/charts.js`: tiny SVG charts (rings, lines, bars, heatmap)
+- `js/util.js`: date & text helpers
 - `js/content.js`: wisdom, lessons, jokes, tips (edit freely to add your own!)
+- `tests/core.test.js`: unit tests
 - `sw.js`, `manifest.webmanifest`, `icons/`: offline + installable app support
-- `tools/make-icons.js`: regenerates the PNG icons (`node tools/make-icons.js`)
+- `tools/make-icons.cjs`: regenerates the PNG icons (`npm run icons`)
