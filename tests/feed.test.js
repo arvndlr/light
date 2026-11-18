@@ -80,3 +80,12 @@ test('stories are complete and have their own feed topic', () => {
   assert.deepEqual(topicKinds('stories'), ['story']);
   assert.ok('story' in FEED_BASE);
 });
+
+test('tech cards and quizzes are complete and have their own topic', async () => {
+  const { default: TECH, FIELDS } = await import('../js/tech.js');
+  assert.ok(TECH.cards.length >= 80 && TECH.quiz.length >= 20);
+  for (const c of TECH.cards) { assert.ok(FIELDS.includes(c.f), c.t); assert.ok(c.t && c.b.length > 40, c.t); }
+  for (const f of FIELDS) assert.ok(TECH.cards.filter((c) => c.f === f).length >= 15, f);
+  for (const q of TECH.quiz) { assert.ok(FIELDS.includes(q.f)); assert.equal(q.o.length, 3, q.q); assert.ok(q.a >= 0 && q.a < 3 && q.why, q.q); }
+  assert.deepEqual(topicKinds('tech'), ['tech', 'techquiz']);
+});

@@ -6,6 +6,7 @@ import { clamp } from './util.js';
 export const FEED_BASE = {
   wisdom: 3, challenge: 3, eq: 2, joke: 3, comedy: 2, glow: 2, avoid: 1.5, money: 1.5,
   prompt: 1, quiz: 2.5, poll: 1.5, breathe: 0.8, you: 1, fact: 2.5, word: 1.5, story: 2.5,
+  tech: 2.5, techquiz: 1.5,
 };
 export const PREF_MIN = -10, PREF_MAX = 15;
 /** Share of picks that ignore preferences, so the feed keeps surprising you instead of collapsing into one kind. */
@@ -20,6 +21,7 @@ export const TOPICS = [
   ['laugh', 'Laugh', ['joke', 'comedy'], 'smile'],
   ['wisdom', 'Wisdom', ['wisdom'], 'sparkle'],
   ['learn', 'Learn', ['fact', 'word', 'quiz'], 'bulb'],
+  ['tech', 'Tech', ['tech', 'techquiz'], 'cpu'],
   ['mind', 'Mind', ['eq', 'prompt', 'breathe', 'poll'], 'heart'],
   ['body', 'Glow-up', ['glow', 'avoid', 'challenge'], 'flame'],
   ['money', 'Money', ['money'], 'coin'],

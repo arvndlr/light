@@ -21,7 +21,7 @@ import { setLang, LANGS, locale, tr } from './i18n.js';
 import { setLocale, getLocale } from './util.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '3.1.0';
+const APP_VERSION = '3.2.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
@@ -445,9 +445,11 @@ const KIND_META = {
   you: { tag: 'Your progress', handle: 'you', tags: '#yourjourney', bg: 'g-gold', ic: 'trophy', fx: ['🔥', '🏆', '⭐'] },
   fact: { tag: 'Did you know?', handle: 'light.science', tags: '#science #health', bg: 'g-cyan', ic: 'bulb', fx: ['🔬', '🧬', '💡'] },
   story: { tag: 'Story', handle: 'light.stories', tags: '#inspiration #mindset', bg: 'g-sunset', ic: 'bookOpen', fx: ['📖', '🌅', '✨'] },
+  tech: { tag: 'Tech', handle: 'light.tech', tags: '#tech #ai #iot #networking #coding', bg: 'g-tech', ic: 'cpu', fx: ['💻', '🤖', '📡'] },
+  techquiz: { tag: 'Tech quiz', handle: 'light.tech', tags: '#tech #quiz #learn', bg: 'g-tech', ic: 'cpu', fx: ['🧠', '💻', '⚡'] },
   word: { tag: 'Word of the day', handle: 'light.words', tags: '#vocabulary #communication', bg: 'g-rose', ic: 'book', fx: ['📖', '✍️', '🗣️'] },
 };
-const poolFor = (k) => ({ wisdom: C.wisdom, challenge: C.challenges, eq: C.eq, joke: C.jokes, comedy: C.comedy, glow: C.glow.do, avoid: C.glow.avoid, money: C.money, prompt: C.prompts, quiz: C.quiz, poll: C.polls, breathe: [1], fact: C.facts, word: C.words, story: C.stories })[k];
+const poolFor = (k) => ({ wisdom: C.wisdom, challenge: C.challenges, eq: C.eq, joke: C.jokes, comedy: C.comedy, glow: C.glow.do, avoid: C.glow.avoid, money: C.money, prompt: C.prompts, quiz: C.quiz, poll: C.polls, breathe: [1], fact: C.facts, word: C.words, story: C.stories, tech: C.tech, techquiz: C.techQuiz })[k];
 
 /** Personal cards built from your own data — the feed talks about YOU, not strangers. */
 function youCard() {
@@ -493,7 +495,8 @@ function itemText(it) {
   switch (it.kind) {
     case 'wisdom': return `“${d.q}” — ${d.a}`;
     case 'eq': case 'comedy': return `${d.t}: ${d.b}`;
-    case 'quiz': case 'poll': return d.q;
+    case 'quiz': case 'poll': case 'techquiz': return d.q;
+    case 'tech': return `${d.f} — ${d.t}: ${d.b}`;
     case 'you': return `${d.title}. ${d.body}`;
     case 'breathe': return 'A 30-second breathing reset.';
     case 'word': return `${d.w}: ${d.d} — “${d.ex}”`;
@@ -534,9 +537,10 @@ function reelHTML(it, i) {
       break;
     }
     case 'prompt': body = `<div class="r-label">Think about it</div><div class="r-text">${words(d)}</div><button class="r-cta" data-act="reflect">${icon('pen', 16)} Write your answer · +10 XP</button>`; break;
-    case 'quiz': {
+    case 'tech': body = `<div class="r-label">${esc(d.f)}</div><div class="r-title r-tech-t">${esc(d.t)}</div><div class="r-text sm">${words(d.b)}</div>`; break;
+    case 'quiz': case 'techquiz': {
       const done = it.id in S.quiz;
-      body = `<div class="r-label">${done ? 'Answered before' : '+5 XP if you get it right'}</div><div class="r-text">${words(d.q)}</div>
+      body = `<div class="r-label">${it.kind === 'techquiz' ? `${esc(d.f)} · ` : ''}${done ? 'Answered before' : '+5 XP if you get it right'}</div><div class="r-text">${words(d.q)}</div>
         <div class="r-opts">${d.o.map((o, j) => `<button class="r-opt" data-act="quiz" data-j="${j}"><span class="r-opt-k">${'ABC'[j]}</span>${esc(o)}</button>`).join('')}</div><div class="r-why" hidden>${esc(d.why)}</div>`;
       break;
     }

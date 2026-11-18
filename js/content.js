@@ -1,6 +1,7 @@
 // Light — content library. All text is original or paraphrased from ancient public-domain thinkers.
 import EXTRA from './content-extra.js';
 import STORIES from './stories.js';
+import TECH from './tech.js';
 const CONTENT = {
   wisdom: [
     { q: "You have power over your mind, not outside events. Realize this, and you will find strength.", a: "Marcus Aurelius" },
@@ -232,5 +233,7 @@ for (const [k, v] of Object.entries(EXTRA)) {
 }
 
 CONTENT.stories = STORIES;
+CONTENT.tech = TECH.cards;
+CONTENT.techQuiz = TECH.quiz;
 
 export default CONTENT;

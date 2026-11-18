@@ -954,6 +954,8 @@ body.feed-mode #nav { --glass: rgba(6, 8, 16, .55); --line-strong: rgba(255, 255
 .fig-prop { fill: var(--surface-3); stroke: var(--line-strong); stroke-width: 1; }
 
 /* ---------- Stories (v2.9) ---------- */
+.g-tech   { --base: #020f12; --c1: rgba(34, 211, 238, .5); --c2: rgba(74, 222, 128, .34); --c3: rgba(99, 102, 241, .4); --tint: #5eead4; }
+.r-tech-t { margin: 6px 0 12px; }
 .g-sunset { --base: #150a10; --c1: rgba(251, 146, 60, .55); --c2: rgba(244, 63, 94, .38); --c3: rgba(250, 204, 21, .32); --tint: #fdba74; }
 .r-story-t { font-size: clamp(1.6rem, 6.6vw, 2.2rem); line-height: 1.15; margin: 4px 0 10px; }
 .story { max-width: 620px; margin: 0 auto; }

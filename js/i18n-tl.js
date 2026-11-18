@@ -178,7 +178,7 @@ const dict = {
   'Social media': 'Social media', 'Soft drinks': 'Softdrinks',
 
   // ---- Feed
-  'For You': 'Para sa Iyo', 'Refresh feed': 'I-refresh ang feed', 'Topics': 'Topics', 'All': 'Lahat', 'Stories': 'Kwento', 'Laugh': 'Tawa', 'Learn': 'Matuto', 'Mind': 'Isip',
+  'For You': 'Para sa Iyo', 'Tech': 'Tech', 'Tech quiz': 'Tech quiz', 'Refresh feed': 'I-refresh ang feed', 'Topics': 'Topics', 'All': 'Lahat', 'Stories': 'Kwento', 'Laugh': 'Tawa', 'Learn': 'Matuto', 'Mind': 'Isip',
   'Real-life challenge': 'Real-life challenge', 'Comedy school': 'Comedy school', 'Avoid this': 'Iwasan ito', 'Reflect': 'Pagnilayan', 'Quick quiz': 'Mabilisang quiz',
   'This or that': 'Ito o iyan', 'Reset': 'Reset', 'Your progress': 'Progress mo', 'Did you know?': 'Alam mo ba?', 'Word of the day': 'Salita ng araw', 'Story': 'Kwento',
   'More options': 'Iba pang options', 'Your challenge': 'Challenge mo', 'I did it': 'Nagawa ko', 'Tap for the punchline': 'I-tap para sa punchline', 'Think about it': 'Pag-isipan',
