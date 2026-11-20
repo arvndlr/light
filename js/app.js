@@ -6,7 +6,7 @@ import {
   minutesOf, $, $$, esc, pad, parseKey, addDays, today, clamp, avg, sum, uid, hour, lastN, fmtDate, round1, daily, weekStart,
 } from './util.js';
 import {
-  DOMAINS, HABITS, CATS_OUT, CATS_IN, CATS_SAVE, BAD_CATS, catInfo, cur, goals, sleepHours, hygRatio, txOn, spentOn,
+  DOMAINS, HABITS, CATS_OUT, CATS_IN, CATS_SAVE, BAD_CATS, catInfo, balances, loanStatus, setCashNow, moneyLeaks, MONEY_TRAPS, cur, goals, sleepHours, hygRatio, txOn, spentOn,
   jokesOn, savedTotal, monthTotals, slipsOn, habitStreak, checkinStreak, scores, rangeScores, computeXP, levelOf, xpFor,
   titleOf, quests, BADGES, awardBadges, chestReady, rollChest, reviewDue, latestReview, weekSummary, recommendations,
   projection, insights, buildICS, heatmapKeys,
@@ -21,7 +21,7 @@ import { setLang, LANGS, locale, tr } from './i18n.js';
 import { setLocale, getLocale } from './util.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '3.2.0';
+const APP_VERSION = '3.3.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
@@ -80,7 +80,7 @@ function persist() {
 }
 
 // ---------- Rendering ----------
-const UI = { tab: 'today', range: 30, domain: 'overall', grow: 'fitness', hyg: null, fitGroup: 'All', mType: 'out', mCat: 'food' };
+const UI = { tab: 'today', range: 30, domain: 'overall', grow: 'fitness', hyg: null, fitGroup: 'All', mType: 'out', mCat: 'food', mLoanAct: 'pay', mLoan: null, mMonth: null };
 const TABS = [['today', 'sun', 'Today'], ['money', 'wallet', 'Money'], ['feed', 'sparkles', 'Feed'], ['stats', 'chart', 'Stats'], ['grow', 'sprout', 'Grow']];
 const firstName = () => (S.profile?.name || 'friend').split(' ')[0];
 
@@ -367,6 +367,33 @@ function viewToday() {
 }
 
 // ----- Money -----
+const TX_TYPES = [['out', 'Spent'], ['in', 'Received'], ['save', 'Savings'], ['loan', 'Loans']];
+const LOAN_ACTS = [['pay', 'Pay a loan'], ['borrow', 'I borrowed'], ['lend', 'I lent'], ['collect', 'Got paid back']];
+const TX_STYLE = { out: ['−', 'amt-out'], pay: ['−', 'amt-out'], lend: ['−', 'amt-out'], in: ['+', 'amt-in'], collect: ['+', 'amt-in'], borrow: ['+', 'amt-in'], save: ['→', 'amt-save'] };
+const loanById = (id) => S.loans.find((l) => l.id === id);
+const monthLabel = (mk) => new Date(+mk.slice(0, 4), +mk.slice(5, 7) - 1, 1).toLocaleDateString(getLocale(), { month: 'long', year: 'numeric' });
+const shiftMonth = (mk, n) => { const d = new Date(+mk.slice(0, 4), +mk.slice(5, 7) - 1 + n, 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; };
+
+function txRow(t) {
+  const ci = catInfo(t.cat), [sg, cls] = TX_STYLE[t.type] || ['', ''];
+  const loan = t.loanId ? loanById(t.loanId) : null;
+  const title = t.note || (loan ? `${ci[2]} · ${loan.who}` : ci[2]);
+  return `<button class="tx tx-btn" data-act="edit-tx" data-id="${t.id}" aria-label="Edit ${esc(title)}"><div class="cat" aria-hidden="true">${ico(ci[1], 20)}</div>
+    <div class="grow"><div>${esc(title)}</div><div class="tiny muted">${fmtDate(t.date)} · ${ci[2]}${loan && t.note ? ` · ${esc(loan.who)}` : ''}</div></div>
+    <div class="${cls}">${sg}${cur(t.amount)}</div><span class="tx-edit" aria-hidden="true">${icon('pen', 14)}</span></button>`;
+}
+function loanCard(l) {
+  const pct = l.total ? Math.min(100, (l.paid / l.total) * 100) : 0;
+  const owe = l.dir === 'owe';
+  return `<div class="loan ${l.done ? 'done' : ''} ${l.overdue ? 'overdue' : ''}">
+    <div class="row between"><div class="grow"><div class="loan-who"><span>${owe ? 'You owe' : 'Owes you'}</span> · <strong>${esc(l.who)}</strong></div>
+      <div class="tiny muted">${l.done ? '✓ Paid off' : `${cur(l.left)} left of ${cur(l.total)}`}${l.due && !l.done ? ` · ${l.overdue ? '⚠ overdue since' : 'due'} ${fmtDate(l.due)}` : ''}</div></div>
+      <button class="icon-btn xs" data-act="edit-loan" data-id="${l.id}" aria-label="Edit loan ${esc(l.who)}">${icon('pen', 14)}</button></div>
+    <div class="xpbar loan-bar" style="margin-top:10px"><i style="width:${pct}%"></i></div>
+    ${l.done ? '' : `<button class="btn sm" style="margin-top:10px" data-act="loan-pay" data-id="${l.id}">${owe ? 'Record a payment' : 'They paid me'}</button>`}
+  </div>`;
+}
+
 function viewMoney() {
   const k = today(), st = S.settings;
   const { month, out, inc, saved } = monthTotals(k);
@@ -377,24 +404,43 @@ function viewMoney() {
   const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
   const maxCat = cats[0]?.[1] || 1;
   const days14 = lastN(14).map((x) => ({ label: fmtDate(x, { day: 'numeric' }), v: spentOn(x) }));
-  const bad = sum(month.filter((t) => t.type === 'out' && BAD_CATS.includes(t.cat)).map((t) => +t.amount));
-  const catList = { out: CATS_OUT, in: CATS_IN, save: CATS_SAVE }[UI.mType];
-  if (!catList.find((c) => c[0] === UI.mCat)) UI.mCat = catList[0][0];
-  const list = [...month].sort((a, b) => (b.date + b.id).localeCompare(a.date + a.id));
-  const sv = savedTotal(), sg = st.savingsGoal;
-  const sign = { out: '−', in: '+', save: '→' }, cls = { out: 'amt-out', in: 'amt-in', save: 'amt-save' };
+  const b = balances(), leaks = moneyLeaks(k);
+  const sv = b.savings, sg = st.savingsGoal;
+  const mk = UI.mMonth || k.slice(0, 7);
+  const list = S.tx.filter((t) => t.date.startsWith(mk)).sort((a, b2) => (b2.date + b2.id).localeCompare(a.date + a.id));
+  const active = b.loans.filter((l) => !l.done), paidOff = b.loans.filter((l) => l.done);
 
   return `
   <h1>Money</h1>
-  <div class="card" style="margin-top:14px">
+  <div class="card money-hero" style="margin-top:14px">
+    <div class="row between"><div class="small muted">${icon('wallet', 15)} Money you have</div>
+      <button class="btn sm ghost" data-act="set-balance">${icon('pen', 14)} ${b.set ? 'Update' : 'Set balance'}</button></div>
+    <div class="big-num money-cash ${b.cash < 0 ? 'neg' : ''}">${cur(b.cash)}</div>
+    <div class="tiny muted">Cash, bank & e-wallets${b.set ? '' : ' · set your balance to make this exact'}</div>
+    <div class="grid g3 money-3 money-split">
+      <div><div class="tiny muted">Savings</div><strong class="amt-save">${cur(b.savings)}</strong></div>
+      <div><div class="tiny muted">You owe</div><strong style="color:${b.owe > 0 ? 'var(--bad)' : 'inherit'}">${cur(b.owe)}</strong></div>
+      <div><div class="tiny muted">Owed to you</div><strong class="amt-in">${cur(b.owed)}</strong></div>
+    </div>
+    <div class="money-net"><span class="small muted">Net worth</span><strong>${cur(b.net)}</strong></div>
+  </div>
+
+  <div class="card">
     <div class="row between"><div><div class="small muted">Spent in ${dt.toLocaleDateString(getLocale(), { month: 'long' })}</div><div class="big-num">${cur(out)}</div></div>
       ${ring(st.budget ? (out / st.budget) * 100 : 0, out > st.budget ? 'var(--bad)' : 'var(--amber)', 72, 8, st.budget ? Math.round((out / st.budget) * 100) + '%' : '–', 'Share of monthly budget used')}</div>
-    <div class="grid g3" style="margin-top:12px">
+    <div class="grid g3 money-3" style="margin-top:12px">
       <div><div class="tiny muted">Budget left</div><strong style="color:${left < 0 ? 'var(--bad)' : 'var(--good)'}">${cur(left)}</strong></div>
       <div><div class="tiny muted">Safe per day</div><strong>${cur(Math.round(perDay))}</strong></div>
       <div><div class="tiny muted">Income</div><strong class="amt-in">${cur(inc)}</strong></div>
     </div>
-    ${bad > 0 ? `<div class="insight" style="margin-top:12px;border-left-color:var(--bad)">🍔🥤🎲 You spent <strong>${cur(bad)}</strong> on fast food, soda and gambling this month. That's ${cur(bad * 12)} a year at this pace.</div>` : ''}
+  </div>
+
+  <div class="sec"><h2>⚠️ Avoid</h2><span class="muted small">${leaks.length ? `${leaks.length} from your records` : 'looking good'}</span></div>
+  <div class="card avoid-card">
+    ${leaks.length ? leaks.map((x) => `<div class="leak sev-${x.sev}"><span class="leak-ic" aria-hidden="true">${ico(x.ic, 18)}</span><span class="small">${x.t}</span></div>`).join('')
+      : `<div class="small muted">No money leaks found in your records this month. Keep logging — Light will warn you when something starts draining your money.</div>`}
+    <details class="traps"><summary class="small"><strong>Common money traps</strong></summary>
+      ${MONEY_TRAPS.map(([ic, t]) => `<div class="leak"><span class="leak-ic" aria-hidden="true">${ico(ic, 18)}</span><span class="small">${t}</span></div>`).join('')}</details>
   </div>
 
   <div class="card">
@@ -403,26 +449,102 @@ function viewMoney() {
     ${saved ? `<div class="tiny muted" style="margin-top:6px">${cur(saved)} saved this month</div>` : ''}
   </div>
 
-  <div class="sec"><h2>➕ Add</h2></div>
-  <form class="card" data-form="addtx" novalidate>
-    <div class="seg" role="tablist">${[['out', 'Spent'], ['in', 'Received'], ['save', 'Saved']].map(([v, n]) => `<button type="button" role="tab" aria-selected="${UI.mType === v}" class="${UI.mType === v ? 'on' : ''}" data-act="mtype" data-v="${v}">${n}</button>`).join('')}</div>
-    <div class="row" style="margin-top:12px"><input type="number" id="m-amt" aria-label="Amount" placeholder="Amount (${esc(st.currency)})" inputmode="decimal" min="0" step="any" class="grow" required><input type="date" id="m-date" aria-label="Date" value="${k}" max="${k}" style="width:auto"></div>
-    <div class="chips" style="margin-top:12px" role="radiogroup" aria-label="Category">${catList.map(([id, ic, n]) => `<button type="button" role="radio" aria-checked="${UI.mCat === id}" class="chip ${UI.mCat === id ? 'on' : ''}" data-act="mcat" data-v="${id}">${ico(ic, 16)}${n}</button>`).join('')}</div>
-    <input type="text" id="m-note" aria-label="Note" placeholder="Note (optional)" style="margin-top:12px" maxlength="120">
-    <button class="btn primary block" style="margin-top:12px" type="submit">Add</button>
-  </form>
+  <div class="sec" id="money-add"><h2>➕ Add</h2></div>
+  ${addTxForm(k)}
+
+  <div class="sec"><h2>🤝 Loans</h2><span class="muted small">${active.length ? `${active.length} active` : ''}</span></div>
+  <div class="card">${active.length ? active.map(loanCard).join('') : '<div class="small muted">No active loans. Record money you borrowed or lent under Add → Loans, and track every payment until it’s paid off.</div>'}
+    ${paidOff.length ? `<details class="traps"><summary class="small"><strong>Paid off (${paidOff.length})</strong></summary>${paidOff.map(loanCard).join('')}</details>` : ''}</div>
 
   <div class="sec"><h2>📊 Where it goes</h2></div>
   <div class="card">${cats.length ? cats.map(([c, v]) => { const ci = catInfo(c); return `<div class="bar-row"><span class="small bar-lbl">${ico(ci[1], 16)} ${ci[2]}</span><span class="bar"><i style="width:${(v / maxCat) * 100}%;background:${BAD_CATS.includes(c) ? 'var(--bad)' : 'var(--amber)'}"></i></span><span class="small bar-val">${cur(v)}</span></div>`; }).join('') : '<div class="empty">No spending logged this month yet.</div>'}</div>
 
   <div class="card"><div class="small muted" style="margin-bottom:6px">Daily spending — last 14 days (line = daily budget)</div>${barChart(days14, { color: 'var(--amber)', target: st.budget / 30, fmt: (v) => cur(Math.round(v)), label: 'Daily spending, last 14 days' })}</div>
 
-  <div class="sec"><h2>🧾 This month</h2><span class="muted small">${list.length} entries</span></div>
-  <div class="card">${list.length ? list.map((t) => { const ci = catInfo(t.cat); return `<div class="tx"><div class="cat" aria-hidden="true">${ico(ci[1], 20)}</div><div class="grow"><div>${esc(t.note || ci[2])}</div><div class="tiny muted">${fmtDate(t.date)} · ${ci[2]}</div></div>
-    <div class="${cls[t.type]}">${sign[t.type]}${cur(t.amount)}</div><button class="icon-btn xs" data-act="deltx" data-id="${t.id}" aria-label="Delete ${esc(t.note || ci[2])}">${icon('x', 14)}</button></div>`; }).join('') : '<div class="empty">Nothing yet. Every entry makes you more aware.</div>'}</div>
+  <div class="sec"><h2>🧾 Records</h2><span class="muted small">tap one to edit</span></div>
+  <div class="card">
+    <div class="row between month-nav"><button class="icon-btn xs" data-act="m-month" data-v="-1" aria-label="Previous month">${icon('chevronUp', 16, 'rot-l')}</button>
+      <strong class="small">${monthLabel(mk)} · ${list.length} entries</strong>
+      <button class="icon-btn xs" data-act="m-month" data-v="1" aria-label="Next month" ${mk >= k.slice(0, 7) ? 'disabled' : ''}>${icon('chevronUp', 16, 'rot-r')}</button></div>
+    ${list.length ? list.map(txRow).join('') : '<div class="empty">Nothing yet. Every entry makes you more aware.</div>'}</div>
 
   <div class="sec"><h2>💡 Money wisdom</h2></div>
   <div class="card">${esc(daily(C.money))}</div>`;
+}
+
+function addTxForm(k) {
+  const st = S.settings, t = UI.mType;
+  const seg = `<div class="seg seg4" role="tablist">${TX_TYPES.map(([v, n]) => `<button type="button" role="tab" aria-selected="${t === v}" class="${t === v ? 'on' : ''}" data-act="mtype" data-v="${v}">${n}</button>`).join('')}</div>`;
+  const amount = (ph) => `<div class="row" style="margin-top:12px"><input type="number" id="m-amt" aria-label="Amount" placeholder="${ph}" inputmode="decimal" min="0" step="any" class="grow" required><input type="date" id="m-date" aria-label="Date" value="${k}" max="${k}" style="width:auto"></div>`;
+  const note = `<input type="text" id="m-note" aria-label="Note" placeholder="Note (optional)" style="margin-top:12px" maxlength="120">`;
+  const submit = (label) => `<button class="btn primary block" style="margin-top:12px" type="submit">${label}</button>`;
+  if (t !== 'loan') {
+    const catList = { out: CATS_OUT, in: CATS_IN, save: CATS_SAVE }[t];
+    if (!catList.find((c) => c[0] === UI.mCat)) UI.mCat = catList[0][0];
+    return `<form class="card" data-form="addtx" novalidate>${seg}${amount(`Amount (${esc(st.currency)})`)}
+      <div class="chips" style="margin-top:12px" role="radiogroup" aria-label="Category">${catList.map(([id, ic, n]) => `<button type="button" role="radio" aria-checked="${UI.mCat === id}" class="chip ${UI.mCat === id ? 'on' : ''}" data-act="mcat" data-v="${id}">${ico(ic, 16)}${n}</button>`).join('')}</div>
+      ${note}${submit('Add')}</form>`;
+  }
+  const act = UI.mLoanAct;
+  const acts = `<div class="chips" style="margin-top:12px" role="radiogroup" aria-label="Loan action">${LOAN_ACTS.map(([v, n]) => `<button type="button" role="radio" aria-checked="${act === v}" class="chip ${act === v ? 'on' : ''}" data-act="mloan-act" data-v="${v}">${ico(catInfo(v)[1], 16)}${n}</button>`).join('')}</div>`;
+  if (act === 'borrow' || act === 'lend') {
+    return `<form class="card" data-form="addtx" novalidate>${seg}${acts}${amount(act === 'borrow' ? 'Amount borrowed' : 'Amount lent')}
+      <input type="text" id="m-who" aria-label="${act === 'borrow' ? 'Borrowed from' : 'Lent to'}" placeholder="${act === 'borrow' ? 'Borrowed from (person, bank, app)' : 'Lent to (name)'}" style="margin-top:12px" maxlength="60" required>
+      <div class="grid" style="margin-top:12px">
+        <div><label class="lbl" for="m-total">Total to repay (optional)</label><input type="number" id="m-total" placeholder="with interest" inputmode="decimal" min="0" step="any"></div>
+        <div><label class="lbl" for="m-due">Due date (optional)</label><input type="date" id="m-due"></div>
+      </div>${note}${submit(act === 'borrow' ? 'Add loan' : 'Add money lent')}</form>`;
+  }
+  const dir = act === 'pay' ? 'owe' : 'owed';
+  const open = balances().loans.filter((l) => l.dir === dir && !l.done);
+  if (!open.find((l) => l.id === UI.mLoan)) UI.mLoan = open[0]?.id || null;
+  const sel = open.find((l) => l.id === UI.mLoan);
+  return `<form class="card" data-form="addtx" novalidate>${seg}${acts}
+    ${open.length ? `<div class="chips" style="margin-top:12px" role="radiogroup" aria-label="Which loan">${open.map((l) => `<button type="button" role="radio" aria-checked="${UI.mLoan === l.id}" class="chip ${UI.mLoan === l.id ? 'on' : ''}" data-act="mloan" data-v="${l.id}" data-left="${l.left}">${esc(l.who)} · ${cur(l.left)}</button>`).join('')}</div>
+      ${amount(sel ? `Amount (${cur(sel.left)} left)` : 'Amount')}${note}${submit(act === 'pay' ? 'Record payment' : 'Record money received')}`
+    : `<div class="small muted" style="margin-top:12px">${act === 'pay' ? 'No loans to pay. Add one with “I borrowed”.' : 'Nobody owes you right now. Add one with “I lent”.'}</div>`}</form>`;
+}
+
+function openBalance() {
+  const b = balances();
+  openModal(`<form data-form="balance" novalidate><div class="row between"><h2>💰 Money you have</h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
+    <p class="small muted">How much money do you have right now? Add up your wallet, bank accounts and e-wallets (GCash, Maya…). Don’t include savings you track separately.</p>
+    <label class="lbl" for="bal-v">Cash on hand now (${esc(S.settings.currency)})</label>
+    <input type="number" id="bal-v" inputmode="decimal" step="any" value="${b.set ? b.cash : ''}" placeholder="e.g. 12500" required>
+    <p class="tiny muted" style="margin-top:8px">Your records stay the same — Light adjusts your starting balance so the total matches.</p>
+    <button class="btn primary block" style="margin-top:12px" type="submit">Save balance</button></form>`, { label: 'Money you have' });
+  setTimeout(() => $('#bal-v')?.focus(), 50);
+}
+
+function openTxEdit(id) {
+  const t = S.tx.find((x) => x.id === id); if (!t) return;
+  const loan = t.loanId ? loanById(t.loanId) : null;
+  const catList = { out: CATS_OUT, in: CATS_IN, save: CATS_SAVE }[t.type];
+  openModal(`<form data-form="edit-tx" data-id="${t.id}" novalidate><div class="row between"><h2>✏️ Edit record</h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
+    ${catList ? `<div class="seg" role="radiogroup" aria-label="Type">${TX_TYPES.filter(([v]) => v !== 'loan').map(([v, n]) => `<button type="button" role="radio" aria-checked="${t.type === v}" class="${t.type === v ? 'on' : ''}" data-act="etx-type" data-v="${v}">${n}</button>`).join('')}</div>`
+      : `<div class="pill">${ico(catInfo(t.type)[1], 14)} ${catInfo(t.type)[2]}${loan ? ` · ${esc(loan.who)}` : ''}</div>`}
+    <div class="row" style="margin-top:12px"><input type="number" id="e-amt" aria-label="Amount" value="${t.amount}" inputmode="decimal" min="0" step="any" class="grow" required><input type="date" id="e-date" aria-label="Date" value="${t.date}" max="${today()}" style="width:auto"></div>
+    <div id="e-cats">${catList ? editCats(t.type, t.cat) : ''}</div>
+    <input type="text" id="e-note" aria-label="Note" placeholder="Note (optional)" value="${esc(t.note || '')}" style="margin-top:12px" maxlength="120">
+    <div class="row" style="margin-top:14px;gap:10px"><button type="button" class="btn ghost" data-act="del-tx" data-id="${t.id}">${icon('x', 15)} Delete</button><button class="btn primary grow" type="submit">Save changes</button></div></form>`, { label: 'Edit record', onClose: render });
+}
+const editCats = (type, cat) => {
+  const list = { out: CATS_OUT, in: CATS_IN, save: CATS_SAVE }[type];
+  const sel = list.find((c) => c[0] === cat) ? cat : list[0][0];
+  return `<div class="chips" style="margin-top:12px" role="radiogroup" aria-label="Category">${list.map(([id, ic, n]) => `<button type="button" role="radio" aria-checked="${sel === id}" class="chip ${sel === id ? 'on' : ''}" data-act="etx-cat" data-v="${id}">${ico(ic, 16)}${n}</button>`).join('')}</div>`;
+};
+
+function openLoanEdit(id) {
+  const l = loanById(id); if (!l) return;
+  const s = loanStatus(l);
+  openModal(`<form data-form="edit-loan" data-id="${l.id}" novalidate><div class="row between"><h2>🤝 ${l.dir === 'owe' ? 'Loan you owe' : 'Money owed to you'}</h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
+    <div class="grid g3" style="margin-bottom:12px"><div><div class="tiny muted">${l.dir === 'owe' ? 'Borrowed' : 'Lent'}</div><strong>${cur(s.principal)}</strong></div><div><div class="tiny muted">Paid</div><strong class="amt-in">${cur(s.paid)}</strong></div><div><div class="tiny muted">Left</div><strong>${cur(s.left)}</strong></div></div>
+    <label class="lbl" for="l-who">${l.dir === 'owe' ? 'Borrowed from' : 'Lent to'}</label><input type="text" id="l-who" value="${esc(l.who)}" maxlength="60" required>
+    <div class="grid"><div><label class="lbl" for="l-total">Total to repay</label><input type="number" id="l-total" value="${+l.total || ''}" placeholder="${s.principal}" inputmode="decimal" min="0" step="any"></div>
+      <div><label class="lbl" for="l-due">Due date</label><input type="date" id="l-due" value="${l.due || ''}"></div></div>
+    <label class="lbl" for="l-note">Note</label><input type="text" id="l-note" value="${esc(l.note || '')}" maxlength="120">
+    <p class="tiny muted" style="margin-top:8px">To change an amount, edit its record in Records below.</p>
+    <div class="row" style="margin-top:14px;gap:10px"><button type="button" class="btn ghost" data-act="del-loan" data-id="${l.id}">${icon('x', 15)} Delete loan</button><button class="btn primary grow" type="submit">Save</button></div></form>`, { label: 'Edit loan' });
 }
 
 // ----- Feed: immersive, personalized "For You" reels (algorithm in feed.js) -----
@@ -1591,6 +1713,35 @@ const A = {
   mtype: (el) => { UI.mType = el.dataset.v; render(); },
   mcat: (el) => { UI.mCat = el.dataset.v; $$('[data-act="mcat"]').forEach((b) => { b.classList.toggle('on', b === el); b.setAttribute('aria-checked', b === el); }); },
   deltx: (el) => removeWithUndo(S.tx, S.tx.findIndex((t) => t.id === el.dataset.id), 'Entry'),
+  'mloan-act': (el) => { UI.mLoanAct = el.dataset.v; render(); },
+  mloan: (el) => {
+    UI.mLoan = el.dataset.v;
+    $$('[data-act="mloan"]').forEach((b) => { b.classList.toggle('on', b === el); b.setAttribute('aria-checked', b === el); });
+    const a = $('#m-amt'); if (a) a.placeholder = `Amount (${cur(+el.dataset.left)} left)`;
+  },
+  'm-month': (el) => { UI.mMonth = shiftMonth(UI.mMonth || today().slice(0, 7), +el.dataset.v); render(); },
+  'set-balance': () => openBalance(),
+  'edit-tx': (el) => openTxEdit(el.dataset.id),
+  'etx-type': (el) => {
+    $$('[data-act="etx-type"]').forEach((b) => { b.classList.toggle('on', b === el); b.setAttribute('aria-checked', b === el); });
+    $('#e-cats').innerHTML = editCats(el.dataset.v, null);
+  },
+  'etx-cat': (el) => { $$('[data-act="etx-cat"]').forEach((b) => { b.classList.toggle('on', b === el); b.setAttribute('aria-checked', b === el); }); },
+  'del-tx': (el) => { const id = el.dataset.id; closeModal(); removeWithUndo(S.tx, S.tx.findIndex((t) => t.id === id), 'Entry'); },
+  'edit-loan': (el) => openLoanEdit(el.dataset.id),
+  'loan-pay': (el) => {
+    const l = loanById(el.dataset.id); if (!l) return;
+    Object.assign(UI, { mType: 'loan', mLoanAct: l.dir === 'owe' ? 'pay' : 'collect', mLoan: l.id });
+    render(); $('#money-add')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); setTimeout(() => $('#m-amt')?.focus({ preventScroll: true }), 350);
+  },
+  'del-loan': (el) => {
+    const l = loanById(el.dataset.id); if (!l) return;
+    const n = S.tx.filter((t) => t.loanId === l.id).length;
+    if (!confirm(`Delete this loan and its ${n} records? This can’t be undone.`)) return;
+    for (let i = S.tx.length - 1; i >= 0; i--) if (S.tx[i].loanId === l.id) S.tx.splice(i, 1);
+    S.loans.splice(S.loans.indexOf(l), 1);
+    persist(); closeModal(); render(); toast('Loan deleted');
+  },
   // Feed
   claim: (el) => {
     const k = today(); if ((S.claims[k] || 0) >= CLAIM_CAP) { toast('Daily challenge cap reached — go live your life! 🌍'); return; }
@@ -1685,6 +1836,25 @@ const A = {
 };
 
 // Forms (Enter key submits, mobile "Go" button works)
+function addLoanRecord(amt, date) {
+  const act = UI.mLoanAct, note = $('#m-note')?.value.trim() || '';
+  if (act === 'borrow' || act === 'lend') {
+    const who = $('#m-who').value.trim(); if (!who) { toast('Enter a name'); $('#m-who').focus(); return; }
+    const loan = { id: uid(), dir: act === 'borrow' ? 'owe' : 'owed', who, total: Math.max(0, +$('#m-total').value || 0), due: $('#m-due').value || '', note, created: date };
+    S.loans.push(loan);
+    S.tx.push({ id: uid(), date, type: act, amount: amt, cat: act, note: '', loanId: loan.id });
+    persist(); buzz(); render();
+    toast(act === 'borrow' ? `🤝 Loan from ${esc(who)} added — pay it down a little at a time` : `🤲 Money lent to ${esc(who)} recorded`);
+    return;
+  }
+  const loan = loanById(UI.mLoan); if (!loan) { toast('Pick a loan first'); return; }
+  S.tx.push({ id: uid(), date, type: act, amount: amt, cat: act, note, loanId: loan.id });
+  persist(); buzz();
+  const st = loanStatus(loan);
+  if (st.done) { burst(); toast(act === 'pay' ? `🎉 Loan from ${esc(loan.who)} paid off!` : `🎉 ${esc(loan.who)} paid you back in full!`, { ms: 4500 }); }
+  else toast(act === 'pay' ? `💳 Payment recorded · ${cur(st.left)} left` : `💵 Received · ${cur(st.left)} still owed`);
+  render();
+}
 const FORMS = {
   onboard: () => {
     const name = $('#ob-name').value.trim();
@@ -1697,9 +1867,11 @@ const FORMS = {
     persist(); render(); burst(); toast(`Welcome, ${esc(firstName())}! Your light starts today ✨`);
   },
   addtx: () => {
-    const amt = +$('#m-amt').value;
-    if (!(amt > 0)) { toast('Enter an amount'); $('#m-amt').focus(); return; }
+    const amtEl = $('#m-amt'); if (!amtEl) return;
+    const amt = +amtEl.value;
+    if (!(amt > 0)) { toast('Enter an amount'); amtEl.focus(); return; }
     const date = $('#m-date').value || today();
+    if (UI.mType === 'loan') return addLoanRecord(amt, date);
     S.tx.push({ id: uid(), date, type: UI.mType, amount: amt, cat: UI.mCat, note: $('#m-note').value.trim() });
     persist(); buzz();
     if (UI.mType === 'out' && BAD_CATS.includes(UI.mCat)) toast('Logged honestly — that takes courage. This resets that freedom streak; tomorrow is a fresh start.', { ms: 5000 });
@@ -1707,6 +1879,26 @@ const FORMS = {
     else toast(UI.mType === 'in' ? '💰 Income logged' : '🧾 Expense logged');
     render();
     $('#m-amt')?.focus();
+  },
+  balance: () => {
+    const v = $('#bal-v').value;
+    if (v === '' || isNaN(+v)) { toast('Enter an amount'); $('#bal-v').focus(); return; }
+    setCashNow(+v); persist(); closeModal(); render(); buzz(); toast('💰 Balance updated');
+  },
+  'edit-tx': (form) => {
+    const t = S.tx.find((x) => x.id === form.dataset.id); if (!t) return closeModal();
+    const amt = +$('#e-amt').value;
+    if (!(amt > 0)) { toast('Enter an amount'); $('#e-amt').focus(); return; }
+    const type = $('[data-act="etx-type"].on')?.dataset.v;
+    if (type) { t.type = type; t.cat = $('[data-act="etx-cat"].on')?.dataset.v || t.cat; }
+    Object.assign(t, { amount: amt, date: $('#e-date').value || t.date, note: $('#e-note').value.trim() });
+    persist(); closeModal(); render(); toast('✏️ Record updated');
+  },
+  'edit-loan': (form) => {
+    const l = loanById(form.dataset.id); if (!l) return closeModal();
+    const who = $('#l-who').value.trim(); if (!who) { toast('Enter a name'); $('#l-who').focus(); return; }
+    Object.assign(l, { who, total: Math.max(0, +$('#l-total').value || 0), due: $('#l-due').value || '', note: $('#l-note').value.trim() });
+    persist(); closeModal(); render(); toast('Loan saved');
   },
   addjoke: () => { const t = $('#joke-in').value.trim(); if (!t) { toast('Write a joke first — even a terrible one!'); return; } S.jokes.push({ id: uid(), date: today(), text: t }); persist(); burst(); toast('🎤 Joke saved · +10 XP'); render(); },
   reflect: (form) => {

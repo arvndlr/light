@@ -989,3 +989,38 @@ body.feed-mode #nav { --glass: rgba(6, 8, 16, .55); --line-strong: rgba(255, 255
 .breath.bx.in { transform: scale(1.2); }
 .breath.bx.out { transform: scale(.8); }
 .as-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+
+/* ---------- Money: balance, avoid list, loans, editable records ---------- */
+.money-hero { background: linear-gradient(150deg, color-mix(in srgb, var(--teal) 16%, var(--surface)), var(--surface) 60%); }
+.money-cash { font-size: clamp(2rem, 9vw, 2.6rem); margin-top: 6px; }
+.money-cash.neg { color: var(--bad); }
+.money-split { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.money-net { display: flex; justify-content: space-between; align-items: baseline; margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); }
+.leak { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; }
+.leak + .leak { border-top: 1px solid var(--line); }
+.leak-ic { flex: none; width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; background: var(--surface-2); color: var(--muted); }
+.leak-ic .i { width: 17px; height: 17px; }
+.leak.sev-3 .leak-ic { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
+.leak.sev-2 .leak-ic { background: color-mix(in srgb, var(--amber) 18%, transparent); color: var(--amber); }
+.traps { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.traps summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+.traps summary::-webkit-details-marker { display: none; }
+.traps summary::after { content: '+'; font-weight: 800; color: var(--muted); }
+.traps[open] summary::after { content: '−'; }
+.seg4 button { padding-inline: 4px; font-size: .84rem; }
+.tx-btn { width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); color: inherit; font: inherit; cursor: pointer; }
+.tx-btn:last-child { border-bottom: 0; }
+.tx-btn:hover .tx-edit, .tx-btn:focus-visible .tx-edit { opacity: 1; }
+.tx-edit { color: var(--muted); opacity: .45; display: grid; }
+.month-nav { padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.month-nav .icon-btn:disabled { opacity: .3; }
+.rot-l { transform: rotate(-90deg); }
+.rot-r { transform: rotate(90deg); }
+.loan { padding: 12px 0; }
+.loan + .loan { border-top: 1px solid var(--line); }
+.loan-who { font-size: .92rem; }
+.loan-bar i { background: var(--good); }
+.loan.overdue .loan-bar i { background: var(--bad); }
+.loan.done { opacity: .7; }
+.grid.money-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.money-3 strong { font-size: .95rem; overflow-wrap: anywhere; }

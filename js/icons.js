@@ -79,6 +79,8 @@ const P = {
   thumbDown: '<path d="M7.5 13.5V4M7.5 13.5l3.6 6.2a1.9 1.9 0 0 0 3.5-1.3L13.8 15h4.6a2 2 0 0 0 2-2.4l-1.3-6.7A2.4 2.4 0 0 0 16.7 4H7.5M7.5 4H5a1.5 1.5 0 0 0-1.5 1.5v6.5A1.5 1.5 0 0 0 5 13.5h2.5"/>',
   copy: '<rect x="8.5" y="8.5" width="12" height="12" rx="2.5"/><path d="M15.5 8.5V6A2.5 2.5 0 0 0 13 3.5H6A2.5 2.5 0 0 0 3.5 6v7A2.5 2.5 0 0 0 6 15.5h2.5"/>',
   cpu: '<rect x="6" y="6" width="12" height="12" rx="2.5"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M9.5 2.5V6M14.5 2.5V6M9.5 18v3.5M14.5 18v3.5M2.5 9.5H6M2.5 14.5H6M18 9.5h3.5M18 14.5h3.5"/>',
+  card: '<rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="M3 10h18M7 15h3"/>',
+  alert: '<path d="M12 4 21 19.5H3z"/><path d="M12 10v4M12 17v.01"/>',
   lock: '<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
 };
 
@@ -95,7 +97,7 @@ const EMOJI = {
   '☀': 'sun', '🌤': 'sun', '🌙': 'moon', '😴': 'moon', '🌅': 'sunrise', '🌗': 'contrast',
   '💰': 'coin', '✨': 'sparkles', '📊': 'pie', '🌱': 'sprout', '⚙': 'settings',
   '📖': 'book', '📓': 'bookOpen', '📒': 'book', '📚': 'book', '🎓': 'book', '🎯': 'target', '💡': 'bulb', '💧': 'droplet',
-  '🗺': 'flag', '🛡': 'shield', '😂': 'smile', '🙂': 'smile', '➕': 'plus', '🧾': 'receipt', '🗓': 'calendar',
+  '🗺': 'flag', '🛡': 'shield', '😂': 'smile', '🙂': 'smile', '➕': 'plus', '🧾': 'receipt', '💳': 'card', '🤝': 'users', '🤲': 'gift', '💵': 'coin', '⏰': 'clock', '📉': 'trending', '🪙': 'coin', '⚠️': 'alert', '⚠': 'alert', '🛒': 'bag', '🔐': 'lock', '📱': 'phone', '🎲': 'dice', '🥤': 'cup', '🔥': 'flame', '🗓': 'calendar',
   '🔮': 'compass', '🧩': 'eye', '🧠': 'mind', '⏱': 'timer', '🕰': 'clock', '❤': 'heart', '🏆': 'trophy',
   '🎤': 'mic', '💬': 'message', '🔖': 'bookmark', '📌': 'bookmark', '🎁': 'gift', '🔄': 'refresh', '🔥': 'flame',
   '🏃': 'activity', '📝': 'pen', '📵': 'phoneOff', '📱': 'phone', '🎲': 'dice', '🍔': 'burger', '🥤': 'cup',

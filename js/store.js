@@ -15,13 +15,15 @@ export const DEFAULTS = () => ({
     theme: 'dark', accent: 'sunrise', // theme: 'auto' | 'dark' | 'light'
     feedHint: true, // show "swipe up" hint until the first swipe
     fitLevel: 'beginner', fitVoice: true, // home workouts
+    moneyStart: null, // cash you had before your first record (set via "Update balance"); null = not set yet
     lang: 'en', // interface language: 'en' | 'tl' (Taglish)
     asthma: false, // asthma tracking & reminders (Grow → Health)
     hygAM: ['Brush teeth', 'Wash face', 'Shower', 'Sunscreen', 'Deodorant', 'Groom hair'],
     hygPM: ['Wash face', 'Brush teeth', 'Floss', 'Moisturize', 'Lay out tomorrow\'s clothes', 'Screens off 30 min before bed'],
   },
   days: {},     // 'YYYY-MM-DD' -> { water, exercise, deepWork, hygAM, hygPM, morning, evening }
-  tx: [],       // { id, date, type: 'out'|'in'|'save', amount, cat, note }
+  tx: [],       // { id, date, type: 'out'|'in'|'save'|'pay'|'collect'|'borrow'|'lend', amount, cat, note, loanId? }
+  loans: [],    // { id, dir: 'owe'|'owed', who, total?, due?, note, created }: amounts come from its tx records
   jokes: [], journal: [], saved: [], sos: [], focusLog: [],
   workouts: [], // { id, date, mins, level, partial? }
   badges: {}, claims: {}, reviews: {}, chests: {},
@@ -34,7 +36,7 @@ export const DEFAULTS = () => ({
 });
 
 const OBJECT_KEYS = ['days', 'badges', 'claims', 'reviews', 'chests', 'feedPrefs', 'feedLikes', 'quiz', 'feedSeen', 'storiesRead'];
-const ARRAY_KEYS = ['tx', 'jokes', 'journal', 'saved', 'sos', 'focusLog', 'workouts'];
+const ARRAY_KEYS = ['tx', 'loans', 'jokes', 'journal', 'saved', 'sos', 'focusLog', 'workouts'];
 const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
 
 /** Upgrade any older (or partially corrupt) document to the current schema. Never throws. */

@@ -26,12 +26,15 @@ export const HABITS = [
 export const CATS_OUT = [
   ['food', '🍚', 'Food'], ['fastfood', '🍔', 'Fast food'], ['soda', '🥤', 'Soda/sweet drinks'], ['transport', '🚌', 'Transport'],
   ['bills', '💡', 'Bills'], ['shopping', '🛍️', 'Shopping'], ['fun', '🎮', 'Fun'], ['health', '💊', 'Health'],
-  ['family', '👨‍👩‍👧', 'Family'], ['learning', '📚', 'Learning'], ['gambling', '🎲', 'Gambling'], ['other', '📦', 'Other'],
+  ['family', '👨‍👩‍👧', 'Family'], ['learning', '📚', 'Learning'], ['payment', '💳', 'Payments'], ['gambling', '🎲', 'Gambling'], ['other', '📦', 'Other'],
 ];
 export const CATS_IN = [['salary', '💼', 'Salary'], ['side', '💰', 'Side income'], ['gift', '🎁', 'Gift'], ['otherin', '➕', 'Other']];
 export const CATS_SAVE = [['savings', '🏦', 'Savings'], ['invest', '📈', 'Investment']];
+export const CATS_LOAN = [['pay', '💳', 'Loan payment'], ['borrow', '🤝', 'Borrowed'], ['lend', '🤲', 'Lent'], ['collect', '💵', 'Paid back to you']];
 export const BAD_CATS = ['fastfood', 'soda', 'gambling'];
-export const catInfo = (id) => [...CATS_OUT, ...CATS_IN, ...CATS_SAVE].find((c) => c[0] === id) || ['other', '📦', 'Other'];
+export const catInfo = (id) => [...CATS_OUT, ...CATS_IN, ...CATS_SAVE, ...CATS_LOAN].find((c) => c[0] === id) || ['other', '📦', 'Other'];
+/** How each record type moves your cash: +1 money comes in, -1 money goes out (savings move out of cash into savings). */
+export const TX_SIGN = { in: 1, collect: 1, borrow: 1, out: -1, pay: -1, lend: -1, save: -1 };
 
 // ---------- Memoization (invalidated automatically on every save) ----------
 let memoVer = -1;
@@ -72,6 +75,79 @@ export function monthTotals(k = today()) {
   const by = (type) => sum(month.filter((t) => t.type === type).map((t) => +t.amount));
   return { month, out: by('out'), inc: by('in'), saved: by('save') };
 }
+
+// ---------- Balance, loans & money leaks ----------
+const amt = (t) => +t.amount || 0;
+const round2 = (n) => Math.round(n * 100) / 100;
+/** One loan with its money worked out from its records. */
+export function loanStatus(l) {
+  const txs = S.tx.filter((t) => t.loanId === l.id);
+  const principal = sum(txs.filter((t) => t.type === 'borrow' || t.type === 'lend').map(amt));
+  const paid = sum(txs.filter((t) => t.type === 'pay' || t.type === 'collect').map(amt));
+  const total = +l.total > 0 ? +l.total : principal;
+  const left = Math.max(0, round2(total - paid));
+  return { ...l, principal, paid, total, left, done: total > 0 && left <= 0, overdue: !!l.due && left > 0 && l.due < today(), records: txs.length };
+}
+/** How much money you have: cash (wallet + bank + e-wallets), savings, debts and money owed to you. */
+export function balances() {
+  return cached('balances', () => {
+    let cash = +S.settings.moneyStart || 0, savings = 0;
+    for (const t of S.tx) { cash += (TX_SIGN[t.type] || 0) * amt(t); if (t.type === 'save') savings += amt(t); }
+    const loans = S.loans.map(loanStatus);
+    const owe = sum(loans.filter((l) => l.dir === 'owe').map((l) => l.left));
+    const owed = sum(loans.filter((l) => l.dir === 'owed').map((l) => l.left));
+    cash = round2(cash);
+    return { cash, savings, owe, owed, net: round2(cash + savings - owe + owed), loans, set: S.settings.moneyStart != null };
+  });
+}
+/** Make the tracked cash equal what you really have now (adjusts the starting balance, keeps every record). */
+export function setCashNow(actual) {
+  let cash = +S.settings.moneyStart || 0; // computed fresh (not memoized) so it always matches the records right now
+  for (const t of S.tx) cash += (TX_SIGN[t.type] || 0) * amt(t);
+  S.settings.moneyStart = round2((+S.settings.moneyStart || 0) + (+actual - cash));
+}
+const monthKey = (k, back = 0) => { const d = parseKey(k); const m = new Date(d.getFullYear(), d.getMonth() - back, 1); return `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, '0')}`; };
+/** Personal money leaks from your records, most serious first: [{ ic, t, sev }]. */
+export function moneyLeaks(k = today()) {
+  const st = S.settings, out = [];
+  const mk = monthKey(k), pk = monthKey(k, 1);
+  const outIn = (m) => S.tx.filter((t) => t.type === 'out' && t.date.startsWith(m));
+  const byCat = (list) => list.reduce((o, t) => ((o[t.cat] = (o[t.cat] || 0) + amt(t)), o), {});
+  const now = byCat(outIn(mk)), prev = byCat(outIn(pk));
+  const month = S.tx.filter((t) => t.date.startsWith(mk));
+  const tot = (type) => sum(month.filter((t) => t.type === type).map(amt));
+  const spent = tot('out'), inc = tot('in'), paid = tot('pay'), borrowed = tot('borrow');
+  const names = { fastfood: 'Fast food', soda: 'Soda and sweet drinks', gambling: 'Gambling' };
+  for (const c of BAD_CATS) if (now[c] > 0) out.push({ ic: catInfo(c)[1], sev: c === 'gambling' ? 3 : 2, t: `${names[c]}: ${cur(now[c])} this month — about ${cur(now[c] * 12)} a year.` });
+  for (const l of S.loans.map(loanStatus).filter((x) => x.overdue && x.dir === 'owe')) out.push({ ic: '⏰', sev: 3, t: `Your loan from ${esc(l.who)} is overdue — ${cur(l.left)} left. Talk to them before it grows.` });
+  if (inc > 0 && spent + paid > inc) out.push({ ic: '📉', sev: 3, t: `You spent more than you received this month (${cur(spent + paid)} vs ${cur(inc)}).` });
+  if (borrowed > 0 && spent > inc) out.push({ ic: '🤝', sev: 2, t: `You borrowed ${cur(borrowed)} this month. Avoid borrowing to pay for everyday spending.` });
+  if (inc > 0 && paid / inc >= 0.4) out.push({ ic: '💳', sev: 2, t: `Loan payments take ${Math.round((paid / inc) * 100)}% of your income this month. Avoid new debt until it’s lower.` });
+  const d = parseKey(k), dim = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  const pace = (st.budget * d.getDate()) / dim;
+  if (st.budget && spent > pace * 1.1) out.push({ ic: '🔥', sev: 2, t: `You're ahead of budget pace: ${cur(spent)} spent, about ${cur(Math.round(pace))} would be on track by today.` });
+  const ups = Object.entries(now).filter(([c, v]) => !BAD_CATS.includes(c) && prev[c] > 0 && v > prev[c] * 1.3 && v - prev[c] >= Math.max(1, st.budget * 0.05))
+    .sort((a, b) => (b[1] - prev[b[0]]) - (a[1] - prev[a[0]])).slice(0, 2);
+  for (const [c, v] of ups) out.push({ ic: catInfo(c)[1], sev: 1, t: `${catInfo(c)[2]} is up ${Math.round((v / prev[c] - 1) * 100)}% vs last month (${cur(v)}).` });
+  if (st.budget > 0) {
+    const small = outIn(mk).filter((t) => amt(t) <= st.budget / 100);
+    if (small.length >= 8) out.push({ ic: '🪙', sev: 1, t: `${small.length} small purchases added up to ${cur(sum(small.map(amt)))}. Small leaks sink big ships.` });
+  }
+  const b = balances();
+  if (b.set && b.cash < 0) out.push({ ic: '⚠️', sev: 2, t: 'Your tracked cash is below zero. Update your balance or check for a wrong record.' });
+  return out.sort((a, b2) => b2.sev - a.sev);
+}
+/** Common money traps, always worth avoiding. */
+export const MONEY_TRAPS = [
+  ['🎲', 'Online gambling, e-sabong and "investments" that promise fast, guaranteed returns.'],
+  ['📱', 'Online lending apps and 5-6 lenders — hidden fees, huge interest, and harassment of your contacts.'],
+  ['🛒', 'Impulse buys from sales, live selling and late-night "add to cart". Wait 24 hours first.'],
+  ['💳', 'Stacking installments and buy-now-pay-later. Small monthly payments add up fast.'],
+  ['💳', 'Paying only the minimum on a credit card — the interest snowballs.'],
+  ['🤲', 'Lending money you can’t afford to lose. Lend only what you could give as a gift.'],
+  ['🔐', 'Sharing OTPs or sending money to "urgent" messages — scammers target e-wallets.'],
+  ['🥤', 'Daily fast food, milk tea and soft drinks — small habits that cost thousands a month.'],
+];
 
 // ---------- Habits & streaks ----------
 /** Which bad habits slipped on day k: from the evening check-in, money log and urge log. */
