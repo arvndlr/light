@@ -69,7 +69,7 @@ Settings → **Add reminders to my calendar** downloads a calendar file with dai
 ## Development
 
 ```bash
-npm test        # 77 unit tests for the core logic (Node 20+, no dependencies)
+npm test        # 83 unit tests for the core logic (Node 20+, no dependencies)
 npm start       # serve on http://localhost:5173
 ```
 
