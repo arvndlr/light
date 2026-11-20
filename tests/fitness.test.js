@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { EXERCISES, WORKOUTS, WEEK_PLAN, workoutSteps, workoutMinutes, suggestWorkout, exercise, levelInfo } from '../js/fitness.js';
 import { dayPlan } from '../js/plan.js';
 import { replaceState, DEFAULTS, S, day } from '../js/store.js';
-import { today } from '../js/util.js';
+import { today, parseKey } from '../js/util.js';
 
 test('every routine only uses known exercises, and every exercise is complete', () => {
   for (const w of WORKOUTS) for (const id of w.moves) assert.ok(exercise(id), `${w.id} → ${id}`);
@@ -40,7 +40,8 @@ beforeEach(() => {
   s.settings.wakeTime = '06:30'; s.settings.bedTime = '22:30';
   replaceState(s);
 });
-const at = (h, m = 0) => { const d = new Date(); d.setHours(h, m, 0, 0); return d; };
+// Times on the app's current day (it rolls over at 3 AM, so after midnight that's still yesterday).
+const at = (h, m = 0) => { const d = parseKey(today()); d.setHours(h, m, 0, 0); return d; };
 test('day plan picks the right block for the time', () => {
   const ids = (h, m) => dayPlan(at(h, m)).blocks.find((b) => b.current)?.id;
   assert.equal(ids(7, 0), 'wake');
