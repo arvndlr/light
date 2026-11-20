@@ -97,7 +97,7 @@ const EMOJI = {
   '☀': 'sun', '🌤': 'sun', '🌙': 'moon', '😴': 'moon', '🌅': 'sunrise', '🌗': 'contrast',
   '💰': 'coin', '✨': 'sparkles', '📊': 'pie', '🌱': 'sprout', '⚙': 'settings',
   '📖': 'book', '📓': 'bookOpen', '📒': 'book', '📚': 'book', '🎓': 'book', '🎯': 'target', '💡': 'bulb', '💧': 'droplet',
-  '🗺': 'flag', '🛡': 'shield', '😂': 'smile', '🙂': 'smile', '➕': 'plus', '🧾': 'receipt', '💳': 'card', '🤝': 'users', '🤲': 'gift', '💵': 'coin', '⏰': 'clock', '📉': 'trending', '🪙': 'coin', '⚠️': 'alert', '⚠': 'alert', '🛒': 'bag', '🔐': 'lock', '📱': 'phone', '🎲': 'dice', '🥤': 'cup', '🔥': 'flame', '🗓': 'calendar',
+  '🗺': 'flag', '🛡': 'shield', '😂': 'smile', '🙂': 'smile', '➕': 'plus', '🧾': 'receipt', '🛠': 'bulb', '🙏': 'sparkle', '🧹': 'checkCircle', '🎧': 'play', '📺': 'eye', '🕳': 'clock', '⭐': 'trophy', '💳': 'card', '🤝': 'users', '🤲': 'gift', '💵': 'coin', '⏰': 'clock', '📉': 'trending', '🪙': 'coin', '⚠️': 'alert', '⚠': 'alert', '🛒': 'bag', '🔐': 'lock', '📱': 'phone', '🎲': 'dice', '🥤': 'cup', '🔥': 'flame', '🗓': 'calendar',
   '🔮': 'compass', '🧩': 'eye', '🧠': 'mind', '⏱': 'timer', '🕰': 'clock', '❤': 'heart', '🏆': 'trophy',
   '🎤': 'mic', '💬': 'message', '🔖': 'bookmark', '📌': 'bookmark', '🎁': 'gift', '🔄': 'refresh', '🔥': 'flame',
   '🏃': 'activity', '📝': 'pen', '📵': 'phoneOff', '📱': 'phone', '🎲': 'dice', '🍔': 'burger', '🥤': 'cup',

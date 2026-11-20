@@ -15,13 +15,14 @@ import { ring, lineChart, barChart, heatmap, areaChart } from './charts.js';
 import { icon, ico, iconize } from './icons.js';
 import { LEVELS, GROUPS, EXERCISES, WORKOUTS, WEEK_PLAN, exercise, workout, workoutSteps, workoutMinutes, suggestWorkout, levelInfo } from './fitness.js';
 import { dayPlan } from './plan.js';
+import { TIME_CATS, KINDS, timeCat, blockMins, fmtHM, blocksOn, dayMinutes, timeSummary, timeInsights, timeFuture, starterSchedule } from './time.js';
 import { DISCLAIMER, RED_FLAGS, EMERGENCY, IMMUNITY, ASTHMA_BASICS, TRIGGERS, EXERCISE_TIPS, FOODS, MYTHS, BREATHING, breathing, SYMPTOMS, asthmaControl } from './health.js';
 import { figureSVG, hasFigure, poseCount, animateFigures } from './figures.js';
 import { setLang, LANGS, locale, tr } from './i18n.js';
 import { setLocale, getLocale } from './util.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '3.4.0';
+const APP_VERSION = '3.5.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
@@ -80,8 +81,8 @@ function persist() {
 }
 
 // ---------- Rendering ----------
-const UI = { tab: 'today', range: 30, domain: 'overall', grow: 'fitness', hyg: null, fitGroup: 'All', mType: 'out', mCat: 'food', mLoanAct: 'pay', mLoan: null, mMonth: null, mRange: 30 };
-const TABS = [['today', 'sun', 'Today'], ['money', 'wallet', 'Money'], ['feed', 'sparkles', 'Feed'], ['stats', 'chart', 'Stats'], ['grow', 'sprout', 'Grow']];
+const UI = { tab: 'today', range: 30, domain: 'overall', grow: 'fitness', hyg: null, fitGroup: 'All', mType: 'out', mCat: 'food', mLoanAct: 'pay', mLoan: null, mMonth: null, mRange: 30, tDay: null, tRange: 7, tbCat: 'learn' };
+const TABS = [['today', 'sun', 'Today'], ['money', 'wallet', 'Money'], ['time', 'clock', 'Time'], ['feed', 'sparkles', 'Feed'], ['stats', 'chart', 'Stats'], ['grow', 'sprout', 'Grow']];
 const firstName = () => (S.profile?.name || 'friend').split(' ')[0];
 
 /**
@@ -102,7 +103,7 @@ function render({ full = false } = {}) {
       `<button class="nav-btn ${UI.tab === id ? 'on' : ''}" data-act="tab" data-tab="${id}" ${UI.tab === id ? 'aria-current="page"' : ''}><span class="ic">${icon(ic, 22)}</span>${n}</button>`).join('');
     document.body.classList.toggle('feed-mode', UI.tab === 'feed');
     if (UI.tab === 'feed' && !full && $('#feed-stage')) return;
-    view.innerHTML = iconize(({ today: viewToday, money: viewMoney, feed: viewFeed, stats: viewStats, grow: viewGrow })[UI.tab]());
+    view.innerHTML = iconize(({ today: viewToday, money: viewMoney, time: viewTime, feed: viewFeed, stats: viewStats, grow: viewGrow })[UI.tab]());
     if (UI.tab === 'feed') feedInit();
     animateFigures();
   } catch (err) {
@@ -571,6 +572,102 @@ function openLoanEdit(id) {
     <p class="tiny muted" style="margin-top:8px">To change an amount, edit its record in Records below.</p>
     <div class="row" style="margin-top:14px;gap:10px"><button type="button" class="btn ghost" data-act="del-loan" data-id="${l.id}">${icon('x', 15)} Delete loan</button><button class="btn primary grow" type="submit">Save</button></div></form>`, { label: 'Edit loan' });
 }
+
+// ----- Time: your schedule, where your hours go, insights, who you're becoming (logic in time.js) -----
+const WD = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const dayName = (dk, k) => (dk === k ? 'Today' : dk === addDays(k, -1) ? 'Yesterday' : dk === addDays(k, 1) ? 'Tomorrow' : fmtDate(dk));
+const nowMins = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
+const inBlock = (b, m) => { const s = minutesOf(b.start), e = s + blockMins(b); return (m >= s && m < e) || (m + 1440 >= s && m + 1440 < e); };
+const repLabel = (b) => !b.rep?.length ? '' : b.rep.length === 7 ? 'Every day' : b.rep.join() === '1,2,3,4,5' ? 'Weekdays' : b.rep.join() === '0,6' ? 'Weekends' : b.rep.map((d) => fmtDate(addDays('2023-01-01', d), { weekday: 'short' })).join(' ');
+
+function timeBar(mins, total = 1440) {
+  const parts = ['invest', 'need', 'drain'].map((kd) => [kd, mins[kd] || 0]);
+  const free = Math.max(0, total - sum(parts.map((p) => p[1])));
+  return `<div class="tbar" role="img" aria-label="How the day is split">${parts.map(([kd, v]) => v ? `<i style="width:${(v / total) * 100}%;background:${KINDS[kd][1]}" title="${KINDS[kd][0]}: ${fmtHM(v)}"></i>` : '').join('')}${free ? `<i class="free" style="width:${(free / total) * 100}%"></i>` : ''}</div>
+  <div class="tlegend">${parts.map(([kd, v]) => `<span><b style="background:${KINDS[kd][1]}"></b>${KINDS[kd][0]} <strong>${fmtHM(v)}</strong></span>`).join('')}<span><b class="free"></b>Unplanned <strong>${fmtHM(free)}</strong></span></div>`;
+}
+
+function viewTime() {
+  const k = today(), dk = UI.tDay || k;
+  const blocks = blocksOn(dk), dm = dayMinutes(dk);
+  const kindsDay = { invest: 0, need: 0, drain: 0 };
+  for (const [c, v] of Object.entries(dm)) kindsDay[timeCat(c)[3]] += v;
+  const sm = timeSummary(UI.tRange, k), ins = timeInsights(k), fut = timeFuture(k);
+  const cats = Object.entries(sm.avg).filter(([, v]) => v >= 1).sort((a, b) => b[1] - a[1]);
+  const maxC = cats[0]?.[1] || 1, now = nowMins();
+  const blockIds = new Set(blocks.map((b) => b.cat));
+  const d = S.days[dk] || {};
+  const tracked = [
+    ['deep', '⏱️', 'Focus sessions', d.deepWork], ['exercise', '🏃', 'Exercise', d.exercise], ['social', '📱', 'Social media', d.evening?.socialMin],
+    ['sleep', '😴', 'Sleep (from check-in)', dm.sleep && !blockIds.has('sleep') ? dm.sleep : 0],
+  ].filter(([c, , , v]) => v > 0 && (c === 'sleep' || !blockIds.has(c) || v > sum(blocks.filter((b) => b.cat === c).map(blockMins))));
+
+  const row = (b) => { const ci = timeCat(b.cat), live = dk === k && inBlock(b, now);
+    return `<button class="tblock ${live ? 'live' : ''} k-${ci[3]}" style="--c:${ci[4]}" data-act="edit-block" data-id="${b.id}">
+      <span class="tb-time"><strong>${esc(b.start)}</strong><span>${esc(b.end)}</span></span>
+      <span class="tb-main"><span class="tb-title">${ico(ci[1], 16)} ${esc(b.title || ci[2])}</span><span class="tiny muted">${fmtHM(blockMins(b))}${b.rep?.length ? ` · ${repLabel(b)}` : ''}${live ? ' · <strong class="tb-now">now</strong>' : ''}</span></span>
+      <span class="tx-edit" aria-hidden="true">${icon('pen', 14)}</span></button>`; };
+
+  return `
+  <h1>Time</h1>
+  <p class="muted small">Everyone gets 24 hours. Spend them like money — invest them.</p>
+  <div class="card time-hero" style="margin-top:14px">
+    <div class="row between"><div class="small muted">${icon('clock', 15)} ${dayName(dk, k)} · your 24 hours</div></div>
+    <div class="big-num money-cash">${fmtHM(kindsDay.invest)} <span class="small muted">invested</span></div>
+    ${timeBar(kindsDay)}
+  </div>
+
+  <div class="sec"><h2>🗓️ Schedule</h2><button class="btn sm primary" data-act="add-block">${icon('plus', 14)} Add</button></div>
+  <div class="card">
+    <div class="row between month-nav"><button class="icon-btn xs" data-act="t-day" data-v="-1" aria-label="Previous day">${icon('chevronUp', 16, 'rot-l')}</button>
+      <strong class="small">${dayName(dk, k)}${dk !== k ? ` · ${fmtDate(dk, { weekday: 'short' })}` : ''}</strong>
+      <button class="icon-btn xs" data-act="t-day" data-v="1" aria-label="Next day">${icon('chevronUp', 16, 'rot-r')}</button></div>
+    ${blocks.length ? blocks.map(row).join('') : `<div class="empty">${S.schedule.length ? 'Nothing scheduled this day.' : 'Plan your day in blocks — work, learning, family, rest. Light shows where your hours really go.'}</div>
+      <div class="row wrap" style="justify-content:center;gap:8px">${S.schedule.length ? `<button class="btn sm" data-act="copy-yday">${icon('copy', 14)} Copy the day before</button>` : `<button class="btn sm primary" data-act="starter-sched">${icon('sparkles', 14)} Start with a typical day</button>`}</div>`}
+    ${tracked.length ? `<div class="t-tracked"><div class="tiny muted">Tracked by Light</div>${tracked.map(([, ic, n, v]) => `<span class="chip sm">${ico(ic, 14)}${n} · ${fmtHM(v)}</span>`).join('')}</div>` : ''}
+  </div>
+
+  <div class="sec"><h2>📊 Where your time goes</h2></div>
+  <div class="card">
+    <div class="seg mini bal-seg" role="tablist" aria-label="Range">${[[7, '7 days'], [30, '30 days']].map(([v, n]) => `<button type="button" role="tab" aria-selected="${UI.tRange === v}" class="${UI.tRange === v ? 'on' : ''}" data-act="t-range" data-v="${v}">${n}</button>`).join('')}</div>
+    ${sm.days ? `<div class="tiny muted" style="margin-bottom:8px">Average per day · ${sm.days} ${sm.days === 1 ? 'day' : 'days'} with records</div>
+      ${timeBar(sm.kinds)}
+      <div style="margin-top:12px">${cats.map(([c, v]) => { const ci = timeCat(c); return `<div class="bar-row"><span class="small bar-lbl">${ico(ci[1], 16)} ${ci[2]}</span><span class="bar"><i style="width:${(v / maxC) * 100}%;background:${KINDS[ci[3]][1]}"></i></span><span class="small bar-val">${fmtHM(v)}</span></div>`; }).join('')}</div>`
+      : '<div class="empty">Add your schedule and in a day or two you’ll see where your hours go.</div>'}
+  </div>
+
+  <div class="sec"><h2>💡 Insights</h2><span class="muted small">${ins.length ? 'from your last 7 days' : ''}</span></div>
+  <div class="card">${ins.length ? ins.map((x) => `<div class="leak sev-${x.sev === 1 ? 'ok' : x.sev}"><span class="leak-ic" aria-hidden="true">${ico(x.ic, 18)}</span><span class="small">${x.t}</span></div>`).join('')
+    : '<div class="small muted">Log at least 2 days and Light will tell you how you use your day — your time leaks, your best hours and how you compare to last week.</div>'}</div>
+
+  <div class="sec"><h2>🔮 What you could become</h2></div>
+  ${fut.need ? `<div class="card empty">Track your time for ${fut.need} days and Light will show who your hours are turning you into. (${fut.have}/${fut.need} days)</div>` : `
+  <div class="card become">
+    <div class="row"><div style="font-size:2.4rem" aria-hidden="true">${fut.persona[0]}</div><div><div class="tiny muted">At this pace you're</div><h2>${esc(fut.persona[1])}</h2></div></div>
+    <p class="small" style="margin-top:8px">${esc(fut.persona[2])}</p>
+    ${fut.paths.map((p) => { const ci = timeCat(p.c); return `<div class="path">
+      <div class="row between"><strong class="small">${ico(ci[1], 16)} ${ci[2]}</strong><span class="tiny muted">${fmtHM(p.perDay)}/day</span></div>
+      <div class="path-grid"><div><div class="tiny muted">1 year</div><strong>${p.yr} h</strong><div class="tiny">${p.lvl1 ? esc(p.lvl1[1]) : 'Getting started'}</div></div>
+        <div><div class="tiny muted">5 years</div><strong>${p.five} h</strong><div class="tiny">${p.lvl5 ? esc(p.lvl5[1]) : 'Getting started'}</div></div></div>
+      <div class="tiny muted">You become ${esc(p.ident)}${p.mastery && p.mastery <= 40 ? ` · mastery (10,000 h) in about ${p.mastery} years` : ''}.</div></div>`; }).join('')}
+    ${fut.drainMin >= 15 ? `<div class="path drain"><strong class="small">${ico('⚠️', 16)} Time leaks cost you ${fut.drainDays} full days a year</strong>
+      ${fut.swap ? `<div class="tiny muted" style="margin-top:4px">Swap half of it for learning and you gain ${fut.swap} hours of growth a year.</div>` : ''}</div>` : ''}
+  </div>`}`;
+}
+
+function blockForm(b, dk) {
+  const cat = b?.cat || UI.tbCat || 'learn', rep = b?.rep || [];
+  return `<form data-form="block" data-id="${b?.id || ''}" data-day="${dk}" novalidate><div class="row between"><h2>${b ? '✏️ Edit block' : '➕ Add to your schedule'}</h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
+    <div class="chips tb-cats" role="radiogroup" aria-label="Category">${TIME_CATS.map(([id, ic, n, kd]) => `<button type="button" role="radio" aria-checked="${cat === id}" class="chip sm k-${kd} ${cat === id ? 'on' : ''}" data-act="tb-cat" data-v="${id}">${ico(ic, 14)}${n}</button>`).join('')}</div>
+    <label class="lbl" for="b-title">What</label><input type="text" id="b-title" value="${esc(b?.title || '')}" placeholder="e.g. Python course, gym, family dinner" maxlength="60">
+    <div class="grid"><div><label class="lbl" for="b-start">Start time</label><input type="time" id="b-start" value="${b?.start || ''}" required></div>
+      <div><label class="lbl" for="b-end">End time</label><input type="time" id="b-end" value="${b?.end || ''}" required></div></div>
+    <div class="lbl">Repeat</div>
+    <div class="row between wd-row" role="group" aria-label="Repeat on">${WD.map((w, i) => `<button type="button" class="wd ${rep.includes(i) ? 'on' : ''}" data-act="tb-day" data-v="${i}" aria-pressed="${rep.includes(i)}" aria-label="${fmtDate(addDays('2023-01-01', i), { weekday: 'long' })}">${w}</button>`).join('')}</div>
+    <div class="row wrap" style="gap:6px;margin-top:8px">${[['once', 'Just this day'], ['all', 'Every day'], ['wk', 'Weekdays'], ['we', 'Weekends']].map(([v, n]) => `<button type="button" class="chip sm" data-act="tb-quick" data-v="${v}">${n}</button>`).join('')}</div>
+    <div class="row" style="margin-top:16px;gap:10px">${b ? `${b.rep?.length ? `<button type="button" class="btn ghost" data-act="skip-block" data-id="${b.id}" data-day="${dk}">Skip ${dayName(dk, today()).toLowerCase()}</button>` : ''}<button type="button" class="btn ghost" data-act="del-block" data-id="${b.id}">${icon('x', 15)} Delete</button>` : ''}<button class="btn primary grow" type="submit">Save</button></div></form>`;
+}
+const openBlock = (id) => { const b = id ? S.schedule.find((x) => x.id === id) : null; if (id && !b) return; openModal(blockForm(b, UI.tDay || today()), { label: b ? 'Edit block' : 'Add block' }); };
 
 // ----- Feed: immersive, personalized "For You" reels (algorithm in feed.js) -----
 const FEED_BATCH = 6, CLAIM_CAP = 15, TIME_CHECK_EVERY = 25;
@@ -1746,6 +1843,33 @@ const A = {
   },
   'm-month': (el) => { UI.mMonth = shiftMonth(UI.mMonth || today().slice(0, 7), +el.dataset.v); render(); },
   'set-balance': () => openBalance(),
+  't-day': (el) => { const n = addDays(UI.tDay || today(), +el.dataset.v); UI.tDay = n === today() ? null : n; render(); },
+  't-range': (el) => { UI.tRange = +el.dataset.v; render(); },
+  'add-block': () => openBlock(null),
+  'edit-block': (el) => openBlock(el.dataset.id),
+  'tb-cat': (el) => { UI.tbCat = el.dataset.v; $$('[data-act="tb-cat"]').forEach((b) => { b.classList.toggle('on', b === el); b.setAttribute('aria-checked', b === el); }); },
+  'tb-day': (el) => { const on = !el.classList.contains('on'); el.classList.toggle('on', on); el.setAttribute('aria-pressed', on); },
+  'tb-quick': (el) => {
+    const set = { once: [], all: [0, 1, 2, 3, 4, 5, 6], wk: [1, 2, 3, 4, 5], we: [0, 6] }[el.dataset.v];
+    $$('[data-act="tb-day"]').forEach((b) => { const on = set.includes(+b.dataset.v); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  },
+  'del-block': (el) => {
+    const i = S.schedule.findIndex((b) => b.id === el.dataset.id); if (i < 0) return;
+    const b = S.schedule[i];
+    if (b.rep?.length && !confirm(`Delete "${b.title || timeCat(b.cat)[2]}" from every day it repeats?`)) return;
+    closeModal(); removeWithUndo(S.schedule, i, 'Block');
+  },
+  'skip-block': (el) => {
+    const b = S.schedule.find((x) => x.id === el.dataset.id); if (!b) return;
+    b.skip = [...(b.skip || []), el.dataset.day]; persist(); closeModal(); render(); toast('Skipped for that day');
+  },
+  'starter-sched': () => { S.schedule.push(...starterSchedule()); persist(); buzz(); render(); toast('🗓️ Typical day added — tap any block to change it'); },
+  'copy-yday': () => {
+    const dk = UI.tDay || today(), src = blocksOn(addDays(dk, -1));
+    if (!src.length) { toast('Nothing to copy from the day before'); return; }
+    S.schedule.push(...src.map((b) => ({ id: uid(), cat: b.cat, title: b.title || '', start: b.start, end: b.end, date: dk })));
+    persist(); render(); toast(`Copied ${src.length} blocks`);
+  },
   'edit-tx': (el) => openTxEdit(el.dataset.id),
   'etx-type': (el) => {
     $$('[data-act="etx-type"]').forEach((b) => { b.classList.toggle('on', b === el); b.setAttribute('aria-checked', b === el); });
@@ -1905,6 +2029,20 @@ const FORMS = {
     else toast(UI.mType === 'in' ? '💰 Income logged' : '🧾 Expense logged');
     render();
     $('#m-amt')?.focus();
+  },
+  block: (form) => {
+    const start = $('#b-start').value, end = $('#b-end').value;
+    if (!start || !end) { toast('Set a start and end time'); (start ? $('#b-end') : $('#b-start')).focus(); return; }
+    if (start === end) { toast('Start and end can’t be the same'); $('#b-end').focus(); return; }
+    const cat = $('[data-act="tb-cat"].on')?.dataset.v || 'learn';
+    const rep = $$('[data-act="tb-day"].on').map((b) => +b.dataset.v);
+    const dk = form.dataset.day, fields = { cat, title: $('#b-title').value.trim(), start, end };
+    const b = S.schedule.find((x) => x.id === form.dataset.id);
+    if (b) {
+      Object.assign(b, fields);
+      if (rep.length) { b.rep = rep; b.from = b.from || b.date || dk; delete b.date; } else { delete b.rep; delete b.from; delete b.skip; b.date = b.date || dk; }
+    } else S.schedule.push({ id: uid(), ...fields, ...(rep.length ? { rep, from: dk } : { date: dk }) });
+    UI.tbCat = cat; persist(); closeModal(); buzz(); render(); toast(b ? '✏️ Block updated' : `🗓️ Added · ${fmtHM(blockMins(fields))}`);
   },
   balance: () => {
     const v = $('#bal-v').value;

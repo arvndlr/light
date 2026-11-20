@@ -26,6 +26,7 @@ export const DEFAULTS = () => ({
   loans: [],    // { id, dir: 'owe'|'owed', who, total?, due?, note, created }: amounts come from its tx records
   jokes: [], journal: [], saved: [], sos: [], focusLog: [],
   workouts: [], // { id, date, mins, level, partial? }
+  schedule: [], // time blocks { id, cat, title, start, end, note, date (one-off) | rep: [weekdays], from, skip: [dates] }
   badges: {}, claims: {}, reviews: {}, chests: {},
   feedPrefs: {}, // card kind -> learned preference score (see feed.js)
   feedLikes: {}, // card id -> date liked
@@ -36,7 +37,7 @@ export const DEFAULTS = () => ({
 });
 
 const OBJECT_KEYS = ['days', 'badges', 'claims', 'reviews', 'chests', 'feedPrefs', 'feedLikes', 'quiz', 'feedSeen', 'storiesRead'];
-const ARRAY_KEYS = ['tx', 'loans', 'jokes', 'journal', 'saved', 'sos', 'focusLog', 'workouts'];
+const ARRAY_KEYS = ['tx', 'loans', 'jokes', 'journal', 'saved', 'sos', 'focusLog', 'workouts', 'schedule'];
 const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
 
 /** Upgrade any older (or partially corrupt) document to the current schema. Never throws. */
