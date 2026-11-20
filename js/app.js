@@ -15,6 +15,7 @@ import { ring, lineChart, barChart, heatmap, areaChart } from './charts.js';
 import { icon, ico, iconize } from './icons.js';
 import { LEVELS, GROUPS, EXERCISES, WORKOUTS, WEEK_PLAN, exercise, workout, workoutSteps, workoutMinutes, suggestWorkout, levelInfo } from './fitness.js';
 import { dayPlan } from './plan.js';
+import { me, VALUES, valuesCheck, STRENGTH_QS, scoreStrengths, topStrengths, strengthInfo, TRAITS as BIG5, TRAIT_QS, scoreTraits, goodDayFormula, identitySentence, ID_TEMPLATES, identityProgress } from './me.js';
 import { native, isAndroidWeb, APK_URL, syncScreen, screenOn, screenAvg, appCat } from './screen.js';
 import { TIME_CATS, KINDS, timeCat, blockMins, fmtHM, blocksOn, dayMinutes, timeSummary, timeInsights, timeFuture, starterSchedule } from './time.js';
 import { DISCLAIMER, RED_FLAGS, EMERGENCY, IMMUNITY, ASTHMA_BASICS, TRIGGERS, EXERCISE_TIPS, FOODS, MYTHS, BREATHING, breathing, SYMPTOMS, asthmaControl } from './health.js';
@@ -23,7 +24,7 @@ import { setLang, LANGS, locale, tr } from './i18n.js';
 import { setLocale, getLocale } from './util.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '3.6.0';
+const APP_VERSION = '3.7.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
@@ -82,8 +83,8 @@ function persist() {
 }
 
 // ---------- Rendering ----------
-const UI = { tab: 'today', range: 30, domain: 'overall', grow: 'fitness', hyg: null, fitGroup: 'All', mType: 'out', mCat: 'food', mLoanAct: 'pay', mLoan: null, mMonth: null, mRange: 30, tDay: null, tRange: 7, tbCat: 'learn', scView: 'today', scAll: false };
-const TABS = [['today', 'sun', 'Today'], ['money', 'wallet', 'Money'], ['time', 'clock', 'Time'], ['feed', 'sparkles', 'Feed'], ['stats', 'chart', 'Stats'], ['grow', 'sprout', 'Grow']];
+const UI = { tab: 'today', range: 30, domain: 'overall', grow: 'fitness', hyg: null, fitGroup: 'All', mType: 'out', mCat: 'food', mLoanAct: 'pay', mLoan: null, mMonth: null, mRange: 30, tDay: null, tRange: 7, tbCat: 'learn', scView: 'today', scAll: false, me: 'who', quiz: null, valSel: [] };
+const TABS = [['today', 'sun', 'Today'], ['money', 'wallet', 'Money'], ['time', 'clock', 'Time'], ['feed', 'sparkles', 'Feed'], ['me', 'user', 'Me'], ['grow', 'sprout', 'Grow']];
 const firstName = () => (S.profile?.name || 'friend').split(' ')[0];
 
 /**
@@ -104,7 +105,7 @@ function render({ full = false } = {}) {
       `<button class="nav-btn ${UI.tab === id ? 'on' : ''}" data-act="tab" data-tab="${id}" ${UI.tab === id ? 'aria-current="page"' : ''}><span class="ic">${icon(ic, 22)}</span>${n}</button>`).join('');
     document.body.classList.toggle('feed-mode', UI.tab === 'feed');
     if (UI.tab === 'feed' && !full && $('#feed-stage')) return;
-    view.innerHTML = iconize(({ today: viewToday, money: viewMoney, time: viewTime, feed: viewFeed, stats: viewStats, grow: viewGrow })[UI.tab]());
+    view.innerHTML = iconize(({ today: viewToday, money: viewMoney, time: viewTime, feed: viewFeed, me: viewMe, grow: viewGrow })[UI.tab]());
     if (UI.tab === 'feed') feedInit();
     animateFigures();
   } catch (err) {
@@ -120,11 +121,13 @@ function render({ full = false } = {}) {
 const GROW_TABS = ['fitness', 'health', 'comedy', 'eq', 'glow', 'freedom', 'journal', 'badges'];
 function routeFromHash() {
   const [tab, sub] = location.hash.replace(/^#\/?/, '').split('/');
-  const r = { tab: TABS.some((t) => t[0] === tab) ? tab : 'today' };
+  const r = { tab: TABS.some((t) => t[0] === tab) ? tab : tab === 'stats' ? 'me' : 'today' };
   if (GROW_TABS.includes(sub)) r.grow = sub;
+  if (tab === 'stats') r.me = 'stats';
+  else if (r.tab === 'me' && ['who', 'future', 'stats'].includes(sub)) r.me = sub;
   return r;
 }
-const hashFor = () => `#/${UI.tab}${UI.tab === 'grow' ? '/' + UI.grow : ''}`;
+const hashFor = () => `#/${UI.tab}${UI.tab === 'grow' ? '/' + UI.grow : UI.tab === 'me' ? '/' + (UI.me || 'who') : ''}`;
 function syncHash(replace = false) {
   const h = hashFor();
   if (location.hash === h) return;
@@ -1007,6 +1010,142 @@ document.addEventListener('pointerup', (e) => {
 
 // ----- Stats -----
 const trendTag = (d) => (d == null || isNaN(d) ? '' : d > 0 ? `<span class="trend-up">▲ ${d}</span>` : d < 0 ? `<span class="trend-down">▼ ${Math.abs(d)}</span>` : '<span class="muted">● 0</span>');
+// ----- Me: who I am, future me, stats (logic in me.js) -----
+const ME_TABS = [['who', 'user', 'Who I am'], ['future', 'compass', 'Future me'], ['stats', 'chart', 'Stats']];
+const AGREE = [[1, 'Not me at all'], [2, 'Not really'], [3, 'Sometimes'], [4, 'Mostly me'], [5, 'Totally me']];
+const LVL_DOT = ['var(--bad)', 'var(--amber)', 'var(--good)'];
+
+function viewMe() {
+  const name = firstName(), lvl = levelOf(computeXP()), sentence = identitySentence(S.profile?.name || name);
+  const tab = UI.me || 'who';
+  const body = tab === 'future' ? meFuture() : tab === 'stats' ? viewStats() : meWho();
+  return `
+  <div class="me-head">
+    <div class="me-avatar" aria-hidden="true">${esc((S.profile?.name || '?').trim().charAt(0).toUpperCase())}</div>
+    <div class="grow"><h1>${esc(S.profile?.name || 'Me')}</h1><div class="small muted">Level ${lvl} · ${titleOf(lvl)}</div></div>
+  </div>
+  ${sentence ? `<p class="me-sentence">${esc(sentence)}</p>` : ''}
+  <div class="seg me-seg" role="tablist" aria-label="Me sections">${ME_TABS.map(([id, ic, n]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? 'on' : ''}" data-act="me-tab" data-v="${id}">${icon(ic, 15)}${n}</button>`).join('')}</div>
+  <div class="me-body">${body}</div>`;
+}
+
+function meWho() {
+  const m = me(), { top, edge } = topStrengths(3), vc = valuesCheck(), f = goodDayFormula();
+  const keys = lastN(30), ins = insights(keys);
+  const traitsDone = Object.keys(m.traits).length > 0;
+  const cta = (act, ic, t, s, mins, v = '') => `<button class="me-cta" data-act="${act}"${v ? ` data-v="${v}"` : ''}><span class="leak-ic" aria-hidden="true">${ico(ic, 18)}</span><span class="grow"><strong class="small">${t}</strong><span class="tiny muted">${s}</span></span><span class="tiny muted">${mins}</span></button>`;
+  const lived = vc.filter((v) => v.r);
+  const gap = lived.find((v) => v.r.lvl === 0);
+  return `
+  <div class="sec"><h2>🧭 What matters to you</h2>${m.values.length ? '<button class="btn sm ghost" data-act="me-values">Edit</button>' : ''}</div>
+  ${m.values.length ? `<div class="card">
+      ${vc.map((v, i) => `<div class="val-row"><span class="val-rank">${i + 1}</span><span class="small grow"><strong>${ico(v.ic, 15)} ${v.n}</strong>${v.r ? `<span class="tiny muted val-ev">${esc(v.r.t)}</span>` : v.measurable ? '<span class="tiny muted val-ev">not enough data yet</span>' : ''}</span>
+        ${v.r ? `<span class="val-dot" style="background:${LVL_DOT[v.r.lvl]}" title="${['Barely in your days', 'Some', 'Strong'][v.r.lvl]}"></span>` : ''}</div>`).join('')}
+      ${gap ? `<div class="insight small" style="margin-top:10px">${esc(`You say ${gap.n.toLowerCase()} matters to you, but it barely shows in your days (${gap.r.t}). What’s one small thing you could do for it today?`)}</div>`
+        : lived.length ? '<div class="insight small" style="margin-top:10px;border-left-color:var(--good)">Your days match what you say matters. That’s integrity — keep going.</div>' : ''}
+    </div>`
+    : `<div class="card">${cta('me-values', '🧭', 'Find your values', 'Pick the 5 things that matter most to you. Light checks if your days match.', '1 min')}</div>`}
+
+  <div class="sec"><h2>💎 Your strengths</h2>${top.length ? '<button class="btn sm ghost" data-act="me-quiz" data-v="strengths">Retake</button>' : ''}</div>
+  ${top.length ? `<div class="card">
+      <div class="grid g3 money-3">${top.map((id, i) => { const s = strengthInfo(id); return `<div class="str-card ${i === 0 ? 'first' : ''}"><div style="font-size:1.6rem" aria-hidden="true">${s[1]}</div><strong class="small">${s[2]}</strong></div>`; }).join('')}</div>
+      ${edge ? `<div class="tiny muted" style="margin-top:10px">${esc(`Growth edge: ${strengthInfo(edge)[2]} — your lowest score. Light’s Grow pages can help you build it.`)}</div>` : ''}
+    </div>`
+    : `<div class="card">${cta('me-quiz', '💎', 'Discover your strengths', '20 quick statements. Find what you’re naturally great at.', '3 min', 'strengths')}</div>`}
+
+  <div class="sec"><h2>🧬 Your personality</h2>${traitsDone ? '<button class="btn sm ghost" data-act="me-quiz" data-v="traits">Retake</button>' : ''}</div>
+  ${traitsDone ? `<div class="card">${BIG5.map(([id, ic, n, , hi, lo]) => { const v = m.traits[id] ?? 50; return `<div class="trait">
+      <div class="row between"><strong class="small">${ico(ic, 15)} ${n}</strong><span class="tiny muted">${v}</span></div>
+      <span class="bar trait-bar"><i style="width:${Math.max(4, v)}%"></i></span><div class="tiny muted">${v >= 60 ? hi : v <= 40 ? lo : 'Balanced — a bit of both, depending on the situation.'}</div></div>`; }).join('')}</div>`
+    : `<div class="card">${cta('me-quiz', '🧬', 'Personality snapshot', '10 statements on the five big personality traits.', '2 min', 'traits')}</div>`}
+
+  <div class="sec"><h2>✨ Your formula for a good day</h2>${f.days ? `<span class="muted small">from ${f.days} days</span>` : ''}</div>
+  <div class="card">${f.need ? `<div class="small muted">Check in (mood) on ${f.need} days and Light will find what your best days have in common. (${f.have}/${f.need})</div>` : `
+    ${f.lifts.length ? `<div class="tiny muted" style="margin-bottom:6px">Your mood is higher on days when…</div>${f.lifts.map((x) => `<div class="leak sev-ok"><span class="leak-ic" aria-hidden="true">${ico(x.ic, 18)}</span><span class="small grow">${x.t}</span><strong class="small amt-in">+${x.lift}</strong></div>`).join('')}`
+      : '<div class="small muted">No clear pattern yet — keep checking in and trying different things.</div>'}
+    ${f.drags.length ? `<div class="tiny muted" style="margin:10px 0 6px">Surprisingly, your mood is lower when…</div>${f.drags.map((x) => `<div class="leak sev-2"><span class="leak-ic" aria-hidden="true">${ico(x.ic, 18)}</span><span class="small grow">${x.t}</span><strong class="small" style="color:var(--bad)">${x.lift}</strong></div>`).join('')}` : ''}
+    ${f.best ? `<div class="tiny muted" style="margin-top:10px">Best day of your week: <strong>${f.best}</strong> · hardest: <strong>${f.worst}</strong></div>` : ''}`}</div>
+
+  <div class="sec"><h2>🧩 Know yourself</h2><span class="muted small">last 30 days</span></div>
+  <div class="card"><div class="small muted" style="margin-bottom:8px">Bad-habit days</div>${ins.slipCounts.map(({ h, n: c }) => `<div class="bar-row"><span class="small bar-lbl">${ico(h.ic, 16)} ${h.name}</span><span class="bar"><i style="width:${(c / Math.max(1, keys.length)) * 100}%;background:var(--bad)"></i></span><span class="small bar-val">${c} day${c === 1 ? '' : 's'}</span></div>`).join('')}</div>
+  <div class="card">${ins.lines.map((t) => `<div class="insight small">${t}</div>`).join('')}</div>`;
+}
+
+function meFuture() {
+  const m = me(), k = today();
+  const letters = m.letters.slice().sort((a, b) => a.open.localeCompare(b.open));
+  const idCard = (idn) => {
+    const p = identityProgress(idn, k);
+    const proj = idn.kind === 'time'
+      ? `<div class="path-grid"><div><div class="tiny muted">1 year</div><strong>${p.yr} h</strong><div class="tiny">${p.lvl1 ? esc(p.lvl1[1]) : 'Getting started'}</div></div><div><div class="tiny muted">5 years</div><strong>${p.five} h</strong><div class="tiny">${p.lvl5 ? esc(p.lvl5[1]) : 'Getting started'}</div></div></div>`
+      : idn.kind === 'money' ? `<div class="path-grid"><div><div class="tiny muted">1 year</div><strong>${cur(p.yr)}</strong><div class="tiny">saved or paid off</div></div><div><div class="tiny muted">5 years</div><strong>${cur(p.five)}</strong><div class="tiny">at this pace</div></div></div>`
+        : `<div class="tiny muted" style="margin:8px 0">At this pace: about <strong>${p.yr}</strong> clean days in the next year.</div>`;
+    return `<div class="card id-card">
+      <div class="row between"><div class="row" style="gap:10px"><span class="id-ic" aria-hidden="true">${idn.ic}</span><div><div class="tiny muted">I am becoming</div><strong>${esc(idn.t)}</strong></div></div>
+        <button class="icon-btn xs" data-act="del-id" data-id="${idn.id}" aria-label="Remove ${esc(idn.t)}">${icon('x', 14)}</button></div>
+      <div class="id-dots" aria-label="Votes in the last 14 days">${p.dots.map((on, i) => `<i class="${on ? 'on' : ''} ${i === 13 ? 'today' : ''}"></i>`).join('')}</div>
+      <div class="grid g3 money-3"><div><div class="tiny muted">This week</div><strong class="small">${p.fmt(p.week)}</strong></div><div><div class="tiny muted">30 days</div><strong class="small">${p.fmt(p.month)}</strong></div><div><div class="tiny muted">Streak</div><strong class="small">${p.streak} ${p.streak === 1 ? 'day' : 'days'}</strong></div></div>
+      ${proj}${p.early ? '<div class="tiny muted">Early estimate — it gets more accurate after 2 weeks.</div>' : ''}
+      <button class="btn sm block" data-act="id-vote" data-id="${idn.id}">${icon('check', 14)} ${idn.kind === 'time' ? 'Cast today’s vote: add 30 min to my schedule' : idn.kind === 'money' ? 'Cast today’s vote: save or pay something' : 'Cast today’s vote: stay clean tonight'}</button>
+    </div>`;
+  };
+  return `
+  <div class="sec"><h2>🔮 Future you — 1 year</h2></div>
+  ${viewProjection()}
+
+  <div class="sec"><h2>🌱 Who you’re becoming</h2><button class="btn sm primary" data-act="add-id">${icon('plus', 14)} Add</button></div>
+  <p class="small muted" style="margin:-4px 0 10px">Every action is a vote for the person you want to become. Choose who that is.</p>
+  ${m.ids.length ? m.ids.map(idCard).join('') : `<div class="card empty">Pick who you want to become — a software engineer, fit and strong, debt-free, a great parent. Light counts every hour and peso you put in and shows where it leads in 1 and 5 years.
+    <div style="margin-top:12px"><button class="btn sm primary" data-act="add-id">${icon('plus', 14)} Choose who I’m becoming</button></div></div>`}
+
+  <div class="sec"><h2>✉️ Letters to future you</h2><button class="btn sm" data-act="write-letter">${icon('pen', 14)} Write</button></div>
+  <div class="card">${letters.length ? letters.map((l) => l.open <= k
+      ? `<div class="letter open"><div class="tiny muted">Written ${fmtDate(l.date, { month: 'short', day: 'numeric', year: 'numeric' })}</div><p class="small" data-i18n-skip>${esc(l.text).replace(/\n/g, '<br>')}</p></div>`
+      : `<div class="letter sealed"><span class="leak-ic" aria-hidden="true">${icon('lock', 16)}</span><span class="small grow">Sealed letter · opens ${fmtDate(l.open, { month: 'long', day: 'numeric', year: 'numeric' })}</span></div>`).join('')
+    : '<div class="small muted">Write to yourself one year from now: who you hope to be, what you’re struggling with, what you want to remember. Light keeps it sealed until then.</div>'}</div>`;
+}
+
+// Quizzes: one statement per screen, tap an answer to go on.
+function openQuiz(kind) { UI.quiz = { kind, i: 0, ans: [] }; showQuiz(); }
+function showQuiz() {
+  const q = UI.quiz, list = q.kind === 'strengths' ? STRENGTH_QS : TRAIT_QS, x = list[q.i];
+  openModal(`<div class="row between"><h2>${q.kind === 'strengths' ? '💎 Your strengths' : '🧬 Personality snapshot'}</h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
+    <div class="quiz-prog" aria-hidden="true"><i style="width:${(q.i / list.length) * 100}%"></i></div>
+    <div class="tiny muted">${q.i + 1} / ${list.length} · How much is this you?</div>
+    <p class="quiz-q">${esc(x.q)}</p>
+    <div class="quiz-opts">${AGREE.map(([v, n]) => `<button type="button" class="quiz-opt ${q.ans[q.i] === v ? 'on' : ''}" data-act="quiz-ans" data-v="${v}">${n}</button>`).join('')}</div>
+    ${q.i ? `<button type="button" class="btn sm ghost" style="margin-top:10px" data-act="quiz-back">${icon('chevronUp', 14, 'rot-l')} Back</button>` : ''}`, { label: 'Quiz' });
+}
+function openValues() {
+  UI.valSel = me().values.slice();
+  showValues();
+}
+function showValues() {
+  const sel = UI.valSel;
+  openModal(`<div class="row between"><h2>🧭 What matters most?</h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
+    <p class="small muted" style="margin:6px 0 12px">Tap up to 5, most important first.</p>
+    <div class="chips">${VALUES.map(([id, ic, n]) => { const i = sel.indexOf(id); return `<button type="button" class="chip ${i >= 0 ? 'on' : ''}" data-act="val-pick" data-v="${id}" aria-pressed="${i >= 0}">${i >= 0 ? `<b class="val-num">${i + 1}</b>` : ico(ic, 16)}${n}</button>`; }).join('')}</div>
+    <button class="btn primary block" style="margin-top:16px" data-act="save-values" ${sel.length ? '' : 'disabled'}>Save ${sel.length ? `(${sel.length})` : ''}</button>`, { label: 'Values' });
+}
+function openAddIdentity() {
+  const have = new Set(me().ids.map((x) => x.k));
+  openModal(`<form data-form="identity" novalidate><div class="row between"><h2>🌱 Who are you becoming?</h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
+    <div class="id-grid">${ID_TEMPLATES.filter((t) => !have.has(t.k)).map((t) => `<button type="button" class="id-pick" data-act="add-id-t" data-k="${t.k}"><span aria-hidden="true">${t.ic}</span>${t.t}</button>`).join('')}</div>
+    <div class="lbl" style="margin-top:16px">Or your own</div>
+    <input type="text" id="id-t" placeholder="e.g. Nurse, Chef, Pilot, Teacher" maxlength="40">
+    <div class="tiny muted" style="margin:10px 0 6px">What time builds it?</div>
+    <div class="chips">${TIME_CATS.filter((c) => c[3] === 'invest' || c[0] === 'work').map(([id, ic, n]) => `<button type="button" class="chip sm" data-act="id-cat" data-v="${id}" aria-pressed="false">${ico(ic, 14)}${n}</button>`).join('')}</div>
+    <button class="btn primary block" style="margin-top:14px" type="submit">Add</button></form>`, { label: 'Add identity' });
+}
+function openLetter() {
+  openModal(`<form data-form="letter" novalidate><div class="row between"><h2>✉️ Dear future me…</h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
+    <textarea id="lt-text" rows="8" placeholder="Who do you hope to be? What are you working on? What do you want to remember?" maxlength="4000" style="margin-top:10px"></textarea>
+    <div class="lbl">Open it in</div>
+    <div class="seg" role="radiogroup" aria-label="Open in">${[[90, '3 months'], [182, '6 months'], [365, '1 year']].map(([d, n], i) => `<button type="button" role="radio" aria-checked="${i === 2}" class="${i === 2 ? 'on' : ''}" data-act="lt-when" data-v="${d}">${n}</button>`).join('')}</div>
+    <button class="btn primary block" style="margin-top:14px" type="submit">${icon('lock', 15)} Seal the letter</button></form>`, { label: 'Letter to future me' });
+}
+const nextHalfHour = () => { const d = new Date(); let m = d.getHours() * 60 + d.getMinutes(); m = Math.ceil((m + 1) / 30) * 30; const hm = (x) => `${String(Math.floor((x % 1440) / 60)).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`; return [hm(m), hm(m + 30)]; };
+
 function viewStats() {
   const n = UI.range, keys = lastN(n), prev = lastN(n, addDays(today(), -n));
   const sc = rangeScores(keys), ps = rangeScores(prev);
@@ -1022,11 +1161,9 @@ function viewStats() {
   const focusPts = k14.map((k) => ({ label: lbl(k), v: S.days[k]?.deepWork || 0 }));
   const moodPts = keys.map((k) => { const d = S.days[k]; const ms = [d?.morning?.mood, d?.evening?.mood].filter(Boolean); return { label: lbl(k), v: ms.length ? avg(ms) : null }; });
   const reviews = Object.entries(S.reviews).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 6);
-  const ins = insights(keys);
 
   return `
-  <h1>Stats</h1>
-  <div class="seg" role="tablist" style="margin-top:14px">${[7, 30, 90].map((r) => `<button role="tab" aria-selected="${UI.range === r}" class="${UI.range === r ? 'on' : ''}" data-act="range" data-v="${r}">${r} days</button>`).join('')}</div>
+  <div class="seg" role="tablist" style="margin-top:4px">${[7, 30, 90].map((r) => `<button role="tab" aria-selected="${UI.range === r}" class="${UI.range === r ? 'on' : ''}" data-act="range" data-v="${r}">${r} days</button>`).join('')}</div>
 
   ${!sc.length ? `<div class="card empty" style="margin-top:14px">📈 Your stats appear after your first check-in. Do your morning check-in to begin!</div>` : `
   <div class="card hero" style="margin-top:14px">
@@ -1040,13 +1177,6 @@ function viewStats() {
   <div class="sec"><h2>🗓️ Your year in light</h2><span class="tiny muted">daily Life Score</span></div>
   <div class="card">${heatmap(heatmapKeys(26), (k) => scores(k)?.overall ?? null)}
     <div class="legend" style="margin-top:8px"><span>Less</span>${[0, 1, 2, 3, 4, 5].map((n) => `var(--heat-${n})`).map((c) => `<i style="background:${c}"></i>`).join('')}<span>More</span></div></div>
-
-  <div class="sec"><h2>🔮 Future You — 1 year projection</h2></div>
-  ${viewProjection()}
-
-  <div class="sec"><h2>🧩 Know yourself</h2></div>
-  <div class="card"><div class="small muted" style="margin-bottom:8px">Bad-habit days in the last ${keys.length} days</div>${ins.slipCounts.map(({ h, n: c }) => `<div class="bar-row"><span class="small bar-lbl">${ico(h.ic, 16)} ${h.name}</span><span class="bar"><i style="width:${(c / Math.max(1, keys.length)) * 100}%;background:var(--bad)"></i></span><span class="small bar-val">${c} day${c === 1 ? '' : 's'}</span></div>`).join('')}</div>
-  <div class="card">${ins.lines.map((t) => `<div class="insight small">${t}</div>`).join('')}</div>
 
   <div class="sec"><h2>🗓️ Weekly reviews</h2><button class="btn sm" data-act="open-weekly">${S.reviews[weekStart(today())] ? 'Edit this week' : 'Do review'}</button></div>
   <div class="card">${reviews.length ? reviews.map(([wk, r]) => `<div class="insight small" style="border-left-color:var(--gold)"><strong>Week of ${fmtDate(wk, { month: 'short', day: 'numeric' })}</strong>${r.avg != null ? ` · score ${r.avg}` : ''}${r.focusHabit ? ` · focus: ${esc(r.focusHabit)}` : ''}${r.proud ? `<br>🏆 ${esc(r.proud)}` : ''}${r.nextWeek ? `<br>➡️ ${esc(r.nextWeek)}` : ''}</div>`).join('') : '<div class="empty">Weekly reviews turn data into direction. Do your first one this weekend.</div>'}</div>
@@ -1885,6 +2015,45 @@ const A = {
   },
   'm-month': (el) => { UI.mMonth = shiftMonth(UI.mMonth || today().slice(0, 7), +el.dataset.v); render(); },
   'set-balance': () => openBalance(),
+  'me-tab': (el) => { UI.me = el.dataset.v; syncHash(); render(); window.scrollTo(0, 0); },
+  'me-values': () => openValues(),
+  'val-pick': (el) => {
+    const v = el.dataset.v, s = UI.valSel, i = s.indexOf(v);
+    if (i >= 0) s.splice(i, 1); else if (s.length < 5) s.push(v); else { toast('Pick up to 5 — remove one first'); return; }
+    showValues();
+  },
+  'save-values': () => { const m = me(); m.values = UI.valSel.slice(); m.at.values = today(); persist(); closeModal(); render(); buzz(); toast('🧭 Values saved'); },
+  'me-quiz': (el) => openQuiz(el.dataset.v),
+  'quiz-ans': (el) => {
+    const q = UI.quiz; if (!q) return;
+    const list = q.kind === 'strengths' ? STRENGTH_QS : TRAIT_QS;
+    q.ans[q.i] = +el.dataset.v;
+    if (q.i < list.length - 1) { q.i++; showQuiz(); return; }
+    const m = me();
+    if (q.kind === 'strengths') m.strengths = scoreStrengths(q.ans); else m.traits = scoreTraits(q.ans);
+    m.at[q.kind] = today(); UI.quiz = null;
+    persist(); closeModal(); render(); burst(); toast(q.kind === 'strengths' ? `💎 Your top strength: ${strengthInfo(topStrengths(1).top[0])[2]}` : '🧬 Personality snapshot saved');
+  },
+  'quiz-back': () => { const q = UI.quiz; if (q && q.i > 0) { q.i--; showQuiz(); } },
+  'add-id': () => openAddIdentity(),
+  'add-id-t': (el) => {
+    const t = ID_TEMPLATES.find((x) => x.k === el.dataset.k); if (!t) return;
+    me().ids.push({ id: uid(), ...t, created: today() });
+    persist(); closeModal(); render(); burst(); toast(`🌱 You’re becoming: ${t.t}`);
+  },
+  'id-cat': (el) => { const on = !el.classList.contains('on'); el.classList.toggle('on', on); el.setAttribute('aria-pressed', on); },
+  'del-id': (el) => { const ids = me().ids; removeWithUndo(ids, ids.findIndex((x) => x.id === el.dataset.id), 'Identity'); },
+  'id-vote': (el) => {
+    const idn = me().ids.find((x) => x.id === el.dataset.id); if (!idn) return;
+    if (idn.kind === 'money') { go('money'); return; }
+    if (idn.kind === 'clean') { toast('🛡️ Tonight’s vote: no bad habits. If an urge hits, tap Urge.', { ms: 4500 }); return; }
+    if (idn.jokes && !idn.cats?.length) { UI.grow = 'comedy'; go('grow'); return; }
+    const [start, end] = nextHalfHour();
+    S.schedule.push({ id: uid(), cat: idn.cats[0], title: idn.t, start, end, date: today() });
+    persist(); buzz(); render(); toast(`🗓️ ${start}–${end} added to today: ${idn.t}`);
+  },
+  'write-letter': () => openLetter(),
+  'lt-when': (el) => { $$('[data-act="lt-when"]').forEach((b) => { b.classList.toggle('on', b === el); b.setAttribute('aria-checked', b === el); }); },
   'sc-allow': () => native()?.openUsageAccess(),
   'sc-refresh': () => { refreshScreen(true); render(); toast('Screen time updated'); },
   'sc-view': (el) => { UI.scView = el.dataset.v; UI.scAll = false; render(); },
@@ -2084,6 +2253,20 @@ const FORMS = {
     else toast(UI.mType === 'in' ? '💰 Income logged' : '🧾 Expense logged');
     render();
     $('#m-amt')?.focus();
+  },
+  identity: () => {
+    const t = $('#id-t').value.trim();
+    if (!t) { toast('Type who you’re becoming, or tap one above'); $('#id-t').focus(); return; }
+    const cats = $$('[data-act="id-cat"].on').map((b) => b.dataset.v);
+    me().ids.push({ id: uid(), k: 'custom-' + uid(), ic: '⭐', t, kind: 'time', cats: cats.length ? cats : ['learn'], created: today() });
+    persist(); closeModal(); render(); burst(); toast(`🌱 You’re becoming: ${t}`);
+  },
+  letter: () => {
+    const text = $('#lt-text').value.trim();
+    if (text.length < 10) { toast('Write a little more to your future self'); $('#lt-text').focus(); return; }
+    const days = +($('[data-act="lt-when"].on')?.dataset.v || 365);
+    me().letters.push({ id: uid(), date: today(), open: addDays(today(), days), text });
+    persist(); closeModal(); render(); toast(`✉️ Sealed until ${fmtDate(addDays(today(), days), { month: 'long', day: 'numeric', year: 'numeric' })}`);
   },
   block: (form) => {
     const start = $('#b-start').value, end = $('#b-end').value;

@@ -29,6 +29,7 @@ export const DEFAULTS = () => ({
   workouts: [], // { id, date, mins, level, partial? }
   screen: {},   // screen time from the Android app: 'YYYY-MM-DD' -> [{ p: package, n: name, m: minutes, c: android category }]
   screenAt: null,
+  me: {},       // { values: [ids], strengths: {id: 1–5}, traits: {id: 0–100}, ids: [identities], letters: [{ id, date, open, text }], at: {} }
   schedule: [], // time blocks { id, cat, title, start, end, note, date (one-off) | rep: [weekdays], from, skip: [dates] }
   badges: {}, claims: {}, reviews: {}, chests: {},
   feedPrefs: {}, // card kind -> learned preference score (see feed.js)
@@ -39,7 +40,7 @@ export const DEFAULTS = () => ({
   timer: null,  // running focus session { start, dur, label }
 });
 
-const OBJECT_KEYS = ['days', 'badges', 'claims', 'reviews', 'chests', 'feedPrefs', 'feedLikes', 'quiz', 'feedSeen', 'storiesRead', 'screen'];
+const OBJECT_KEYS = ['days', 'badges', 'claims', 'reviews', 'chests', 'feedPrefs', 'feedLikes', 'quiz', 'feedSeen', 'storiesRead', 'screen', 'me'];
 const ARRAY_KEYS = ['tx', 'loans', 'jokes', 'journal', 'saved', 'sos', 'focusLog', 'workouts', 'schedule'];
 const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
 
