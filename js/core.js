@@ -100,6 +100,24 @@ export function balances() {
     return { cash, savings, owe, owed, net: round2(cash + savings - owe + owed), loans, set: S.settings.moneyStart != null };
   });
 }
+/** Cash at the end of each day for the last `days` days, every `step` days (today always last): [{ k, v }]. */
+export function balanceHistory(days = 30, step = 1, k = today()) {
+  const keys = [];
+  for (let i = days - 1; i >= 0; i -= step) keys.push(addDays(k, -i));
+  if (keys[keys.length - 1] !== k) keys.push(k);
+  const tx = S.tx.slice().sort((a, b) => a.date.localeCompare(b.date));
+  let cash = +S.settings.moneyStart || 0, j = 0;
+  return keys.map((d) => {
+    while (j < tx.length && tx[j].date <= d) { cash += (TX_SIGN[tx[j].type] || 0) * amt(tx[j]); j++; }
+    return { k: d, v: round2(cash) };
+  });
+}
+/** Short money label for chart axes: ₱950, ₱12.5k, ₱1.2M. */
+export const curShort = (n) => {
+  const a = Math.abs(n), s = n < 0 ? '-' : '';
+  const v = a >= 1e6 ? +(a / 1e6).toFixed(1) + 'M' : a >= 1e3 ? +(a / 1e3).toFixed(1) + 'k' : Math.round(a);
+  return s + S.settings.currency + v;
+};
 /** Make the tracked cash equal what you really have now (adjusts the starting balance, keeps every record). */
 export function setCashNow(actual) {
   let cash = +S.settings.moneyStart || 0; // computed fresh (not memoized) so it always matches the records right now

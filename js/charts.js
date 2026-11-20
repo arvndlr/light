@@ -26,6 +26,31 @@ export function lineChart(pts, { color = 'var(--accent)', max = 100, min = 0, h 
   </svg>`;
 }
 
+/** Filled line chart with an automatic range (handles negatives). pts = [{ label, v, tip }]. */
+export function areaChart(pts, { color = 'var(--accent)', h = 170, fmt = (v) => v, label = 'Area chart', id = 'area' } = {}) {
+  const W = 600, padL = 46, padR = 10, padB = 20, padT = 12, iw = W - padL - padR, ih = h - padB - padT;
+  const vs = pts.map((p) => p.v);
+  let lo = Math.min(0, ...vs), hi = Math.max(0, ...vs);
+  if (hi === lo) hi = lo + 1;
+  const pad = (hi - lo) * 0.08; hi += pad; if (lo < 0) lo -= pad;
+  const x = (i) => padL + (pts.length < 2 ? iw / 2 : (i / (pts.length - 1)) * iw);
+  const y = (v) => padT + ih - ((v - lo) / (hi - lo)) * ih;
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
+  const base = y(Math.max(lo, 0));
+  const area = `${line} L${x(pts.length - 1).toFixed(1)},${base.toFixed(1)} L${x(0).toFixed(1)},${base.toFixed(1)} Z`;
+  const ticks = [...new Set([lo < 0 ? lo + pad : null, 0, (hi - pad) / 2, hi - pad].filter((t) => t != null && t <= hi && t >= lo))];
+  const every = Math.ceil(pts.length / 6), last = pts.length - 1;
+  return `<svg class="chart" viewBox="0 0 ${W} ${h}" role="img" aria-label="${esc(label)}">
+    <defs><linearGradient id="${id}-g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".32"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+    ${ticks.map((t) => `<line x1="${padL}" x2="${W - padR}" y1="${y(t)}" y2="${y(t)}" stroke="${t === 0 && lo < 0 ? 'var(--muted)' : 'var(--line)'}" stroke-dasharray="3 4"/><text x="${padL - 6}" y="${y(t) + 3}" text-anchor="end">${esc(fmt(t))}</text>`).join('')}
+    <path d="${area}" fill="url(#${id}-g)"/>
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${pts.map((p, i) => `<rect x="${x(i) - iw / pts.length / 2}" y="${padT}" width="${iw / pts.length}" height="${ih}" fill="transparent"><title>${esc(p.tip || p.label)}</title></rect>`).join('')}
+    <circle cx="${x(last)}" cy="${y(pts[last].v)}" r="4.5" fill="${color}" stroke="var(--surface)" stroke-width="2"/>
+    ${pts.map((p, i) => ((i % every === 0 && last - i >= every / 2) || i === last ? `<text x="${x(i)}" y="${h - 4}" text-anchor="${i === last ? 'end' : i === 0 ? 'start' : 'middle'}">${esc(p.label)}</text>` : '')).join('')}
+  </svg>`;
+}
+
 export function barChart(pts, { color = 'var(--accent)', target = null, max = null, h = 150, fmt = (v) => v, label = 'Bar chart' } = {}) {
   const W = 600, padB = 20, padT = 14, ih = h - padB - padT;
   const mx = max || Math.max(1, target || 0, ...pts.map((p) => p.v)) * 1.1;

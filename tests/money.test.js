@@ -79,3 +79,19 @@ test('older saved data gets an empty loans list', () => {
   assert.deepEqual(m.loans, []);
   assert.equal(m.settings.moneyStart, null);
 });
+
+test('balance history follows the records day by day', async () => {
+  const { balanceHistory, curShort } = await import('../js/core.js');
+  state({ settings: { moneyStart: 1000 }, tx: [
+    tx('in', 500, { date: addDays(T, -5) }), tx('out', 200, { date: addDays(T, -2), cat: 'food' }), tx('borrow', 300, { date: T, loanId: 'L' })] });
+  const h = balanceHistory(7);
+  assert.equal(h.length, 7);
+  assert.equal(h[h.length - 1].k, T);
+  assert.deepEqual(h.map((p) => p.v), [1000, 1500, 1500, 1500, 1300, 1300, 1600]);
+  assert.equal(h[h.length - 1].v, balances().cash);
+  const w = balanceHistory(365, 7);
+  assert.equal(w[w.length - 1].k, T);
+  assert.ok(w.length <= 54);
+  assert.equal(curShort(12500), '₱12.5k');
+  assert.equal(curShort(-950), '-₱950');
+});

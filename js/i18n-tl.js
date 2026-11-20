@@ -524,3 +524,11 @@ patterns.unshift(
 );
 
 export default { dict, patterns };
+
+// Money: balance over time
+Object.assign(dict, {
+  'Balance over time': 'Balance sa paglipas ng panahon', '30 days': '30 araw', '3 months': '3 buwan',
+  'Lowest': 'Pinakamababa', 'Highest': 'Pinakamataas', 'today': 'ngayon', 'No change': 'Walang pagbabago',
+  'Add records or set your balance to see how your money moves over time.': 'Magdagdag ng records o i-set ang balance mo para makita kung paano gumagalaw ang pera mo.',
+});
+patterns.unshift([/^Balance over the last (\d+) days$/, 'Balance sa nakaraang $1 araw']);

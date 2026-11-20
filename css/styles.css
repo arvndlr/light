@@ -1024,3 +1024,11 @@ body.feed-mode #nav { --glass: rgba(6, 8, 16, .55); --line-strong: rgba(255, 255
 .loan.done { opacity: .7; }
 .grid.money-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .money-3 strong { font-size: .95rem; overflow-wrap: anywhere; }
+
+/* ---------- Money: balance over time ---------- */
+.bal-seg { margin: 10px 0 6px; }
+.bal-diff { font-weight: 700; color: var(--muted); }
+.bal-diff.up { color: var(--good); }
+.bal-diff.down { color: var(--bad); }
+.bal-stats { margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+.bal-card .chart text { font-size: 13px; }

@@ -6,12 +6,12 @@ import {
   minutesOf, $, $$, esc, pad, parseKey, addDays, today, clamp, avg, sum, uid, hour, lastN, fmtDate, round1, daily, weekStart,
 } from './util.js';
 import {
-  DOMAINS, HABITS, CATS_OUT, CATS_IN, CATS_SAVE, BAD_CATS, catInfo, balances, loanStatus, setCashNow, moneyLeaks, MONEY_TRAPS, cur, goals, sleepHours, hygRatio, txOn, spentOn,
+  DOMAINS, HABITS, CATS_OUT, CATS_IN, CATS_SAVE, BAD_CATS, catInfo, balances, loanStatus, setCashNow, moneyLeaks, MONEY_TRAPS, balanceHistory, curShort, cur, goals, sleepHours, hygRatio, txOn, spentOn,
   jokesOn, savedTotal, monthTotals, slipsOn, habitStreak, checkinStreak, scores, rangeScores, computeXP, levelOf, xpFor,
   titleOf, quests, BADGES, awardBadges, chestReady, rollChest, reviewDue, latestReview, weekSummary, recommendations,
   projection, insights, buildICS, heatmapKeys,
 } from './core.js';
-import { ring, lineChart, barChart, heatmap } from './charts.js';
+import { ring, lineChart, barChart, heatmap, areaChart } from './charts.js';
 import { icon, ico, iconize } from './icons.js';
 import { LEVELS, GROUPS, EXERCISES, WORKOUTS, WEEK_PLAN, exercise, workout, workoutSteps, workoutMinutes, suggestWorkout, levelInfo } from './fitness.js';
 import { dayPlan } from './plan.js';
@@ -21,7 +21,7 @@ import { setLang, LANGS, locale, tr } from './i18n.js';
 import { setLocale, getLocale } from './util.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '3.3.0';
+const APP_VERSION = '3.4.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
@@ -80,7 +80,7 @@ function persist() {
 }
 
 // ---------- Rendering ----------
-const UI = { tab: 'today', range: 30, domain: 'overall', grow: 'fitness', hyg: null, fitGroup: 'All', mType: 'out', mCat: 'food', mLoanAct: 'pay', mLoan: null, mMonth: null };
+const UI = { tab: 'today', range: 30, domain: 'overall', grow: 'fitness', hyg: null, fitGroup: 'All', mType: 'out', mCat: 'food', mLoanAct: 'pay', mLoan: null, mMonth: null, mRange: 30 };
 const TABS = [['today', 'sun', 'Today'], ['money', 'wallet', 'Money'], ['feed', 'sparkles', 'Feed'], ['stats', 'chart', 'Stats'], ['grow', 'sprout', 'Grow']];
 const firstName = () => (S.profile?.name || 'friend').split(' ')[0];
 
@@ -394,6 +394,29 @@ function loanCard(l) {
   </div>`;
 }
 
+const BAL_RANGES = [[30, '30 days', 1], [90, '3 months', 3], [365, '1 year', 7]];
+function balanceCard(k) {
+  const [days, , step] = BAL_RANGES.find((r) => r[0] === UI.mRange) || BAL_RANGES[0];
+  const hist = balanceHistory(days, step, k);
+  const first = hist[0].v, now = hist[hist.length - 1].v, diff = Math.round((now - first) * 100) / 100;
+  const lo = hist.reduce((m, p) => (p.v < m.v ? p : m)), hi = hist.reduce((m, p) => (p.v > m.v ? p : m));
+  const opt = days > 90 ? { month: 'short' } : { month: 'short', day: 'numeric' };
+  const pts = hist.map((p) => ({ v: p.v, label: fmtDate(p.k, opt), tip: `${fmtDate(p.k)}: ${cur(p.v)}` }));
+  const color = now < 0 ? 'var(--bad)' : 'var(--teal)';
+  const none = !S.tx.length && !b0();
+  return `<div class="card bal-card">
+    <div class="row between"><div class="small muted">${icon('trending', 15)} Balance over time</div>
+      <span class="small bal-diff ${diff > 0 ? 'up' : diff < 0 ? 'down' : ''}">${diff > 0 ? '▲ +' : diff < 0 ? '▼ ' : ''}${diff ? cur(diff) : 'No change'}</span></div>
+    <div class="seg mini bal-seg" role="tablist" aria-label="Chart range">${BAL_RANGES.map(([v, n]) => `<button type="button" role="tab" aria-selected="${days === v}" class="${days === v ? 'on' : ''}" data-act="m-range" data-v="${v}">${n}</button>`).join('')}</div>
+    ${none ? '<div class="empty">Add records or set your balance to see how your money moves over time.</div>'
+      : areaChart(pts, { color, fmt: curShort, id: 'bal', label: `Balance over the last ${days} days` })}
+    ${none ? '' : `<div class="grid g3 money-3 bal-stats">
+      <div><div class="tiny muted">Lowest</div><strong class="small">${cur(lo.v)}</strong><div class="tiny muted">${fmtDate(lo.k, { month: 'short', day: 'numeric' })}</div></div>
+      <div><div class="tiny muted">Highest</div><strong class="small">${cur(hi.v)}</strong><div class="tiny muted">${fmtDate(hi.k, { month: 'short', day: 'numeric' })}</div></div>
+      <div><div class="tiny muted">Now</div><strong class="small">${cur(now)}</strong><div class="tiny muted">today</div></div></div>`}
+  </div>`;
+}
+const b0 = () => S.settings.moneyStart != null;
 function viewMoney() {
   const k = today(), st = S.settings;
   const { month, out, inc, saved } = monthTotals(k);
@@ -424,6 +447,8 @@ function viewMoney() {
     </div>
     <div class="money-net"><span class="small muted">Net worth</span><strong>${cur(b.net)}</strong></div>
   </div>
+
+  ${balanceCard(k)}
 
   <div class="card">
     <div class="row between"><div><div class="small muted">Spent in ${dt.toLocaleDateString(getLocale(), { month: 'long' })}</div><div class="big-num">${cur(out)}</div></div>
@@ -1812,6 +1837,7 @@ const A = {
   refeed: () => { save(); render({ full: true }); toast('🔄 Fresh cards'); },
   // Stats
   range: (el) => { UI.range = +el.dataset.v; render(); },
+  'm-range': (el) => { UI.mRange = +el.dataset.v; render(); },
   domain: (el) => { UI.domain = el.dataset.v; render(); },
   // Grow
   growtab: (el) => { UI.grow = el.dataset.v; syncHash(true); render(); $('.grow-tabs .on')?.scrollIntoView({ inline: 'nearest', block: 'nearest' }); },
