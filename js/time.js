@@ -4,6 +4,7 @@
 import { S } from './store.js';
 import { today, addDays, parseKey, minutesOf, sum, round1, fmtDate } from './util.js';
 import { tr } from './i18n.js';
+import { screenByCat, screenAvg } from './screen.js';
 
 // kind: invest = grows you · need = keeps you running · drain = leaks time
 export const TIME_CATS = [
@@ -19,6 +20,8 @@ export const TIME_CATS = [
   ['chores', '🧹', 'Chores & errands', 'need', 'var(--muted)'],
   ['commute', '🚌', 'Commute', 'need', 'var(--muted)'],
   ['rest', '🎧', 'Rest & hobbies', 'need', 'var(--teal)'],
+  ['chat', '💬', 'Messaging & calls', 'need', 'var(--teal)'],
+  ['phone', '🧩', 'Other phone use', 'need', 'var(--muted)'],
   ['social', '📱', 'Social media', 'drain', 'var(--bad)'],
   ['videos', '📺', 'TV & videos', 'drain', 'var(--bad)'],
   ['games', '🎮', 'Games', 'drain', 'var(--bad)'],
@@ -50,6 +53,9 @@ export function dayMinutes(k) {
     exercise: d.exercise || 0,
     social: d.evening?.socialMin || 0,
   };
+  // Screen time (Android app) is the most exact source for time leaks.
+  const sc = screenByCat(k);
+  for (const c of ['social', 'videos', 'games']) if (sc[c] > (tracked[c] || 0)) tracked[c] = sc[c];
   for (const [c, v] of Object.entries(tracked)) if (v > (out[c] || 0)) out[c] = v;
   return out;
 }
@@ -77,6 +83,12 @@ export function timeInsights(k = today()) {
   const sleep = w.avg.sleep || 0;
   const drains = TIME_CATS.filter((c) => c[3] === 'drain' && w.avg[c[0]] >= 20);
   for (const c of drains) out.push({ ic: c[1], sev: w.avg[c[0]] >= 120 ? 3 : 2, t: tr(`${c[2]}: ${fmtHM(w.avg[c[0]])} a day — that's ${Math.round((w.avg[c[0]] * 365) / 1440)} full days a year.`) });
+  const sa = screenAvg(7, k);
+  if (sa.days >= 2) {
+    if (sa.total >= 180) out.push({ ic: '📱', sev: sa.total >= 300 ? 3 : 2, t: tr(`Your phone takes ${fmtHM(sa.total)} a day — ${Math.round((sa.total * 365) / 1440)} full days a year.`) });
+    const top = sa.apps.find((a) => timeCat(a.cat)[3] === 'drain' && a.m >= 30);
+    if (top) out.push({ ic: timeCat(top.cat)[1], sev: top.m >= 90 ? 3 : 2, t: tr(`${top.n} is your biggest time leak: ${fmtHM(top.m)} a day.`) });
+  }
   if (sleep && sleep < (st.sleepTarget || 8) * 60 - 30) out.push({ ic: '😴', sev: 2, t: tr(`You sleep about ${h(sleep)}h a night — below your ${st.sleepTarget}h goal. Tired hours are weaker hours.`) });
   if (!w.avg.exercise) out.push({ ic: '🏃', sev: 2, t: tr('No exercise logged this week. Even 20 minutes a day adds up to 120 hours a year.') });
   const share = w.logged ? w.kinds.invest / (w.logged - (w.avg.sleep || 0) || 1) : 0;

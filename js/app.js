@@ -15,6 +15,7 @@ import { ring, lineChart, barChart, heatmap, areaChart } from './charts.js';
 import { icon, ico, iconize } from './icons.js';
 import { LEVELS, GROUPS, EXERCISES, WORKOUTS, WEEK_PLAN, exercise, workout, workoutSteps, workoutMinutes, suggestWorkout, levelInfo } from './fitness.js';
 import { dayPlan } from './plan.js';
+import { native, isAndroidWeb, APK_URL, syncScreen, screenOn, screenAvg, appCat } from './screen.js';
 import { TIME_CATS, KINDS, timeCat, blockMins, fmtHM, blocksOn, dayMinutes, timeSummary, timeInsights, timeFuture, starterSchedule } from './time.js';
 import { DISCLAIMER, RED_FLAGS, EMERGENCY, IMMUNITY, ASTHMA_BASICS, TRIGGERS, EXERCISE_TIPS, FOODS, MYTHS, BREATHING, breathing, SYMPTOMS, asthmaControl } from './health.js';
 import { figureSVG, hasFigure, poseCount, animateFigures } from './figures.js';
@@ -22,7 +23,7 @@ import { setLang, LANGS, locale, tr } from './i18n.js';
 import { setLocale, getLocale } from './util.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '3.5.0';
+const APP_VERSION = '3.6.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
@@ -81,7 +82,7 @@ function persist() {
 }
 
 // ---------- Rendering ----------
-const UI = { tab: 'today', range: 30, domain: 'overall', grow: 'fitness', hyg: null, fitGroup: 'All', mType: 'out', mCat: 'food', mLoanAct: 'pay', mLoan: null, mMonth: null, mRange: 30, tDay: null, tRange: 7, tbCat: 'learn' };
+const UI = { tab: 'today', range: 30, domain: 'overall', grow: 'fitness', hyg: null, fitGroup: 'All', mType: 'out', mCat: 'food', mLoanAct: 'pay', mLoan: null, mMonth: null, mRange: 30, tDay: null, tRange: 7, tbCat: 'learn', scView: 'today', scAll: false };
 const TABS = [['today', 'sun', 'Today'], ['money', 'wallet', 'Money'], ['time', 'clock', 'Time'], ['feed', 'sparkles', 'Feed'], ['stats', 'chart', 'Stats'], ['grow', 'sprout', 'Grow']];
 const firstName = () => (S.profile?.name || 'friend').split(' ')[0];
 
@@ -587,8 +588,47 @@ function timeBar(mins, total = 1440) {
   <div class="tlegend">${parts.map(([kd, v]) => `<span><b style="background:${KINDS[kd][1]}"></b>${KINDS[kd][0]} <strong>${fmtHM(v)}</strong></span>`).join('')}<span><b class="free"></b>Unplanned <strong>${fmtHM(free)}</strong></span></div>`;
 }
 
+
+// Screen time card (Android app only; the browser shows how to get it on Android phones).
+function refreshScreen(force = false) {
+  if (!native() || (!force && Date.now() - (S.screenAt || 0) < 120000)) return;
+  if (syncScreen() === 'ok') save();
+}
+function screenCard(k) {
+  const n = native();
+  if (!n) return isAndroidWeb() ? `<div class="card sc-get"><div class="row" style="gap:12px;align-items:flex-start"><span class="leak-ic" aria-hidden="true">${ico('📱', 18)}</span>
+      <div><strong class="small">Track screen time automatically</strong><p class="tiny muted" style="margin-top:4px">Install the Light Android app and see exactly how many minutes go to TikTok, Facebook, YouTube, games and every other app — counted in your Time page and insights.</p>
+      <div class="row wrap" style="gap:8px;margin-top:10px"><a class="btn sm primary" href="${APK_URL}">${icon('download', 14)} Get the Android app</a><button class="btn sm ghost" data-act="sc-how">How it works</button></div></div></div></div>` : '';
+  if (!n.hasUsageAccess()) return `<div class="card sc-get"><div class="row" style="gap:12px;align-items:flex-start"><span class="leak-ic" aria-hidden="true">${ico('📱', 18)}</span>
+      <div><strong class="small">See your screen time per app</strong><p class="tiny muted" style="margin-top:4px">Allow Light in <strong>Usage access</strong>, then come back. Light only reads how long each app was open — never what you do in it — and it stays on this phone.</p>
+      <button class="btn sm primary" style="margin-top:10px" data-act="sc-allow">${icon('lock', 14)} Allow usage access</button></div></div></div>`;
+  const week = UI.scView === 'week', sa = screenAvg(7, k);
+  const list = week ? sa.apps : screenOn(k), total = sum(list.map((a) => a.m));
+  const leaks = sum(list.filter((a) => timeCat(a.cat)[3] === 'drain').map((a) => a.m));
+  const shown = UI.scAll ? list : list.slice(0, 8), max = list[0]?.m || 1;
+  const ago = S.screenAt ? Math.round((Date.now() - S.screenAt) / 60000) : null;
+  return `<div class="sec"><h2>📱 Screen time</h2><button class="icon-btn xs" data-act="sc-refresh" aria-label="Refresh screen time">${icon('refresh', 15)}</button></div>
+  <div class="card">
+    <div class="seg mini bal-seg" role="tablist" aria-label="Screen time range">${[['today', 'Today'], ['week', '7-day average']].map(([v, n2]) => `<button type="button" role="tab" aria-selected="${(UI.scView || 'today') === v}" class="${(UI.scView || 'today') === v ? 'on' : ''}" data-act="sc-view" data-v="${v}">${n2}</button>`).join('')}</div>
+    ${list.length ? `<div class="row between" style="align-items:baseline"><div class="big-num" style="font-size:1.6rem">${fmtHM(total)}</div><span class="small" style="color:${leaks ? 'var(--bad)' : 'var(--muted)'}">${fmtHM(leaks)} on time leaks</span></div>
+      <div class="tiny muted" style="margin:2px 0 10px">${week ? `per day · ${sa.days} ${sa.days === 1 ? 'day' : 'days'}` : 'on your phone today'}</div>
+      ${shown.map((a) => { const ci = timeCat(a.cat); return `<div class="sc-row"><button class="sc-app" data-act="app-cat" data-p="${esc(a.p)}" data-n="${esc(a.n)}" aria-label="Change category for ${esc(a.n)}">
+        <span class="small sc-name" data-i18n-skip>${esc(a.n)}</span><span class="sc-cat k-${ci[3]}">${ico(ci[1], 12)} ${ci[2]}</span></button>
+        <span class="bar"><i style="width:${(a.m / max) * 100}%;background:${KINDS[ci[3]][1]}"></i></span><span class="small bar-val">${fmtHM(a.m)}</span></div>`; }).join('')}
+      ${list.length > 8 ? `<button class="btn sm ghost block" style="margin-top:6px" data-act="sc-all">${UI.scAll ? 'Show less' : `Show all ${list.length} apps`}</button>` : ''}
+      <div class="tiny muted" style="margin-top:8px">Tap an app to change its category${ago != null ? ` · updated ${ago < 1 ? 'just now' : ago + ' min ago'}` : ''}</div>`
+      : '<div class="empty">No app use recorded yet today.</div>'}
+  </div>`;
+}
+function openAppCat(p, name) {
+  const cur0 = S.settings.appCats?.[p] || appCat({ p, c: '' });
+  openModal(`<div class="row between"><h2>📱 <span data-i18n-skip>${esc(name)}</span></h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
+    <p class="small muted" style="margin:6px 0 12px">What is this app time for you? Time leaks count against you; learning and work count as invested or essential.</p>
+    <div class="chips">${TIME_CATS.map(([id, ic, n2, kd]) => `<button type="button" class="chip sm k-${kd} ${cur0 === id ? 'on' : ''}" data-act="set-app-cat" data-p="${esc(p)}" data-v="${id}">${ico(ic, 14)}${n2}</button>`).join('')}</div>`, { label: 'App category' });
+}
 function viewTime() {
   const k = today(), dk = UI.tDay || k;
+  refreshScreen();
   const blocks = blocksOn(dk), dm = dayMinutes(dk);
   const kindsDay = { invest: 0, need: 0, drain: 0 };
   for (const [c, v] of Object.entries(dm)) kindsDay[timeCat(c)[3]] += v;
@@ -616,6 +656,7 @@ function viewTime() {
     <div class="big-num money-cash">${fmtHM(kindsDay.invest)} <span class="small muted">invested</span></div>
     ${timeBar(kindsDay)}
   </div>
+  ${screenCard(k)}
 
   <div class="sec"><h2>🗓️ Schedule</h2><button class="btn sm primary" data-act="add-block">${icon('plus', 14)} Add</button></div>
   <div class="card">
@@ -1731,6 +1772,7 @@ function openSettings() {
     </div>`, { label: 'Settings', onClose: render });
 }
 function download(name, text, type) {
+  if (native()?.saveFile) { if (!native().saveFile(name, text, type)) toast('Could not save the file'); return; }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([text], { type }));
   a.download = name; document.body.appendChild(a); a.click(); a.remove();
@@ -1843,6 +1885,18 @@ const A = {
   },
   'm-month': (el) => { UI.mMonth = shiftMonth(UI.mMonth || today().slice(0, 7), +el.dataset.v); render(); },
   'set-balance': () => openBalance(),
+  'sc-allow': () => native()?.openUsageAccess(),
+  'sc-refresh': () => { refreshScreen(true); render(); toast('Screen time updated'); },
+  'sc-view': (el) => { UI.scView = el.dataset.v; UI.scAll = false; render(); },
+  'sc-all': () => { UI.scAll = !UI.scAll; render(); },
+  'app-cat': (el) => openAppCat(el.dataset.p, el.dataset.n),
+  'set-app-cat': (el) => { S.settings.appCats = { ...(S.settings.appCats || {}), [el.dataset.p]: el.dataset.v }; persist(); closeModal(); render(); toast('Category saved'); },
+  'sc-how': () => openModal(`<div class="row between"><h2>📱 Light for Android</h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
+    <ol class="small how-list"><li>Here in your browser: <strong>Settings → Export backup</strong>, so you can bring your data along.</li>
+      <li>Tap <strong>Get the Android app</strong> and open <strong>light.apk</strong>. If Android asks, allow installing from your browser.</li>
+      <li>Open Light, go to <strong>Settings → Import backup</strong> and pick the file you exported.</li>
+      <li>On the Time page, tap <strong>Allow usage access</strong> and switch Light on.</li></ol>
+    <p class="tiny muted">The app opens the same Light, so it updates itself. Screen time never leaves your phone. iPhone doesn't allow apps to read screen time.</p>`, { label: 'Android app' }),
   't-day': (el) => { const n = addDays(UI.tDay || today(), +el.dataset.v); UI.tDay = n === today() ? null : n; render(); },
   't-range': (el) => { UI.tRange = +el.dataset.v; render(); },
   'add-block': () => openBlock(null),
@@ -1954,7 +2008,8 @@ const A = {
     const text = el.dataset.b + '\n— shared from Light';
     const { it } = reelOf(el); if (it) { nudge(S.feedPrefs, it.kind, SIGNAL.share); save(); }
     try {
-      if (navigator.share) await navigator.share({ text });
+      if (native()?.share) native().share(text);
+      else if (navigator.share) await navigator.share({ text });
       else { await navigator.clipboard.writeText(text); toast('Copied to clipboard 📋'); }
     } catch { /* user cancelled */ }
   },
@@ -2201,6 +2256,7 @@ const onRoute = () => {
 };
 window.addEventListener('popstate', onRoute);
 window.addEventListener('hashchange', onRoute);
+window.addEventListener('lightnative-resume', () => { if (S.profile && UI.tab === 'time') { refreshScreen(true); render(); } });
 
 // ---------- Boot ----------
 setLang(S.settings.lang); setLocale(locale());

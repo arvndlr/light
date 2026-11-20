@@ -596,3 +596,29 @@ patterns.unshift(
   [/^You spend (more|as much) time on time leaks \((.+)\) (?:than|as) on (.+) \((.+)\)\. Flip that and you become (.+)\.$/, (t, w, a, c, b, id) => `${w === 'more' ? 'Mas maraming' : 'Kasing-dami ang'} oras mo sa sayang na oras (${a}) ${w === 'more' ? 'kaysa' : 'at'} sa ${low(t, c)} (${b}). Baliktarin mo iyan at ikaw ay magiging ${t(id)}.`],
   [/^(.+) a day on (.+) is (\d+) hours a year\. In 5 years: (.+)\.$/, (t, a, c, h, l) => `${a} kada araw sa ${low(t, c)} ay ${h} oras kada taon. Sa loob ng 5 taon: ${low(t, l)}.`],
 );
+
+// Screen time (Android app)
+Object.assign(dict, {
+  'Screen time': 'Screen time', 'Today': 'Ngayon', '7-day average': 'Average sa 7 araw', 'on your phone today': 'sa cellphone mo ngayong araw',
+  'Messaging & calls': 'Chat at tawag', 'Other phone use': 'Iba pang gamit sa cellphone',
+  'Track screen time automatically': 'Awtomatikong i-track ang screen time',
+  'Install the Light Android app and see exactly how many minutes go to TikTok, Facebook, YouTube, games and every other app — counted in your Time page and insights.': 'I-install ang Light Android app at makikita mo kung ilang minuto ang napupunta sa TikTok, Facebook, YouTube, games at bawat app — kasama sa Time page at insights mo.',
+  'Get the Android app': 'Kunin ang Android app', 'How it works': 'Paano ito gumagana',
+  'See your screen time per app': 'Tingnan ang screen time mo kada app',
+  'Allow usage access': 'Payagan ang usage access',
+  'No app use recorded yet today.': 'Wala pang naitalang paggamit ng app ngayong araw.',
+  'Show less': 'Ipakita nang mas kaunti', 'Screen time updated': 'Na-update ang screen time', 'Category saved': 'Na-save ang kategorya',
+  'What is this app time for you? Time leaks count against you; learning and work count as invested or essential.': 'Para saan ang oras mo sa app na ito? Ang sayang na oras ay laban sa iyo; ang pag-aaral at trabaho ay invested o kailangan.',
+  'Tap an app to change its category': 'I-tap ang app para palitan ang kategorya', 'Light for Android': 'Light para sa Android', 'Could not save the file': 'Hindi na-save ang file',
+  'The app opens the same Light, so it updates itself. Screen time never leaves your phone. iPhone doesn\'t allow apps to read screen time.': 'Parehong Light ang binubuksan ng app, kaya kusa itong nag-a-update. Hindi umaalis sa cellphone mo ang screen time. Hindi pinapayagan ng iPhone na basahin ng apps ang screen time.',
+});
+patterns.unshift(
+  [/^(.+) on time leaks$/, '$1 sa sayang na oras'],
+  [/^per day · (\d+) days?$/, 'kada araw · $1 araw'],
+  [/^Show all (\d+) apps$/, 'Ipakita lahat ng $1 apps'],
+  [/^updated just now$/, 'na-update ngayon lang'],
+  [/^updated (\d+) min ago$/, 'na-update $1 min na ang nakaraan'],
+  [/^Change category for (.+)$/, 'Palitan ang kategorya ng $1'],
+  [/^Your phone takes (.+) a day — (\d+) full days a year\.$/, '$1 kada araw ang kinakain ng cellphone mo — $2 buong araw kada taon.'],
+  [/^(.+) is your biggest time leak: (.+) a day\.$/, 'Ang $1 ang pinakamalaki mong sayang na oras: $2 kada araw.'],
+);

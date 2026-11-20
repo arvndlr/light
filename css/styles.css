@@ -1068,3 +1068,17 @@ body.feed-mode #nav { --glass: rgba(6, 8, 16, .55); --line-strong: rgba(255, 255
 #nav .nav-btn { min-width: 0; }
 /* Inline icons inside text labels (svg is display:block by default) */
 .small > .i, .tiny > .i, strong > .i, .tb-title > .i, .bar-lbl > .i, .t-tracked .chip > .i { display: inline-block; vertical-align: -3px; margin-right: 5px; }
+
+/* ---------- Time: screen time per app ---------- */
+.sc-get { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+.sc-row { display: grid; grid-template-columns: minmax(0, 1.25fr) 1fr auto; gap: 10px; align-items: center; padding: 6px 0; }
+.sc-app { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; background: none; border: 0; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.sc-name { font-weight: 650; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-cat { font-size: .7rem; color: var(--muted); display: inline-flex; align-items: center; gap: 3px; }
+.sc-cat .i { display: inline-block; }
+.sc-cat.k-drain { color: var(--bad); }
+.sc-cat.k-invest { color: var(--good); }
+.how-list { padding-left: 20px; display: grid; gap: 8px; margin: 10px 0 12px; }
+.sc-row .bar { display: block; height: 8px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+.sc-row .bar i { display: block; height: 100%; border-radius: 999px; }
+.sc-row .bar-val { width: auto; min-width: 0; text-align: right; font-variant-numeric: tabular-nums; }

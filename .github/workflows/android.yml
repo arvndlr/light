@@ -1,0 +1,46 @@
+name: android
+# Builds the Light Android app (android/) and publishes it as the "android" release:
+# https://github.com/arvndlr/light/releases/download/android/light.apk
+on:
+  push:
+    branches: [main]
+    paths: ['android/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Signing key
+        id: key
+        env:
+          KEYSTORE_B64: ${{ secrets.LIGHT_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then echo "::warning::Add the LIGHT_KEYSTORE_B64 and LIGHT_KEYSTORE_PASSWORD secrets to build the app"; echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/light.jks"
+          echo "LIGHT_KEYSTORE=$RUNNER_TEMP/light.jks" >> "$GITHUB_ENV"
+      - name: Build APK # without the key it still builds (debug-signed) so the code is checked
+        env:
+          LIGHT_KEYSTORE_PASSWORD: ${{ secrets.LIGHT_KEYSTORE_PASSWORD }}
+        run: gradle -p android assembleRelease --no-daemon
+      - name: Publish
+        if: steps.key.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk light.apk
+          gh release view android >/dev/null 2>&1 || gh release create android --title "Light for Android" --latest=false \
+            --notes "Install light.apk on your Android phone. It opens the same Light app and adds automatic screen time per app (allow Usage access when asked). Updates to the website reach the app automatically."
+          gh release upload android light.apk --clobber

@@ -1,0 +1,43 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Release signing comes from CI secrets (see .github/workflows/android.yml).
+// Without them (e.g. a local build) the APK is signed with the debug key.
+def ks = System.getenv('LIGHT_KEYSTORE')
+
+android {
+    namespace 'io.github.arvndlr.light'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'io.github.arvndlr.light'
+        minSdk 26
+        targetSdk 34
+        versionCode Integer.parseInt(System.getenv('GITHUB_RUN_NUMBER') ?: '1')
+        versionName '1.0.' + (System.getenv('GITHUB_RUN_NUMBER') ?: '0')
+    }
+
+    signingConfigs {
+        if (ks) {
+            release {
+                storeFile file(ks)
+                storePassword System.getenv('LIGHT_KEYSTORE_PASSWORD')
+                keyAlias 'light'
+                keyPassword System.getenv('LIGHT_KEYSTORE_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig ks ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

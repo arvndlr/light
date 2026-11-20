@@ -17,6 +17,7 @@ export const DEFAULTS = () => ({
     fitLevel: 'beginner', fitVoice: true, // home workouts
     moneyStart: null, // cash you had before your first record (set via "Update balance"); null = not set yet
     lang: 'en', // interface language: 'en' | 'tl' (Taglish)
+    appCats: {}, // screen time: package -> Light time category you chose
     asthma: false, // asthma tracking & reminders (Grow → Health)
     hygAM: ['Brush teeth', 'Wash face', 'Shower', 'Sunscreen', 'Deodorant', 'Groom hair'],
     hygPM: ['Wash face', 'Brush teeth', 'Floss', 'Moisturize', 'Lay out tomorrow\'s clothes', 'Screens off 30 min before bed'],
@@ -26,6 +27,8 @@ export const DEFAULTS = () => ({
   loans: [],    // { id, dir: 'owe'|'owed', who, total?, due?, note, created }: amounts come from its tx records
   jokes: [], journal: [], saved: [], sos: [], focusLog: [],
   workouts: [], // { id, date, mins, level, partial? }
+  screen: {},   // screen time from the Android app: 'YYYY-MM-DD' -> [{ p: package, n: name, m: minutes, c: android category }]
+  screenAt: null,
   schedule: [], // time blocks { id, cat, title, start, end, note, date (one-off) | rep: [weekdays], from, skip: [dates] }
   badges: {}, claims: {}, reviews: {}, chests: {},
   feedPrefs: {}, // card kind -> learned preference score (see feed.js)
@@ -36,7 +39,7 @@ export const DEFAULTS = () => ({
   timer: null,  // running focus session { start, dur, label }
 });
 
-const OBJECT_KEYS = ['days', 'badges', 'claims', 'reviews', 'chests', 'feedPrefs', 'feedLikes', 'quiz', 'feedSeen', 'storiesRead'];
+const OBJECT_KEYS = ['days', 'badges', 'claims', 'reviews', 'chests', 'feedPrefs', 'feedLikes', 'quiz', 'feedSeen', 'storiesRead', 'screen'];
 const ARRAY_KEYS = ['tx', 'loans', 'jokes', 'journal', 'saved', 'sos', 'focusLog', 'workouts', 'schedule'];
 const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
 
