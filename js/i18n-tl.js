@@ -756,3 +756,6 @@ Object.assign(dict, {
   'See who you’re becoming from how you spend your time': 'Tingnan kung sino ang nagiging ikaw batay sa paggamit mo ng oras',
   '10 minutes in the morning, 10 at night. Everything stays private on this device.': '10 minuto sa umaga, 10 sa gabi. Pribado lahat sa device na ito.',
 });
+
+// Toasts
+patterns.unshift([/^Glass (\d+) of (\d+) · \+5 XP$/, 'Baso $1 sa $2 · +5 XP']);

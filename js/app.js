@@ -12,7 +12,7 @@ import {
   projection, insights, buildICS, heatmapKeys,
 } from './core.js';
 import { ring, lineChart, barChart, heatmap, areaChart } from './charts.js';
-import { icon, ico, iconize } from './icons.js';
+import { icon, ico, iconize, iconFor } from './icons.js';
 import { LEVELS, GROUPS, EXERCISES, WORKOUTS, WEEK_PLAN, exercise, workout, workoutSteps, workoutMinutes, suggestWorkout, levelInfo } from './fitness.js';
 import { dayPlan } from './plan.js';
 import { me, VALUES, valuesCheck, STRENGTH_QS, scoreStrengths, topStrengths, strengthInfo, TRAITS as BIG5, TRAIT_QS, scoreTraits, goodDayFormula, identitySentence, ID_TEMPLATES, identityProgress } from './me.js';
@@ -24,18 +24,69 @@ import { setLang, LANGS, locale, tr } from './i18n.js';
 import { setLocale, getLocale } from './util.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '3.10.1';
+const APP_VERSION = '3.11.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
-let toastT = null;
-function toast(msg, { undo, action, ms } = {}) {
+// One toast at a time, at the top. Its look follows what it says: success (green), heads-up (amber),
+// problem (red) or reward (accent, with the XP as a chip). Tap or swipe up to dismiss; touching it pauses the timer.
+let toastT = null, toastLeft = 0, toastAt = 0;
+const LEAD_EMOJI = /^(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*\uFE0F?)\s*/u;
+const TOAST_IC = { ok: 'checkCircle', warn: 'alert', err: 'alert', xp: 'sparkles', info: 'bell' };
+function toastType(text, lead) {
+  if (lead === '⚠️' || lead === '⚠' || /^(Could not|Couldn’t|Couldn't|That file is not|Something went wrong)/.test(text)) return 'err';
+  if (/^(Enter |Please |Write |Pick |Set a |Type |Start and end|Nothing to|Daily challenge cap)/.test(text)) return 'warn';
+  if (/\+\d+ (bonus )?XP|^🎉|^🏅/.test(text) || ['🎉', '🏅', '💪', '🏆', '🔥'].includes(lead)) return 'xp';
+  return 'ok';
+}
+function hideToast() {
+  const t = $('#toast');
+  clearTimeout(toastT);
+  t.classList.remove('show', 'paused');
+}
+function toast(msg, { undo, action, ms, type } = {}) {
   const t = $('#toast');
   const act = undo ? { label: 'Undo', fn: undo } : action;
-  t.innerHTML = `<span>${msg}</span>${act ? `<button class="toast-btn" type="button">${esc(act.label)}</button>` : ''}`;
-  if (act) t.querySelector('button').onclick = () => { t.classList.remove('show'); act.fn(); };
+  // Split "🎤 Joke saved · +10 XP" into an icon, the words and an XP chip (translate first, so Taglish keys still match).
+  let lead = '', svg = '', text = String(msg);
+  const sv = text.match(/^\s*(<svg[\s\S]*?<\/svg>)\s*/);
+  if (sv) { svg = sv[1]; text = text.slice(sv[0].length); } else { const m = text.match(LEAD_EMOJI); if (m) { lead = m[1]; text = text.slice(m[0].length); } }
+  const kind = type || toastType(text, lead);
+  text = tr(text);
+  let xp = '';
+  const xm = text.match(/\s*(?:·\s*)?\+(\d+)(?: bonus)? XP$/);
+  if (xm && xm.index > 0) { xp = `+${xm[1]} XP`; text = text.slice(0, xm.index).replace(/[\s·]+$/, ''); }
+  const ic = svg || (lead && iconFor(lead) ? icon(iconFor(lead), 18) : lead ? `<span class="t-emo">${lead}</span>` : icon(TOAST_IC[kind], 18));
+  const wasShown = t.classList.contains('show');
+  t.className = `toast tt-${kind}`;
+  t.setAttribute('role', kind === 'err' ? 'alert' : 'status');
+  t.innerHTML = `<span class="t-ic" aria-hidden="true">${ic}</span><span class="t-msg" data-i18n-skip>${text}</span>${xp ? `<span class="t-xp">${xp}</span>` : ''}${act ? `<button class="toast-btn" type="button">${esc(tr(act.label))}</button>` : ''}<i class="t-bar" aria-hidden="true"></i>`;
+  if (act) t.querySelector('.toast-btn').onclick = (e) => { e.stopPropagation(); hideToast(); act.fn(); };
+  toastLeft = ms || (act ? 6000 : kind === 'err' ? 5000 : Math.min(5000, 2600 + text.length * 25));
+  t.style.setProperty('--t-ms', `${toastLeft}ms`);
+  void t.offsetWidth; // restart the countdown bar and the entrance
   t.classList.add('show');
+  if (wasShown) t.classList.add('bump');
+  if (kind === 'err' || kind === 'warn') buzz([18, 40, 18]);
   clearTimeout(toastT);
-  toastT = setTimeout(() => t.classList.remove('show'), ms || (act ? 6000 : 2800));
+  toastAt = Date.now();
+  toastT = setTimeout(hideToast, toastLeft);
+}
+{ // Tap to dismiss (when there's no button), swipe up to dismiss, hold to pause.
+  const t = $('#toast');
+  let y0 = null;
+  const pause = () => { if (!t.classList.contains('show') || t.classList.contains('paused')) return; clearTimeout(toastT); toastLeft -= Date.now() - toastAt; t.classList.add('paused'); };
+  const resume = () => { if (!t.classList.contains('paused')) return; t.classList.remove('paused'); toastAt = Date.now(); toastT = setTimeout(hideToast, Math.max(1200, toastLeft)); };
+  t.addEventListener('pointerdown', (e) => { y0 = e.clientY; pause(); });
+  t.addEventListener('pointermove', (e) => { if (y0 != null && e.clientY - y0 < 0) t.style.translate = `0 ${e.clientY - y0}px`; });
+  const end = (e) => {
+    const dy = y0 == null ? 0 : e.clientY - y0; y0 = null; t.style.translate = '';
+    if (dy < -24 || (Math.abs(dy) < 6 && !t.querySelector('.toast-btn') && e.type === 'pointerup')) hideToast(); else resume();
+  };
+  t.addEventListener('pointerup', end);
+  t.addEventListener('pointercancel', end);
+  t.addEventListener('mouseenter', pause);
+  t.addEventListener('mouseleave', resume);
+  t.addEventListener('animationend', () => t.classList.remove('bump'));
 }
 const buzz = (p = 12) => { if (S.settings.haptics && navigator.vibrate && navigator.userActivation?.hasBeenActive !== false) try { navigator.vibrate(p); } catch { /* unsupported */ } };
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1993,7 +2044,7 @@ const A = {
   'open-evening': () => openWizard('evening'),
   'open-evening-y': () => openWizard('evening', addDays(today(), -1)),
   'open-weekly': () => openWizard('weekly'),
-  'water+': () => { const d = day(); d.water = (d.water || 0) + 1; persist(); buzz(); if (d.water === S.settings.waterTarget) { burst(); toast('💧 Water goal reached! +10 bonus XP'); } else toast(`💧 +5 XP · ${d.water}/${S.settings.waterTarget}`); render(); },
+  'water+': () => { const d = day(); d.water = (d.water || 0) + 1; persist(); buzz(); if (d.water === S.settings.waterTarget) { burst(); toast('💧 Water goal reached! +10 bonus XP'); } else toast(`💧 Glass ${d.water} of ${S.settings.waterTarget} · +5 XP`); render(); },
   'water-': () => { const d = day(); d.water = Math.max(0, (d.water || 0) - 1); persist(); render(); },
   hyg: (el) => { const d = day(); const l = el.dataset.l, it = el.dataset.item; d[l][it] = !d[l][it]; persist(); buzz(); if (d[l][it] && hygRatio(d, l) === 1) addCelebrate(el, l === 'hygAM' ? '🪥 Morning routine complete!' : '🌙 Night routine complete!'); render(); },
   hygtab: (el) => { UI.hyg = el.dataset.v; render(); },
@@ -2504,7 +2555,7 @@ window.addEventListener('error', (e) => onErr(e.error || e.message));
 window.addEventListener('unhandledrejection', (e) => onErr(e.reason));
 
 // Debug/testing hook (harmless in production).
-window.__light = { get state() { return S; }, scores, computeXP, render, version: APP_VERSION };
+window.__light = { get state() { return S; }, scores, computeXP, render, toast, version: APP_VERSION };
 
 // Keep the "Right now" plan current: re-render Today when the time block changes.
 let lastBlock = null;
