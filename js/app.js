@@ -24,7 +24,7 @@ import { setLang, LANGS, locale, tr } from './i18n.js';
 import { setLocale, getLocale } from './util.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '3.11.0';
+const APP_VERSION = '3.12.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 // One toast at a time, at the top. Its look follows what it says: success (green), heads-up (amber),
@@ -2260,7 +2260,7 @@ const A = {
     el.disabled = true; el.textContent = 'Done ✓';
     $$('[data-claims]').forEach((e) => { e.textContent = `${S.claims[k]}/${CLAIM_CAP} today`; });
   },
-  like: (el) => { const { r, it } = reelOf(el); if (it) { const on = !S.feedLikes[it.id]; setLike(r, it, on); if (on) burst(el); } },
+  like: (el) => { const { r, it } = reelOf(el); if (it) { const on = !S.feedLikes[it.id]; setLike(r, it, on); } },
   'feed-save': (el) => { const { it } = reelOf(el); if (it) toggleSave(it); },
   reflect: (el) => { const { it } = reelOf(el); if (it) openReflect(it); },
   'read-story': (el) => { const { it } = reelOf(el); if (it) openStory(it); },
@@ -2275,7 +2275,7 @@ const A = {
     $('.r-why', r).hidden = false;
     if (first) S.quiz[it.id] = ok;
     nudge(S.feedPrefs, it.kind, SIGNAL.answer); persist();
-    if (ok) { burst(el); buzz([20, 30, 20]); toast(first ? '🧠 Correct! +5 XP' : '🧠 Correct!'); } else buzz(40);
+    if (ok) { buzz([20, 30, 20]); toast(first ? '🧠 Correct! +5 XP' : '🧠 Correct!'); } else buzz(40);
   },
   poll: (el) => {
     const { r, it } = reelOf(el); if (!it || $('.r-opt[disabled]', r)) return;
@@ -2286,7 +2286,7 @@ const A = {
   },
   punch: (el) => { const p = el.parentElement.querySelector('.r-punch'); el.hidden = true; p.hidden = false; p.classList.add('pop'); buzz(15); },
   'feed-water': (el) => {
-    const d = day(); d.water = (d.water || 0) + 1; persist(); burst(el); buzz();
+    const d = day(); d.water = (d.water || 0) + 1; persist(); buzz();
     el.disabled = true; el.textContent = `💧 Logged · ${d.water}/${S.settings.waterTarget}`;
   },
   'feed-next': () => scrollReel(1),

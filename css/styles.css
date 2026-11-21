@@ -1204,3 +1204,66 @@ body.feed-mode #nav { --glass: rgba(6, 8, 16, .55); --line-strong: rgba(255, 255
 .plan-day summary .i { margin-top: 2px; flex: none; }
 .pd-txt { flex: 1; min-width: 0; line-height: 1.4; }
 .pd-more { flex: none; white-space: nowrap; padding-top: 1px; }
+
+/* ---------- Feed follows your theme (v3.12) ----------
+   Every card glows in your accent colors on your theme's background (dark or light),
+   instead of a fixed dark rainbow. Cards still differ by where the glow sits. */
+.feed-stage { background: var(--bg); }
+.feed-stage .reel {
+  --base: var(--bg);
+  --c1: color-mix(in srgb, var(--accent) 46%, transparent);
+  --c2: color-mix(in srgb, var(--accent-2) 34%, transparent);
+  --c3: color-mix(in srgb, var(--accent) 22%, transparent);
+  --tint: var(--accent-text);
+}
+.feed-stage .reel:nth-child(3n+2)::before {
+  background:
+    radial-gradient(36% 30% at 78% 24%, var(--c1), transparent 70%),
+    radial-gradient(34% 30% at 18% 70%, var(--c2), transparent 70%),
+    radial-gradient(44% 34% at 60% 100%, var(--c3), transparent 70%);
+}
+.feed-stage .reel:nth-child(3n)::before {
+  background:
+    radial-gradient(40% 30% at 50% 12%, var(--c2), transparent 70%),
+    radial-gradient(34% 32% at 85% 80%, var(--c1), transparent 70%),
+    radial-gradient(40% 34% at 10% 96%, var(--c3), transparent 70%);
+}
+.feed-stage .cap-av { color: var(--accent-ink); background: var(--accent-grad); }
+
+/* Light theme: dark text, soft glass, no heavy shadows */
+:root[data-theme="light"] .feed-stage { color: var(--text); }
+:root[data-theme="light"] .feed-stage .reel {
+  --c1: color-mix(in srgb, var(--accent) 42%, transparent);
+  --c2: color-mix(in srgb, var(--accent-2) 28%, transparent);
+  --c3: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+:root[data-theme="light"] .reel::after { background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 70%, transparent), transparent 24%); }
+:root[data-theme="light"] .feed-top { color: var(--text); }
+:root[data-theme="light"] .feed-top::before { background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 92%, transparent) 0%, color-mix(in srgb, var(--bg) 50%, transparent) 55%, transparent 100%); }
+:root[data-theme="light"] .feed-tabs { background: rgba(20, 24, 40, .06); border-color: var(--line); }
+:root[data-theme="light"] .feed-tabs button { color: var(--muted); }
+:root[data-theme="light"] .feed-tabs button.on { background: var(--text); color: var(--bg); box-shadow: 0 4px 14px rgba(20, 24, 40, .18); }
+:root[data-theme="light"] .ft-chip:not(.on) { color: var(--text); background: rgba(255, 255, 255, .6); border-color: var(--line-strong); }
+:root[data-theme="light"] .feed-top .glass-btn { color: var(--text); background: rgba(255, 255, 255, .6); border-color: var(--line-strong); }
+:root[data-theme="light"] .r-inner, :root[data-theme="light"] .caption, :root[data-theme="light"] .r-btn { text-shadow: none; }
+:root[data-theme="light"] .r-word { color: var(--text); }
+:root[data-theme="light"] .r-example { color: color-mix(in srgb, var(--text) 85%, transparent); }
+:root[data-theme="light"] .r-sub, :root[data-theme="light"] .caption .tiny, :root[data-theme="light"] .r-hint { color: var(--muted); }
+:root[data-theme="light"] .r-cta { background: var(--text); color: var(--bg); box-shadow: 0 10px 24px rgba(20, 24, 40, .2); }
+:root[data-theme="light"] .r-cta.ghost, :root[data-theme="light"] .r-opt, :root[data-theme="light"] .r-why {
+  color: var(--text); background: rgba(255, 255, 255, .62); border-color: var(--line-strong); }
+:root[data-theme="light"] .r-opt:hover { background: rgba(255, 255, 255, .85); }
+:root[data-theme="light"] .r-opt-k { background: rgba(20, 24, 40, .08); }
+:root[data-theme="light"] .r-opt.right { background: color-mix(in srgb, var(--good) 18%, #fff); border-color: var(--good); }
+:root[data-theme="light"] .r-opt.wrong { background: color-mix(in srgb, var(--bad) 14%, #fff); border-color: var(--bad); }
+:root[data-theme="light"] .r-progress, :root[data-theme="light"] .reel .xpbar { background: rgba(20, 24, 40, .1); }
+:root[data-theme="light"] .r-progress i { box-shadow: none; }
+:root[data-theme="light"] .r-btn { color: var(--text); }
+:root[data-theme="light"] .r-ic { background: rgba(255, 255, 255, .7); border-color: var(--line-strong); }
+:root[data-theme="light"] .r-ic .i { color: var(--text); }
+:root[data-theme="light"] .r-btn:hover .r-ic { background: #fff; }
+:root[data-theme="light"] .cap-av { box-shadow: 0 0 0 2px var(--surface); }
+:root[data-theme="light"] body.feed-mode #nav { --glass: rgba(255, 255, 255, .78); --line-strong: rgba(20, 24, 40, .16); --muted: #5d6580; --text: #141826; }
+:root[data-theme="light"] .caption { color: var(--text); }
+:root[data-theme="light"] .feed-top .glass-btn .i { color: var(--text); }
+:root[data-theme="light"] .r-topic { color: var(--text); background: color-mix(in srgb, var(--accent) 14%, rgba(255, 255, 255, .7)); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
