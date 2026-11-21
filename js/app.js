@@ -24,7 +24,7 @@ import { setLang, LANGS, locale, tr } from './i18n.js';
 import { setLocale, getLocale } from './util.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '3.8.0';
+const APP_VERSION = '3.9.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
@@ -163,9 +163,17 @@ const langSeg = () => `<div class="seg" role="radiogroup" aria-label="Language" 
 // ----- Onboarding -----
 function viewOnboard() {
   return `<div class="onboard stack">
-    <div class="orb-wrap"><div class="orb"></div></div>
-    <h1 class="center">Welcome to Light</h1>
-    <p class="center muted">Your daily guide for focus, health, money, character and joy. 10 minutes in the morning, 10 at night. Everything stays private on this device.</p>
+    <div class="ob-hero">
+      <img class="ob-logo" src="icons/icon.svg" alt="" width="104" height="104">
+      <h1>Welcome to Light</h1>
+      <p class="ob-tag">Grow a little every day.</p>
+    </div>
+    <div class="ob-why">
+      <div><span aria-hidden="true">🌱</span><strong>Grow</strong><span>Small daily steps for focus, health, money and character</span></div>
+      <div><span aria-hidden="true">🪞</span><strong>Know yourself</strong><span>Your values, strengths and what makes a good day</span></div>
+      <div><span aria-hidden="true">🌅</span><strong>Become</strong><span>See who you’re becoming from how you spend your time</span></div>
+    </div>
+    <p class="center muted small">10 minutes in the morning, 10 at night. Everything stays private on this device.</p>
     <div class="card"><div class="lbl" data-i18n-skip>Language · Wika</div>${langSeg()}</div>
     <form class="card stack" data-form="onboard" novalidate>
       <div><label class="lbl" for="ob-name">What should I call you?</label><input type="text" id="ob-name" placeholder="Your name" autocomplete="given-name" required></div>
@@ -2537,3 +2545,7 @@ render();
 if (S.timer && timerLeftMs() <= 0) finishFocus(true);
 if (S.profile && nudgeCfg().on) syncNudge(); // keeps the phone's copy (language, identity line) current
 checkNudgeLanding();
+{
+  const sp = document.getElementById('splash');
+  if (sp) setTimeout(() => { sp.classList.add('done'); setTimeout(() => sp.remove(), 450); }, Math.max(0, 900 - performance.now()));
+}

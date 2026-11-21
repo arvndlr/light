@@ -1,7 +1,7 @@
 {
   "name": "Light — Daily Life Guide",
   "short_name": "Light",
-  "description": "Focus, health, money, character and joy in one app.",
+  "description": "Grow a little every day: know who you are, see who you can become, and spend your time on what matters.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -11,7 +11,7 @@
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
     { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
   ]
 }

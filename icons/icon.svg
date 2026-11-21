@@ -1,13 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Light</title>
   <defs>
-    <radialGradient id="g" cx="50%" cy="50%" r="50%">
-      <stop offset="0" stop-color="#fff6d6"/>
-      <stop offset="0.35" stop-color="#ffd166"/>
-      <stop offset="0.7" stop-color="#ff9f43" stop-opacity="0.55"/>
-      <stop offset="1" stop-color="#ff9f43" stop-opacity="0"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0c1226"/>
+      <stop offset="0.62" stop-color="#1a1638"/>
+      <stop offset="1" stop-color="#2a1630"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="256" cy="300" r="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffb04a" stop-opacity="0.55"/>
+      <stop offset="0.45" stop-color="#ff7a59" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#ff7a59" stop-opacity="0"/>
     </radialGradient>
+    <linearGradient id="sun" x1="0" y1="200" x2="0" y2="306" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff4cf"/>
+      <stop offset="0.45" stop-color="#ffc45c"/>
+      <stop offset="1" stop-color="#ff8a3d"/>
+    </linearGradient>
+    <linearGradient id="ray" x1="0" y1="96" x2="0" y2="250" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffe7a3" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#ffd06b"/>
+    </linearGradient>
+    <linearGradient id="sea" x1="0" y1="330" x2="0" y2="410" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff9a4a"/>
+      <stop offset="1" stop-color="#ff5f6d" stop-opacity="0.5"/>
+    </linearGradient>
+    <clipPath id="above"><rect x="0" y="0" width="512" height="306"/></clipPath>
   </defs>
-  <rect width="512" height="512" rx="112" fill="#0b1020"/>
-  <circle cx="256" cy="256" r="200" fill="url(#g)"/>
-  <circle cx="256" cy="256" r="78" fill="#fff6d6"/>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="116" fill="url(#glow)"/>
+  <g stroke="url(#ray)" stroke-width="22" stroke-linecap="round" fill="none">
+    <path d="M256 168 V104"/>
+    <path d="M190 186 L158 131"/>
+    <path d="M322 186 L354 131"/>
+    <path d="M142 234 L88 203"/>
+    <path d="M370 234 L424 203"/>
+  </g>
+  <circle cx="256" cy="306" r="96" fill="url(#sun)" clip-path="url(#above)"/>
+  <rect x="96" y="326" width="320" height="22" rx="11" fill="url(#sea)"/>
+  <rect x="160" y="370" width="192" height="20" rx="10" fill="url(#sea)" opacity="0.75"/>
+  <rect x="218" y="410" width="76" height="18" rx="9" fill="url(#sea)" opacity="0.5"/>
 </svg>

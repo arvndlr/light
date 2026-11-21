@@ -746,3 +746,13 @@ patterns.unshift(
   [/^Light will be there when you open (.+)$/, 'Nandoon ang Light kapag binuksan mo ang $1'],
   [/^(.+)\/day$/, '$1/araw'],
 );
+
+// Welcome page
+Object.assign(dict, {
+  'Grow a little every day.': 'Lumago nang kaunti araw-araw.',
+  'Grow': 'Lumago', 'Become': 'Maging',
+  'Small daily steps for focus, health, money and character': 'Maliliit na hakbang araw-araw para sa focus, kalusugan, pera at ugali',
+  'Your values, strengths and what makes a good day': 'Ang values mo, mga lakas mo, at kung ano ang nagpapaganda sa araw mo',
+  'See who you’re becoming from how you spend your time': 'Tingnan kung sino ang nagiging ikaw batay sa paggamit mo ng oras',
+  '10 minutes in the morning, 10 at night. Everything stays private on this device.': '10 minuto sa umaga, 10 sa gabi. Pribado lahat sa device na ito.',
+});

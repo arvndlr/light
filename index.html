@@ -12,8 +12,30 @@
   <meta name="apple-mobile-web-app-title" content="Light" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    /* Splash: painted before any script or stylesheet loads, faded out after the first render. */
+    #splash { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+      background: radial-gradient(90% 60% at 50% 62%, rgba(255, 138, 61, .16), transparent 70%), linear-gradient(#080b16, #120f26 70%, #1d1230);
+      color: #f3f5ff; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; transition: opacity .4s ease, visibility .4s; }
+    [data-theme="light"] #splash { background: radial-gradient(90% 60% at 50% 62%, rgba(255, 159, 67, .22), transparent 70%), #f5f4f0; color: #141826; }
+    #splash.done { opacity: 0; visibility: hidden; }
+    #splash .sp-mark { width: 124px; height: 124px; border-radius: 30px; box-shadow: 0 18px 60px -12px rgba(255, 138, 61, .55); animation: sp-pop .7s cubic-bezier(.2, .9, .3, 1.2) both; }
+    #splash .sp-word { font-size: 2.1rem; font-weight: 800; letter-spacing: .02em; animation: sp-up .6s .35s ease both; }
+    #splash .sp-tag { margin-top: -10px; font-size: .95rem; opacity: .65; animation: sp-up .6s .5s ease both; }
+    #splash .sp-sun { animation: sp-rise .9s .1s cubic-bezier(.2, .8, .2, 1) both; }
+    #splash .sp-ray { transform-box: view-box; transform-origin: 256px 306px; animation: sp-ray .5s ease both; }
+    #splash .sp-sea { transform-box: fill-box; transform-origin: center; animation: sp-sea .6s ease both; }
+    #splash .sp-glow { animation: sp-glow 2.4s 1s ease-in-out infinite alternate; }
+    @keyframes sp-pop { from { transform: scale(.82); opacity: 0; } }
+    @keyframes sp-up { from { transform: translateY(10px); opacity: 0; } }
+    @keyframes sp-rise { from { transform: translateY(110px); } }
+    @keyframes sp-ray { from { transform: scale(.6); opacity: 0; } }
+    @keyframes sp-sea { from { transform: scaleX(.2); opacity: 0; } }
+    @keyframes sp-glow { to { opacity: .55; } }
+    @media (prefers-reduced-motion: reduce) { #splash *, #splash { animation: none !important; transition: none !important; } }
+  </style>
   <script>
     // Apply the saved theme before first paint (no flash of the wrong colors).
     try {
@@ -21,10 +43,37 @@
       var t = s.theme === 'auto' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : (s.theme || 'dark');
       document.documentElement.dataset.theme = t;
       document.documentElement.dataset.accent = s.accent || 'sunrise';
+      window.__lightLang = s.lang;
     } catch (e) { document.documentElement.dataset.theme = 'dark'; }
   </script>
 </head>
 <body>
+  <div id="splash" aria-hidden="true">
+    <svg class="sp-mark" viewBox="0 0 512 512">
+      <defs>
+        <linearGradient id="sp-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0c1226"/><stop offset=".62" stop-color="#1a1638"/><stop offset="1" stop-color="#2a1630"/></linearGradient>
+        <radialGradient id="sp-gl" cx="256" cy="300" r="220" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffb04a" stop-opacity=".55"/><stop offset=".45" stop-color="#ff7a59" stop-opacity=".18"/><stop offset="1" stop-color="#ff7a59" stop-opacity="0"/></radialGradient>
+        <linearGradient id="sp-sun" x1="0" y1="200" x2="0" y2="306" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff4cf"/><stop offset=".45" stop-color="#ffc45c"/><stop offset="1" stop-color="#ff8a3d"/></linearGradient>
+        <linearGradient id="sp-ray" x1="0" y1="96" x2="0" y2="250" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffe7a3" stop-opacity=".7"/><stop offset="1" stop-color="#ffd06b"/></linearGradient>
+        <linearGradient id="sp-sea" x1="0" y1="330" x2="0" y2="410" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ff9a4a"/><stop offset="1" stop-color="#ff5f6d" stop-opacity=".5"/></linearGradient>
+        <clipPath id="sp-above"><rect width="512" height="306"/></clipPath>
+      </defs>
+      <rect width="512" height="512" rx="116" fill="url(#sp-bg)"/>
+      <rect class="sp-glow" width="512" height="512" rx="116" fill="url(#sp-gl)"/>
+      <g stroke="url(#sp-ray)" stroke-width="22" stroke-linecap="round" fill="none">
+        <path class="sp-ray" style="animation-delay:.55s" d="M256 168V104"/>
+        <path class="sp-ray" style="animation-delay:.5s" d="M190 186L158 131"/><path class="sp-ray" style="animation-delay:.5s" d="M322 186L354 131"/>
+        <path class="sp-ray" style="animation-delay:.45s" d="M142 234L88 203"/><path class="sp-ray" style="animation-delay:.45s" d="M370 234L424 203"/>
+      </g>
+      <g clip-path="url(#sp-above)"><circle class="sp-sun" cx="256" cy="306" r="96" fill="url(#sp-sun)"/></g>
+      <rect class="sp-sea" style="animation-delay:.2s" x="96" y="326" width="320" height="22" rx="11" fill="url(#sp-sea)"/>
+      <rect class="sp-sea" style="animation-delay:.3s" x="160" y="370" width="192" height="20" rx="10" fill="url(#sp-sea)" opacity=".75"/>
+      <rect class="sp-sea" style="animation-delay:.4s" x="218" y="410" width="76" height="18" rx="9" fill="url(#sp-sea)" opacity=".5"/>
+    </svg>
+    <div class="sp-word">Light</div>
+    <div class="sp-tag" id="sp-tag">Grow a little every day</div>
+    <script>if (window.__lightLang === 'tl') document.getElementById('sp-tag').textContent = 'Lumago nang kaunti araw-araw';</script>
+  </div>
   <div id="app">
     <nav id="nav" aria-label="Main"></nav>
     <main id="view" tabindex="-1"></main>
