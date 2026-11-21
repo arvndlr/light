@@ -1163,3 +1163,22 @@ body.feed-mode #nav { --glass: rgba(6, 8, 16, .55); --line-strong: rgba(255, 255
 }
 @keyframes ob-float { 50% { transform: translateY(-6px); } }
 @media (prefers-reduced-motion: reduce) { .ob-logo { animation: none; } }
+
+/* ---------- Spacing system (v3.10) ----------
+   One rhythm for every page: 4 · 8 · 12 · 16 · 20.
+   Page header → 16 → content. Blocks inside a section: 12 apart. Section title row: always 38px tall,
+   20 above, 8 below — so the space between a title and its card is the same everywhere. */
+.sec { margin: 20px 0 8px; min-height: 38px; }
+.sec > h2, .sec > div > h2 { display: flex; align-items: center; gap: 8px; }
+#view > h1 + p { margin-top: 4px; }
+#view > h1 + :not(p), #view > h1 + p + * { margin-top: 16px !important; }
+.today-head { margin-bottom: 16px; }
+.page-head, .grow-stats { margin-bottom: 16px; }
+.me-seg { margin: 16px 0 0; }
+.quick, .checkins, .joke-card { margin-top: 12px; }
+.banner-btn { padding: 16px; border-radius: var(--radius); }
+.card > :first-child { margin-top: 0; }
+.plan-day summary { align-items: flex-start; }
+.plan-day summary .i { margin-top: 2px; flex: none; }
+.pd-txt { flex: 1; min-width: 0; line-height: 1.4; }
+.pd-more { flex: none; white-space: nowrap; padding-top: 1px; }

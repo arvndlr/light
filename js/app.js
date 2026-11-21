@@ -24,7 +24,7 @@ import { setLang, LANGS, locale, tr } from './i18n.js';
 import { setLocale, getLocale } from './util.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '3.9.0';
+const APP_VERSION = '3.10.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
@@ -246,9 +246,9 @@ function planHTML() {
   return `${secH('🧭', 'Right now', `<span class="tiny muted">${fmtClock(cur.from)} – ${fmtClock(cur.to)}</span>`)}
   <section class="card plan-card">
     <div class="plan-head"><span class="nu-ic plan-ic">${ico(cur.ic, 24)}</span><div class="grow"><strong>${cur.title}</strong><div class="tiny muted">${cur.doneCount} of ${cur.items.length} done</div></div><span class="pill gold">${pct}%</span></div>
-    <div class="xpbar thin" style="margin:10px 0 6px"><i style="width:${pct}%"></i></div>
+    <div class="xpbar thin" style="margin:12px 0 8px"><i style="width:${pct}%"></i></div>
     ${cur.items.map(item).join('')}
-    <details class="plan-day"><summary>${icon('calendar', 15)} Coming up: <strong>${nxt.title}</strong> at ${fmtClock(nxt.from)}<span class="pd-more">Full day</span></summary>
+    <details class="plan-day"><summary>${icon('calendar', 15)}<span class="pd-txt">Coming up: <strong>${nxt.title}</strong> at ${fmtClock(nxt.from)}</span><span class="pd-more">Full day</span></summary>
       <ol class="plan-tl">${p.blocks.map((b) => `<li class="${b.current ? 'now' : b.past ? 'past' : ''}"><span class="pt-time">${fmtClock(b.from)}</span><span class="grow"><strong>${b.title}</strong><span class="tiny muted"> · ${b.doneCount}/${b.items.length}</span><span class="pt-items tiny muted">${b.items.map((x) => esc(x.t)).join(' · ')}</span></span></li>`).join('')}</ol>
     </details>
   </section>`;
@@ -289,7 +289,7 @@ function viewToday() {
       <div class="grow">
         <div class="tiny muted hero-kick">Level ${lvl}</div>
         <div class="hero-title">${titleOf(lvl)}</div>
-        <div class="xpbar" style="margin:10px 0 6px" role="progressbar" aria-label="XP to next level" aria-valuemin="0" aria-valuemax="${hi - lo}" aria-valuenow="${xp - lo}"><i style="width:${((xp - lo) / (hi - lo)) * 100}%"></i></div>
+        <div class="xpbar" style="margin:12px 0 8px" role="progressbar" aria-label="XP to next level" aria-valuemin="0" aria-valuemax="${hi - lo}" aria-valuenow="${xp - lo}"><i style="width:${((xp - lo) / (hi - lo)) * 100}%"></i></div>
         <div class="tiny muted">${hi - xp} XP to level ${lvl + 1}</div>
       </div>
     </div>
@@ -336,13 +336,13 @@ function viewToday() {
     ${lr?.nextWeek && weekStart(today()) > lr.week ? `<div class="insight small" style="margin-top:12px">This week’s commitment: <strong>${esc(lr.nextWeek)}</strong></div>` : ''}
     ${pr.length ? `<div class="small muted" style="margin:16px 0 8px">Top priorities</div>` + pr.map((p) =>
       `<button class="check ${p.done ? 'on' : ''}" data-act="prio" data-i="${p.i}" aria-pressed="${!!p.done}"><span class="box" aria-hidden="true">${p.done ? '✓' : ''}</span><span>${esc(p.t)}</span></button>`).join('')
-      : `<button class="btn sm" style="margin-top:14px" data-act="open-morning">Set today's top 3 priorities</button>`}
+      : `<button class="btn sm" style="margin-top:16px" data-act="open-morning">Set today's top 3 priorities</button>`}
   </div>
   ${focusCardHTML()}
 
   ${secH('🗺️', 'Daily quests', `<span class="pill gold">${qd}/${q.length}</span>`)}
   <div class="card">
-    <div class="xpbar thin" style="margin:0 0 6px" aria-hidden="true"><i style="width:${pct}%"></i></div>
+    <div class="xpbar thin" style="margin:0 0 8px" aria-hidden="true"><i style="width:${pct}%"></i></div>
     ${todo.map(questRow).join('') || '<div class="empty" style="padding:14px">Every quest done. Legendary.</div>'}
     ${done.length ? `<details class="done-list"><summary>${icon('checkCircle', 16)} Completed (${done.length})</summary>${done.map(questRow).join('')}</details>` : ''}
   </div>
@@ -359,7 +359,7 @@ function viewToday() {
     <section>
       ${secH('🪥', 'Hygiene', `<div class="seg mini" role="tablist"><button role="tab" aria-selected="${hygTab === 'hygAM'}" class="${hygTab === 'hygAM' ? 'on' : ''}" data-act="hygtab" data-v="hygAM">${icon('sun', 14)}AM</button><button role="tab" aria-selected="${hygTab === 'hygPM'}" class="${hygTab === 'hygPM' ? 'on' : ''}" data-act="hygtab" data-v="hygPM">${icon('moon', 14)}PM</button></div>`, 'hyg-sec')}
       <div class="card"><div class="hyg-grid">${st[hygTab].map((it) => { const on = d[hygTab]?.[it]; return `<button class="hchip ${on ? 'on' : ''}" data-act="hyg" data-l="${hygTab}" data-item="${esc(it)}" aria-pressed="${!!on}"><span class="hbox" aria-hidden="true">${on ? icon('check', 14) : ''}</span><span>${esc(it)}</span></button>`; }).join('')}</div>
-        <div class="tiny muted" style="margin-top:10px">${Math.round(hygRatio(d, hygTab) * 100)}% done</div></div>
+        <div class="tiny muted" style="margin-top:12px">${Math.round(hygRatio(d, hygTab) * 100)}% done</div></div>
     </section>
   </div>
 
@@ -402,8 +402,8 @@ function loanCard(l) {
     <div class="row between"><div class="grow"><div class="loan-who"><span>${owe ? 'You owe' : 'Owes you'}</span> · <strong>${esc(l.who)}</strong></div>
       <div class="tiny muted">${l.done ? '✓ Paid off' : `${cur(l.left)} left of ${cur(l.total)}`}${l.due && !l.done ? ` · ${l.overdue ? '⚠ overdue since' : 'due'} ${fmtDate(l.due)}` : ''}</div></div>
       <button class="icon-btn xs" data-act="edit-loan" data-id="${l.id}" aria-label="Edit loan ${esc(l.who)}">${icon('pen', 14)}</button></div>
-    <div class="xpbar loan-bar" style="margin-top:10px"><i style="width:${pct}%"></i></div>
-    ${l.done ? '' : `<button class="btn sm" style="margin-top:10px" data-act="loan-pay" data-id="${l.id}">${owe ? 'Record a payment' : 'They paid me'}</button>`}
+    <div class="xpbar loan-bar" style="margin-top:12px"><i style="width:${pct}%"></i></div>
+    ${l.done ? '' : `<button class="btn sm" style="margin-top:12px" data-act="loan-pay" data-id="${l.id}">${owe ? 'Record a payment' : 'They paid me'}</button>`}
   </div>`;
 }
 
@@ -448,7 +448,7 @@ function viewMoney() {
 
   return `
   <h1>Money</h1>
-  <div class="card money-hero" style="margin-top:14px">
+  <div class="card money-hero" style="margin-top:16px">
     <div class="row between"><div class="small muted">${icon('wallet', 15)} Money you have</div>
       <button class="btn sm ghost" data-act="set-balance">${icon('pen', 14)} ${b.set ? 'Update' : 'Set balance'}</button></div>
     <div class="big-num money-cash ${b.cash < 0 ? 'neg' : ''}">${cur(b.cash)}</div>
@@ -484,7 +484,7 @@ function viewMoney() {
   <div class="card">
     <div class="row between"><div><div class="small muted">🏦 ${esc(st.savingsName || 'Savings')}</div><div class="big-num" style="font-size:1.4rem">${cur(sv)}${sg ? ` <span class="small muted">of ${cur(sg)}</span>` : ''}</div></div>
       ${sg ? ring((sv / sg) * 100, 'var(--teal)', 60, 7, Math.min(100, Math.round((sv / sg) * 100)) + '%', 'Savings goal progress') : `<button class="btn sm" data-act="settings">Set a goal</button>`}</div>
-    ${saved ? `<div class="tiny muted" style="margin-top:6px">${cur(saved)} saved this month</div>` : ''}
+    ${saved ? `<div class="tiny muted" style="margin-top:8px">${cur(saved)} saved this month</div>` : ''}
   </div>
 
   <div class="sec" id="money-add"><h2>➕ Add</h2></div>
@@ -497,7 +497,7 @@ function viewMoney() {
   <div class="sec"><h2>📊 Where it goes</h2></div>
   <div class="card">${cats.length ? cats.map(([c, v]) => { const ci = catInfo(c); return `<div class="bar-row"><span class="small bar-lbl">${ico(ci[1], 16)} ${ci[2]}</span><span class="bar"><i style="width:${(v / maxCat) * 100}%;background:${BAD_CATS.includes(c) ? 'var(--bad)' : 'var(--amber)'}"></i></span><span class="small bar-val">${cur(v)}</span></div>`; }).join('') : '<div class="empty">No spending logged this month yet.</div>'}</div>
 
-  <div class="card"><div class="small muted" style="margin-bottom:6px">Daily spending — last 14 days (line = daily budget)</div>${barChart(days14, { color: 'var(--amber)', target: st.budget / 30, fmt: (v) => cur(Math.round(v)), label: 'Daily spending, last 14 days' })}</div>
+  <div class="card"><div class="small muted" style="margin-bottom:8px">Daily spending — last 14 days (line = daily budget)</div>${barChart(days14, { color: 'var(--amber)', target: st.budget / 30, fmt: (v) => cur(Math.round(v)), label: 'Daily spending, last 14 days' })}</div>
 
   <div class="sec"><h2>🧾 Records</h2><span class="muted small">tap one to edit</span></div>
   <div class="card">
@@ -564,7 +564,7 @@ function openTxEdit(id) {
     <div class="row" style="margin-top:12px"><input type="number" id="e-amt" aria-label="Amount" value="${t.amount}" inputmode="decimal" min="0" step="any" class="grow" required><input type="date" id="e-date" aria-label="Date" value="${t.date}" max="${today()}" style="width:auto"></div>
     <div id="e-cats">${catList ? editCats(t.type, t.cat) : ''}</div>
     <input type="text" id="e-note" aria-label="Note" placeholder="Note (optional)" value="${esc(t.note || '')}" style="margin-top:12px" maxlength="120">
-    <div class="row" style="margin-top:14px;gap:10px"><button type="button" class="btn ghost" data-act="del-tx" data-id="${t.id}">${icon('x', 15)} Delete</button><button class="btn primary grow" type="submit">Save changes</button></div></form>`, { label: 'Edit record', onClose: render });
+    <div class="row" style="margin-top:16px;gap:10px"><button type="button" class="btn ghost" data-act="del-tx" data-id="${t.id}">${icon('x', 15)} Delete</button><button class="btn primary grow" type="submit">Save changes</button></div></form>`, { label: 'Edit record', onClose: render });
 }
 const editCats = (type, cat) => {
   const list = { out: CATS_OUT, in: CATS_IN, save: CATS_SAVE }[type];
@@ -582,7 +582,7 @@ function openLoanEdit(id) {
       <div><label class="lbl" for="l-due">Due date</label><input type="date" id="l-due" value="${l.due || ''}"></div></div>
     <label class="lbl" for="l-note">Note</label><input type="text" id="l-note" value="${esc(l.note || '')}" maxlength="120">
     <p class="tiny muted" style="margin-top:8px">To change an amount, edit its record in Records below.</p>
-    <div class="row" style="margin-top:14px;gap:10px"><button type="button" class="btn ghost" data-act="del-loan" data-id="${l.id}">${icon('x', 15)} Delete loan</button><button class="btn primary grow" type="submit">Save</button></div></form>`, { label: 'Edit loan' });
+    <div class="row" style="margin-top:16px;gap:10px"><button type="button" class="btn ghost" data-act="del-loan" data-id="${l.id}">${icon('x', 15)} Delete loan</button><button class="btn primary grow" type="submit">Save</button></div></form>`, { label: 'Edit loan' });
 }
 
 // ----- Time: your schedule, where your hours go, insights, who you're becoming (logic in time.js) -----
@@ -609,10 +609,10 @@ function screenCard(k) {
   const n = native();
   if (!n) return isAndroidWeb() ? `<div class="card sc-get"><div class="row" style="gap:12px;align-items:flex-start"><span class="leak-ic" aria-hidden="true">${ico('📱', 18)}</span>
       <div><strong class="small">Track screen time automatically</strong><p class="tiny muted" style="margin-top:4px">Install the Light Android app and see exactly how many minutes go to TikTok, Facebook, YouTube, games and every other app — counted in your Time page and insights.</p>
-      <div class="row wrap" style="gap:8px;margin-top:10px"><a class="btn sm primary" href="${APK_URL}">${icon('download', 14)} Get the Android app</a><button class="btn sm ghost" data-act="sc-how">How it works</button></div></div></div></div>` : '';
+      <div class="row wrap" style="gap:8px;margin-top:12px"><a class="btn sm primary" href="${APK_URL}">${icon('download', 14)} Get the Android app</a><button class="btn sm ghost" data-act="sc-how">How it works</button></div></div></div></div>` : '';
   if (!n.hasUsageAccess()) return `<div class="card sc-get"><div class="row" style="gap:12px;align-items:flex-start"><span class="leak-ic" aria-hidden="true">${ico('📱', 18)}</span>
       <div><strong class="small">See your screen time per app</strong><p class="tiny muted" style="margin-top:4px">Allow Light in <strong>Usage access</strong>, then come back. Light only reads how long each app was open — never what you do in it — and it stays on this phone.</p>
-      <button class="btn sm primary" style="margin-top:10px" data-act="sc-allow">${icon('lock', 14)} Allow usage access</button></div></div></div>`;
+      <button class="btn sm primary" style="margin-top:12px" data-act="sc-allow">${icon('lock', 14)} Allow usage access</button></div></div></div>`;
   const week = UI.scView === 'week', sa = screenAvg(7, k);
   const list = week ? sa.apps : screenOn(k), total = sum(list.map((a) => a.m));
   const leaks = sum(list.filter((a) => timeCat(a.cat)[3] === 'drain').map((a) => a.m));
@@ -622,11 +622,11 @@ function screenCard(k) {
   <div class="card">
     <div class="seg mini bal-seg" role="tablist" aria-label="Screen time range">${[['today', 'Today'], ['week', '7-day average']].map(([v, n2]) => `<button type="button" role="tab" aria-selected="${(UI.scView || 'today') === v}" class="${(UI.scView || 'today') === v ? 'on' : ''}" data-act="sc-view" data-v="${v}">${n2}</button>`).join('')}</div>
     ${list.length ? `<div class="row between" style="align-items:baseline"><div class="big-num" style="font-size:1.6rem">${fmtHM(total)}</div><span class="small" style="color:${leaks ? 'var(--bad)' : 'var(--muted)'}">${fmtHM(leaks)} on time leaks</span></div>
-      <div class="tiny muted" style="margin:2px 0 10px">${week ? `per day · ${sa.days} ${sa.days === 1 ? 'day' : 'days'}` : 'on your phone today'}</div>
+      <div class="tiny muted" style="margin:2px 0 12px">${week ? `per day · ${sa.days} ${sa.days === 1 ? 'day' : 'days'}` : 'on your phone today'}</div>
       ${shown.map((a) => { const ci = timeCat(a.cat); return `<div class="sc-row"><button class="sc-app" data-act="app-cat" data-p="${esc(a.p)}" data-n="${esc(a.n)}" aria-label="Change category for ${esc(a.n)}">
         <span class="small sc-name" data-i18n-skip>${esc(a.n)}</span><span class="sc-cat k-${ci[3]}">${ico(ci[1], 12)} ${ci[2]}</span></button>
         <span class="bar"><i style="width:${(a.m / max) * 100}%;background:${KINDS[ci[3]][1]}"></i></span><span class="small bar-val">${fmtHM(a.m)}</span></div>`; }).join('')}
-      ${list.length > 8 ? `<button class="btn sm ghost block" style="margin-top:6px" data-act="sc-all">${UI.scAll ? 'Show less' : `Show all ${list.length} apps`}</button>` : ''}
+      ${list.length > 8 ? `<button class="btn sm ghost block" style="margin-top:8px" data-act="sc-all">${UI.scAll ? 'Show less' : `Show all ${list.length} apps`}</button>` : ''}
       <div class="tiny muted" style="margin-top:8px">Tap an app to change its category${ago != null ? ` · updated ${ago < 1 ? 'just now' : ago + ' min ago'}` : ''}</div>`
       : '<div class="empty">No app use recorded yet today.</div>'}
   </div>
@@ -651,10 +651,10 @@ function nudgeCard(k) {
   const c = nudgeCfg(), apps = Object.values(c.apps);
   const head = '<div class="sec"><h2>🛡️ Open Light instead?</h2></div>';
   if (!nudgeReady()) return `${head}<div class="card sc-get"><p class="small">When you open TikTok, Facebook or YouTube, Light can show a gentle card: “You’ve used TikTok for 1h 20m today. 60 seconds of Light instead?”</p>
-    <p class="tiny muted" style="margin-top:6px">Install the latest Light app to turn this on. Your data stays — just install it over the old one.</p>
-    <a class="btn sm primary" style="margin-top:10px" href="${APK_URL}">${icon('download', 14)} Update the Light app</a></div>`;
+    <p class="tiny muted" style="margin-top:8px">Install the latest Light app to turn this on. Your data stays — just install it over the old one.</p>
+    <a class="btn sm primary" style="margin-top:12px" href="${APK_URL}">${icon('download', 14)} Update the Light app</a></div>`;
   if (!c.on || !apps.length) return `${head}<div class="card"><p class="small">Choose the apps that steal your time. When you open one, Light shows a card over it: take 60 seconds of Light, or continue for a while. Set a daily limit and it comes back when you reach it.</p>
-    <button class="btn sm primary" style="margin-top:10px" data-act="ng-setup">${ico('🛡️', 14)} Choose apps</button></div>`;
+    <button class="btn sm primary" style="margin-top:12px" data-act="ng-setup">${ico('🛡️', 14)} Choose apps</button></div>`;
   const wk = nudgeWeek(7, k), n = native();
   const warn = !n.canOverlay() ? `<div class="ng-warn small"><span>Light can’t show its card over other apps yet, so it sends a notification instead.</span> <button class="btn sm" data-act="ng-overlay">Allow</button></div>` : '';
   return `${head}<div class="card">
@@ -662,26 +662,26 @@ function nudgeCard(k) {
     <div class="chips ng-apps">${apps.map((a) => `<span class="chip sm on"><span data-i18n-skip>${esc(a.n)}</span>${a.limit ? ` · ${fmtHM(a.limit)}` : ''}</span>`).join('')}</div>
     ${wk.shown ? `<div class="ng-stat"><div class="big-num" style="font-size:1.6rem">${wk.light}<span class="small muted"> / ${wk.shown}</span></div><div class="small">times you chose Light this week</div></div>`
       : '<p class="tiny muted" style="margin-top:8px">On. Open one of these apps and Light will be there.</p>'}
-    <div class="row wrap" style="gap:8px;margin-top:10px"><button class="btn sm" data-act="ng-setup">${icon('pen', 14)} Change apps and limits</button><button class="btn sm ghost" data-act="ng-off">Turn off</button></div>
+    <div class="row wrap" style="gap:8px;margin-top:12px"><button class="btn sm" data-act="ng-setup">${icon('pen', 14)} Change apps and limits</button><button class="btn sm ghost" data-act="ng-off">Turn off</button></div>
   </div>`;
 }
 function openNudgeSetup() {
   const c = nudgeCfg(), list = nudgeCandidates();
   openModal(`<div class="row between"><h2>🛡️ Open Light instead?</h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
-    <p class="small muted" style="margin:6px 0 12px">Pick the apps that waste your time. A limit brings the card back when you reach it.</p>
+    <p class="small muted" style="margin:8px 0 12px">Pick the apps that waste your time. A limit brings the card back when you reach it.</p>
     ${list.length ? `<div class="ng-list">${list.map((a) => { const on = !!c.apps[a.p], lim = c.apps[a.p]?.limit || 0;
       return `<div class="ng-row" data-p="${esc(a.p)}" data-n="${esc(a.n)}"><label class="ng-pick"><input type="checkbox" ${on ? 'checked' : ''}><span class="small" data-i18n-skip>${esc(a.n)}</span>${a.m >= 1 ? `<span class="tiny muted">${fmtHM(Math.round(a.m))}/day</span>` : ''}</label>
         <select class="ng-lim" aria-label="Daily limit for ${esc(a.n)}">${NUDGE_LIMITS.map((m) => `<option value="${m}" ${m === lim ? 'selected' : ''}>${limitLabel(m)}</option>`).join('')}</select></div>`; }).join('')}</div>`
       : '<div class="empty">No social, video or game apps in your screen time yet. Use your phone for a day, then come back.</div>'}
     ${!native().canOverlay() ? '<div class="ng-warn small" style="margin-top:12px">After you save, allow Display over other apps for Light, so the card can appear over TikTok and the others.</div>' : ''}
-    <button class="btn primary block" style="margin-top:14px" data-act="ng-save">${icon('check', 16)} Save</button>`, { label: 'Open Light instead' });
+    <button class="btn primary block" style="margin-top:16px" data-act="ng-save">${icon('check', 16)} Save</button>`, { label: 'Open Light instead' });
 }
 function openNudgeLanding(raw) {
   const [, name = 'that app', used = '0'] = raw.split('|');
   const idn = me().ids[0], b = BREATHING[0];
   buzz([20, 30, 20]);
   openModal(`<div class="row between"><h2>🌱 You chose Light</h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
-    <p class="small" style="margin:6px 0 4px" data-i18n-skip>${esc(tr(`You chose Light over ${name}${+used >= 1 ? ` (${fmtHM(+used)} today)` : ''}. That’s a vote for the person you’re becoming.`))}</p>
+    <p class="small" style="margin:8px 0 4px" data-i18n-skip>${esc(tr(`You chose Light over ${name}${+used >= 1 ? ` (${fmtHM(+used)} today)` : ''}. That’s a vote for the person you’re becoming.`))}</p>
     <p class="tiny muted" style="margin-bottom:12px">Spend the next 60 seconds on something that gives back:</p>
     <div class="ng-opts">
       <button class="card routine" data-act="ng-breathe"><span class="r-emoji" aria-hidden="true">🫧</span><strong>Breathe</strong><span class="tiny muted">${esc(b.n)} · ${b.mins} min</span></button>
@@ -698,7 +698,7 @@ function checkNudgeLanding() {
 function openAppCat(p, name) {
   const cur0 = S.settings.appCats?.[p] || appCat({ p, c: '' });
   openModal(`<div class="row between"><h2>📱 <span data-i18n-skip>${esc(name)}</span></h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
-    <p class="small muted" style="margin:6px 0 12px">What is this app time for you? Time leaks count against you; learning and work count as invested or essential.</p>
+    <p class="small muted" style="margin:8px 0 12px">What is this app time for you? Time leaks count against you; learning and work count as invested or essential.</p>
     <div class="chips">${TIME_CATS.map(([id, ic, n2, kd]) => `<button type="button" class="chip sm k-${kd} ${cur0 === id ? 'on' : ''}" data-act="set-app-cat" data-p="${esc(p)}" data-v="${id}">${ico(ic, 14)}${n2}</button>`).join('')}</div>`, { label: 'App category' });
 }
 function viewTime() {
@@ -726,7 +726,7 @@ function viewTime() {
   return `
   <h1>Time</h1>
   <p class="muted small">Everyone gets 24 hours. Spend them like money — invest them.</p>
-  <div class="card time-hero" style="margin-top:14px">
+  <div class="card time-hero" style="margin-top:16px">
     <div class="row between"><div class="small muted">${icon('clock', 15)} ${dayName(dk, k)} · your 24 hours</div></div>
     <div class="big-num money-cash">${fmtHM(kindsDay.invest)} <span class="small muted">invested</span></div>
     ${timeBar(kindsDay)}
@@ -1024,7 +1024,7 @@ function openStory(it) {
       <button class="btn" data-act="story-save" aria-pressed="${saved}">${icon('bookmark', 18, saved ? 'filled' : '')} <span>${saved ? 'Saved' : 'Save'}</span></button>
       <button class="btn" data-act="story-reflect">${icon('pen', 18)} Reflect</button>
     </div>
-    <button class="btn primary block" style="margin-top:10px" data-act="story-done">${icon('check', 18)} ${done ? 'Done' : 'Finished reading · +5 XP'}</button>
+    <button class="btn primary block" style="margin-top:12px" data-act="story-done">${icon('check', 18)} ${done ? 'Done' : 'Finished reading · +5 XP'}</button>
   </article>`, { label: d.t, onClose: () => { if (Date.now() - (feed.storyAt || 0) > 20000) markStoryRead(it, false); render(); } });
 }
 function markStoryRead(it, celebrate) {
@@ -1113,15 +1113,15 @@ function meWho() {
   ${m.values.length ? `<div class="card">
       ${vc.map((v, i) => `<div class="val-row"><span class="val-rank">${i + 1}</span><span class="small grow"><strong>${ico(v.ic, 15)} ${v.n}</strong>${v.r ? `<span class="tiny muted val-ev">${esc(v.r.t)}</span>` : v.measurable ? '<span class="tiny muted val-ev">not enough data yet</span>' : ''}</span>
         ${v.r ? `<span class="val-dot" style="background:${LVL_DOT[v.r.lvl]}" title="${['Barely in your days', 'Some', 'Strong'][v.r.lvl]}"></span>` : ''}</div>`).join('')}
-      ${gap ? `<div class="insight small" style="margin-top:10px">${esc(`You say ${gap.n.toLowerCase()} matters to you, but it barely shows in your days (${gap.r.t}). What’s one small thing you could do for it today?`)}</div>`
-        : lived.length ? '<div class="insight small" style="margin-top:10px;border-left-color:var(--good)">Your days match what you say matters. That’s integrity — keep going.</div>' : ''}
+      ${gap ? `<div class="insight small" style="margin-top:12px">${esc(`You say ${gap.n.toLowerCase()} matters to you, but it barely shows in your days (${gap.r.t}). What’s one small thing you could do for it today?`)}</div>`
+        : lived.length ? '<div class="insight small" style="margin-top:12px;border-left-color:var(--good)">Your days match what you say matters. That’s integrity — keep going.</div>' : ''}
     </div>`
     : `<div class="card">${cta('me-values', '🧭', 'Find your values', 'Pick the 5 things that matter most to you. Light checks if your days match.', '1 min')}</div>`}
 
   <div class="sec"><h2>💎 Your strengths</h2>${top.length ? '<button class="btn sm ghost" data-act="me-quiz" data-v="strengths">Retake</button>' : ''}</div>
   ${top.length ? `<div class="card">
       <div class="grid g3 money-3">${top.map((id, i) => { const s = strengthInfo(id); return `<div class="str-card ${i === 0 ? 'first' : ''}"><div style="font-size:1.6rem" aria-hidden="true">${s[1]}</div><strong class="small">${s[2]}</strong></div>`; }).join('')}</div>
-      ${edge ? `<div class="tiny muted" style="margin-top:10px">${esc(`Growth edge: ${strengthInfo(edge)[2]} — your lowest score. Light’s Grow pages can help you build it.`)}</div>` : ''}
+      ${edge ? `<div class="tiny muted" style="margin-top:12px">${esc(`Growth edge: ${strengthInfo(edge)[2]} — your lowest score. Light’s Grow pages can help you build it.`)}</div>` : ''}
     </div>`
     : `<div class="card">${cta('me-quiz', '💎', 'Discover your strengths', '20 quick statements. Find what you’re naturally great at.', '3 min', 'strengths')}</div>`}
 
@@ -1133,10 +1133,10 @@ function meWho() {
 
   <div class="sec"><h2>✨ Your formula for a good day</h2>${f.days ? `<span class="muted small">from ${f.days} days</span>` : ''}</div>
   <div class="card">${f.need ? `<div class="small muted">Check in (mood) on ${f.need} days and Light will find what your best days have in common. (${f.have}/${f.need})</div>` : `
-    ${f.lifts.length ? `<div class="tiny muted" style="margin-bottom:6px">Your mood is higher on days when…</div>${f.lifts.map((x) => `<div class="leak sev-ok"><span class="leak-ic" aria-hidden="true">${ico(x.ic, 18)}</span><span class="small grow">${x.t}</span><strong class="small amt-in">+${x.lift}</strong></div>`).join('')}`
+    ${f.lifts.length ? `<div class="tiny muted" style="margin-bottom:8px">Your mood is higher on days when…</div>${f.lifts.map((x) => `<div class="leak sev-ok"><span class="leak-ic" aria-hidden="true">${ico(x.ic, 18)}</span><span class="small grow">${x.t}</span><strong class="small amt-in">+${x.lift}</strong></div>`).join('')}`
       : '<div class="small muted">No clear pattern yet — keep checking in and trying different things.</div>'}
-    ${f.drags.length ? `<div class="tiny muted" style="margin:10px 0 6px">Surprisingly, your mood is lower when…</div>${f.drags.map((x) => `<div class="leak sev-2"><span class="leak-ic" aria-hidden="true">${ico(x.ic, 18)}</span><span class="small grow">${x.t}</span><strong class="small" style="color:var(--bad)">${x.lift}</strong></div>`).join('')}` : ''}
-    ${f.best ? `<div class="tiny muted" style="margin-top:10px">Best day of your week: <strong>${f.best}</strong> · hardest: <strong>${f.worst}</strong></div>` : ''}`}</div>
+    ${f.drags.length ? `<div class="tiny muted" style="margin:12px 0 8px">Surprisingly, your mood is lower when…</div>${f.drags.map((x) => `<div class="leak sev-2"><span class="leak-ic" aria-hidden="true">${ico(x.ic, 18)}</span><span class="small grow">${x.t}</span><strong class="small" style="color:var(--bad)">${x.lift}</strong></div>`).join('')}` : ''}
+    ${f.best ? `<div class="tiny muted" style="margin-top:12px">Best day of your week: <strong>${f.best}</strong> · hardest: <strong>${f.worst}</strong></div>` : ''}`}</div>
 
   <div class="sec"><h2>🧩 Know yourself</h2><span class="muted small">last 30 days</span></div>
   <div class="card"><div class="small muted" style="margin-bottom:8px">Bad-habit days</div>${ins.slipCounts.map(({ h, n: c }) => `<div class="bar-row"><span class="small bar-lbl">${ico(h.ic, 16)} ${h.name}</span><span class="bar"><i style="width:${(c / Math.max(1, keys.length)) * 100}%;background:var(--bad)"></i></span><span class="small bar-val">${c} day${c === 1 ? '' : 's'}</span></div>`).join('')}</div>
@@ -1186,7 +1186,7 @@ function showQuiz() {
     <div class="tiny muted">${q.i + 1} / ${list.length} · How much is this you?</div>
     <p class="quiz-q">${esc(x.q)}</p>
     <div class="quiz-opts">${AGREE.map(([v, n]) => `<button type="button" class="quiz-opt ${q.ans[q.i] === v ? 'on' : ''}" data-act="quiz-ans" data-v="${v}">${n}</button>`).join('')}</div>
-    ${q.i ? `<button type="button" class="btn sm ghost" style="margin-top:10px" data-act="quiz-back">${icon('chevronUp', 14, 'rot-l')} Back</button>` : ''}`, { label: 'Quiz' });
+    ${q.i ? `<button type="button" class="btn sm ghost" style="margin-top:12px" data-act="quiz-back">${icon('chevronUp', 14, 'rot-l')} Back</button>` : ''}`, { label: 'Quiz' });
 }
 function openValues() {
   UI.valSel = me().values.slice();
@@ -1195,7 +1195,7 @@ function openValues() {
 function showValues() {
   const sel = UI.valSel;
   openModal(`<div class="row between"><h2>🧭 What matters most?</h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
-    <p class="small muted" style="margin:6px 0 12px">Tap up to 5, most important first.</p>
+    <p class="small muted" style="margin:8px 0 12px">Tap up to 5, most important first.</p>
     <div class="chips">${VALUES.map(([id, ic, n]) => { const i = sel.indexOf(id); return `<button type="button" class="chip ${i >= 0 ? 'on' : ''}" data-act="val-pick" data-v="${id}" aria-pressed="${i >= 0}">${i >= 0 ? `<b class="val-num">${i + 1}</b>` : ico(ic, 16)}${n}</button>`; }).join('')}</div>
     <button class="btn primary block" style="margin-top:16px" data-act="save-values" ${sel.length ? '' : 'disabled'}>Save ${sel.length ? `(${sel.length})` : ''}</button>`, { label: 'Values' });
 }
@@ -1205,16 +1205,16 @@ function openAddIdentity() {
     <div class="id-grid">${ID_TEMPLATES.filter((t) => !have.has(t.k)).map((t) => `<button type="button" class="id-pick" data-act="add-id-t" data-k="${t.k}"><span aria-hidden="true">${t.ic}</span>${t.t}</button>`).join('')}</div>
     <div class="lbl" style="margin-top:16px">Or your own</div>
     <input type="text" id="id-t" placeholder="e.g. Nurse, Chef, Pilot, Teacher" maxlength="40">
-    <div class="tiny muted" style="margin:10px 0 6px">What time builds it?</div>
+    <div class="tiny muted" style="margin:12px 0 8px">What time builds it?</div>
     <div class="chips">${TIME_CATS.filter((c) => c[3] === 'invest' || c[0] === 'work').map(([id, ic, n]) => `<button type="button" class="chip sm" data-act="id-cat" data-v="${id}" aria-pressed="false">${ico(ic, 14)}${n}</button>`).join('')}</div>
-    <button class="btn primary block" style="margin-top:14px" type="submit">Add</button></form>`, { label: 'Add identity' });
+    <button class="btn primary block" style="margin-top:16px" type="submit">Add</button></form>`, { label: 'Add identity' });
 }
 function openLetter() {
   openModal(`<form data-form="letter" novalidate><div class="row between"><h2>✉️ Dear future me…</h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
-    <textarea id="lt-text" rows="8" placeholder="Who do you hope to be? What are you working on? What do you want to remember?" maxlength="4000" style="margin-top:10px"></textarea>
+    <textarea id="lt-text" rows="8" placeholder="Who do you hope to be? What are you working on? What do you want to remember?" maxlength="4000" style="margin-top:12px"></textarea>
     <div class="lbl">Open it in</div>
     <div class="seg" role="radiogroup" aria-label="Open in">${[[90, '3 months'], [182, '6 months'], [365, '1 year']].map(([d, n], i) => `<button type="button" role="radio" aria-checked="${i === 2}" class="${i === 2 ? 'on' : ''}" data-act="lt-when" data-v="${d}">${n}</button>`).join('')}</div>
-    <button class="btn primary block" style="margin-top:14px" type="submit">${icon('lock', 15)} Seal the letter</button></form>`, { label: 'Letter to future me' });
+    <button class="btn primary block" style="margin-top:16px" type="submit">${icon('lock', 15)} Seal the letter</button></form>`, { label: 'Letter to future me' });
 }
 const nextHalfHour = () => { const d = new Date(); let m = d.getHours() * 60 + d.getMinutes(); m = Math.ceil((m + 1) / 30) * 30; const hm = (x) => `${String(Math.floor((x % 1440) / 60)).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`; return [hm(m), hm(m + 30)]; };
 
@@ -1237,13 +1237,13 @@ function viewStats() {
   return `
   <div class="seg" role="tablist" style="margin-top:4px">${[7, 30, 90].map((r) => `<button role="tab" aria-selected="${UI.range === r}" class="${UI.range === r ? 'on' : ''}" data-act="range" data-v="${r}">${r} days</button>`).join('')}</div>
 
-  ${!sc.length ? `<div class="card empty" style="margin-top:14px">📈 Your stats appear after your first check-in. Do your morning check-in to begin!</div>` : `
-  <div class="card hero" style="margin-top:14px">
+  ${!sc.length ? `<div class="card empty" style="margin-top:16px">📈 Your stats appear after your first check-in. Do your morning check-in to begin!</div>` : `
+  <div class="card hero" style="margin-top:16px">
     ${ring(overall, 'var(--gold)', 110, 10, overall, `Life score ${overall}`)}
     <div class="grow"><strong>Life Score</strong><div class="small muted">Average of all 6 areas over ${sc.length} tracked day${sc.length === 1 ? '' : 's'}.</div>
       ${ps.length ? trendTag(overall - dAvg(ps, 'overall')) + ' <span class="tiny muted">vs previous ' + n + ' days</span>' : ''}</div>
   </div>
-  <div class="grid g3" style="margin-top:14px">${DOMAINS.map((d) => { const v = dAvg(sc, d.id), pv = dAvg(ps, d.id); return `<button class="card ring-card ${UI.domain === d.id ? 'sel' : ''}" style="--sel:${d.hex}" data-act="domain" data-v="${d.id}" aria-pressed="${UI.domain === d.id}">${ring(v, d.color, 64, 7, v)}<div class="small">${d.ic} ${d.name}</div>${pv != null ? `<div class="tiny">${trendTag(v - pv)}</div>` : ''}</button>`; }).join('')}</div>
+  <div class="grid g3" style="margin-top:16px">${DOMAINS.map((d) => { const v = dAvg(sc, d.id), pv = dAvg(ps, d.id); return `<button class="card ring-card ${UI.domain === d.id ? 'sel' : ''}" style="--sel:${d.hex}" data-act="domain" data-v="${d.id}" aria-pressed="${UI.domain === d.id}">${ring(v, d.color, 64, 7, v)}<div class="small">${d.ic} ${d.name}</div>${pv != null ? `<div class="tiny">${trendTag(v - pv)}</div>` : ''}</button>`; }).join('')}</div>
   <div class="card"><div class="row between"><strong>${domInfo.name} score</strong>${dom !== 'overall' ? '<button class="btn sm ghost" data-act="domain" data-v="overall">Show overall</button>' : '<span class="tiny muted">Tap an area above</span>'}</div>${lineChart(pts, { color: domInfo.hex, label: `${domInfo.name} score over ${n} days` })}</div>`}
 
   <div class="sec"><h2>🗓️ Your year in light</h2><span class="tiny muted">daily Life Score</span></div>
@@ -1267,7 +1267,7 @@ function viewProjection() {
   if (p.need) return `<div class="card empty">🔮 Check in on at least ${p.need} days and Light will project who you're becoming in one year — health, money, career, mind and character. (${p.have}/${p.need} days)</div>`;
   return `<div class="card">
     <div class="row"><div style="font-size:2.4rem" aria-hidden="true">${p.persona[0]}</div><div><div class="tiny muted">In one year you're becoming</div><h2>${p.persona[1]}</h2></div></div>
-    <p class="small" style="margin:10px 0 14px">${p.persona[2]}</p>
+    <p class="small" style="margin:12px 0 16px">${p.persona[2]}</p>
     <div class="proj"><span class="h">Area</span><span class="h">Now</span><span class="h">1 year</span>
       ${p.rows.map((r) => `<span><span class="ico">${ico(r.d.ic, 16)}</span> ${r.d.name}</span><strong>${r.now}</strong><span>${r.proj} ${trendTag(r.proj - r.now)}</span>`).join('')}
       <span><strong>Overall</strong></span><strong>${p.nowOverall}</strong><strong style="color:var(--gold)">${p.projOverall}</strong>
@@ -1328,19 +1328,19 @@ function growFitness() {
   const routineCard = (w) => `<button class="card routine" data-act="start-workout" data-w="${w.id}"><span class="r-emoji" aria-hidden="true">${w.ic}</span><strong>${w.n}</strong><span class="tiny muted">${workoutMinutes(w, lvl)} min · ${w.focus}</span>${doneToday.includes(w.id) ? `<span class="routine-done">${icon('check', 12)} done today</span>` : ''}</button>`;
   const exList = EXERCISES.filter((e) => grp === 'All' || e.g === grp);
   return growHero('var(--amber)', `${icon('dumbbell', 14)} This week`, `${done7.length} workout${done7.length === 1 ? '' : 's'} · ${mins7} min`, 'Aim for 3–5 workouts a week. No equipment needed.',
-      `<div class="wk-dots">${dots}</div><div class="lbl" style="margin-top:14px">Your level</div>${lvlSeg}`) + `
+      `<div class="wk-dots">${dots}</div><div class="lbl" style="margin-top:16px">Your level</div>${lvlSeg}`) + `
   ${sug ? `<section class="card today-wo">
       <div class="g-kick" style="--tint:var(--amber)">${icon('timer', 14)} Recommended right now</div>
-      <div class="row" style="margin-top:10px"><span class="r-emoji big" aria-hidden="true">${sug.ic}</span><div class="grow"><h2>${sug.n}</h2><div class="small muted">${workoutMinutes(sug, lvl)} min${sug.rounds > 1 ? ` · ${sug.rounds} rounds` : ''} · ${sug.focus}</div></div></div>
-      <p class="small" style="margin-top:10px">${esc(sug.desc)}</p>
-      <div class="chips" style="margin-top:10px">${sug.moves.map((m) => `<span class="chip sm">${esc(exercise(m).n)}</span>`).join('')}</div>
-      <button class="btn primary block" style="margin-top:14px" data-act="start-workout" data-w="${sug.id}">${icon('play', 18)} Start guided workout</button></section>`
+      <div class="row" style="margin-top:12px"><span class="r-emoji big" aria-hidden="true">${sug.ic}</span><div class="grow"><h2>${sug.n}</h2><div class="small muted">${workoutMinutes(sug, lvl)} min${sug.rounds > 1 ? ` · ${sug.rounds} rounds` : ''} · ${sug.focus}</div></div></div>
+      <p class="small" style="margin-top:12px">${esc(sug.desc)}</p>
+      <div class="chips" style="margin-top:12px">${sug.moves.map((m) => `<span class="chip sm">${esc(exercise(m).n)}</span>`).join('')}</div>
+      <button class="btn primary block" style="margin-top:16px" data-act="start-workout" data-w="${sug.id}">${icon('play', 18)} Start guided workout</button></section>`
     : `<div class="card soft" style="--tint:var(--good)"><strong>${icon('checkCircle', 16)} Training done for today.</strong><p class="small muted" style="margin-top:4px">Recovery is where muscles grow. Sleep well tonight.</p></div>`}
   ${secH('🏋️', 'Routines', `<span class="pill">${WORKOUTS.length}</span>`)}
   <div class="grid routines">${WORKOUTS.map(routineCard).join('')}</div>
   ${secH('📚', 'Exercise library', `<span class="pill">${exList.length}</span>`)}
   <div class="chips fit-groups">${['All', ...GROUPS].map((g) => `<button class="chip ${grp === g ? 'on' : ''}" data-act="fit-group" data-v="${esc(g)}">${esc(g)}</button>`).join('')}</div>
-  <div class="card acc" style="margin-top:10px">${exList.map((e) => `<details><summary><span class="grow">${esc(e.n)}<span class="ex-g">${esc(e.g)}</span></span><span class="pill gold">${esc(e.reps[li])}</span></summary>${hasFigure(e.id) ? `<div class="ex-fig">${figureDemo(e.id, e.n)}</div>` : ''}<ol class="how">${e.how.map((x) => `<li>${esc(x)}</li>`).join('')}</ol><p class="small tip">${icon('bulb', 14)} ${esc(e.tip)}</p></details>`).join('')}</div>
+  <div class="card acc" style="margin-top:12px">${exList.map((e) => `<details><summary><span class="grow">${esc(e.n)}<span class="ex-g">${esc(e.g)}</span></span><span class="pill gold">${esc(e.reps[li])}</span></summary>${hasFigure(e.id) ? `<div class="ex-fig">${figureDemo(e.id, e.n)}</div>` : ''}<ol class="how">${e.how.map((x) => `<li>${esc(x)}</li>`).join('')}</ol><p class="small tip">${icon('bulb', 14)} ${esc(e.tip)}</p></details>`).join('')}</div>
   ${secH('📜', 'Recent workouts', S.workouts.length ? `<span class="pill">${S.workouts.length}</span>` : '')}
   <div class="card">${S.workouts.length ? [...S.workouts].reverse().slice(0, 8).map((x) => { const w = workout(x.id); return `<div class="tx"><div class="cat" aria-hidden="true">${w?.ic || '💪'}</div><div class="grow"><div>${esc(w?.n || 'Workout')}${x.partial ? ' <span class="pill">partial</span>' : ''}</div><div class="tiny muted">${fmtDate(x.date)} · ${x.mins} min · ${levelInfo(x.level).n}</div></div></div>`; }).join('')
     : `<div class="empty"><div class="empty-ic">${icon('dumbbell', 30)}</div>Your finished workouts will show up here. Start with the Morning wake-up — it only takes a few minutes.</div>`}</div>
@@ -1382,8 +1382,8 @@ function growHealth() {
   return growHero('var(--cyan)', `${icon('lungs', 14)} Immunity & easy breathing`, 'Breathe easier, get sick less', esc(DISCLAIMER)) + `
   <section class="card red-flags">
     <div class="g-kick" style="--tint:var(--bad)">${icon('bell', 14)} Get emergency help if…</div>
-    <ul class="g-list" style="margin-top:10px">${RED_FLAGS.map((t) => listItem('x', esc(t), 'bad')).join('')}</ul>
-    <p class="small" style="margin-top:10px;font-weight:650">${esc(EMERGENCY)}</p>
+    <ul class="g-list" style="margin-top:12px">${RED_FLAGS.map((t) => listItem('x', esc(t), 'bad')).join('')}</ul>
+    <p class="small" style="margin-top:12px;font-weight:650">${esc(EMERGENCY)}</p>
   </section>
   ${asthmaCards}
   ${secH('🌊', 'Breathing exercises')}
@@ -1414,7 +1414,7 @@ function openBreathingEx(id) {
     <p class="small muted" style="margin-top:8px;text-align:left">${esc(b.d)}</p>
     <div class="breath bx" id="bx" aria-live="polite"><span id="bx-t">Breathe in</span></div>
     <div class="big-num" id="bx-left">${b.mins}:00</div><div class="tiny muted">remaining</div>
-    <p class="tiny muted" style="margin-top:14px">Stop if you feel dizzy or more breathless, and use your reliever as your action plan says.</p></div>`, { label: b.n, onClose: () => clearInterval(brTimer) });
+    <p class="tiny muted" style="margin-top:16px">Stop if you feel dizzy or more breathless, and use your reliever as your action plan says.</p></div>`, { label: b.n, onClose: () => clearInterval(brTimer) });
   let phase = '';
   const tick = () => {
     const el = $('#bx'); if (!el) { clearInterval(brTimer); return; }
@@ -1443,10 +1443,10 @@ function growComedy() {
       `<div class="xpbar" style="margin-top:12px"><i style="width:${prog}%;background:linear-gradient(90deg,var(--pink),var(--accent))"></i></div>`) + `
   <form class="card" data-form="addjoke" novalidate>
     <div class="g-kick" style="--tint:var(--pink)">${icon('sparkle', 14)} Today’s technique</div>
-    <h3 style="margin:6px 0 4px">${esc(c.t)}</h3><p class="small muted">${esc(c.b)}</p>
+    <h3 style="margin:8px 0 4px">${esc(c.t)}</h3><p class="small muted">${esc(c.b)}</p>
     <label class="lbl" for="joke-in">${esc(c.p)}</label><textarea id="joke-in" placeholder="Write your joke here…" maxlength="1000"></textarea>
-    <button class="btn primary block" style="margin-top:10px" type="submit">${icon('plus', 18)} Add to my notebook · +10 XP</button></form>
-  <div class="card soft" style="--tint:var(--pink)"><div class="g-kick">${icon('smile', 14)} Joke of the day</div><p style="margin-top:6px">${esc(daily(C.jokes))}</p><p class="tiny muted" style="margin-top:8px">Tell one joke to a real person today. Watching faces is how comedians learn.</p></div>
+    <button class="btn primary block" style="margin-top:12px" type="submit">${icon('plus', 18)} Add to my notebook · +10 XP</button></form>
+  <div class="card soft" style="--tint:var(--pink)"><div class="g-kick">${icon('smile', 14)} Joke of the day</div><p style="margin-top:8px">${esc(daily(C.jokes))}</p><p class="tiny muted" style="margin-top:8px">Tell one joke to a real person today. Watching faces is how comedians learn.</p></div>
   ${secH('📒', 'My joke notebook', n ? `<span class="pill">${n}</span>` : '')}
   <div class="card">${n ? [...S.jokes].reverse().map((j) => `<div class="tx"><div class="grow"><div style="white-space:pre-wrap">${esc(j.text)}</div><div class="tiny muted">${fmtDate(j.date)}</div></div><button class="icon-btn xs" data-act="deljoke" data-id="${j.id}" aria-label="Delete joke">${icon('x', 14)}</button></div>`).join('') : `<div class="empty"><div class="empty-ic">${icon('mic', 30)}</div>Your first joke is the hardest. It doesn’t have to be good — it has to be written.</div>`}</div>
   ${secH('📚', 'All techniques', `<span class="pill">${C.comedy.length}</span>`)}
@@ -1471,7 +1471,7 @@ function growGlow() {
   const avg14 = Math.round(avg(hyg.map((x) => x.v)));
   const tile = (hid, label) => { const s = habitStreak(hid), m = nextMilestone(s.current); return `<div class="card streak"><div class="streak-ring">${ring((s.current / m) * 100, 'var(--teal)', 58, 5)}<span class="ic" aria-hidden="true">${HABITS.find((h) => h.id === hid).ic}</span></div><div class="n">${s.current}</div><div class="tiny muted">${label}</div></div>`; };
   return growHero('var(--teal)', `${icon('sparkle', 14)} Your glow score`, `${avg14}%`, 'Average hygiene routine completion over the last 14 days.',
-      `<div style="margin-top:10px">${barChart(hyg, { color: 'var(--teal)', max: 100, target: 100, fmt: (v) => v + '%', label: 'Hygiene completion, last 14 days' })}</div>`) + `
+      `<div style="margin-top:12px">${barChart(hyg, { color: 'var(--teal)', max: 100, target: 100, fmt: (v) => v + '%', label: 'Hygiene completion, last 14 days' })}</div>`) + `
   <div class="grid">${tile('fastfood', 'days without fast food')}${tile('soda', 'days without soda')}</div>
   <div class="grid duo">
     <section>${secH('✅', 'Do this')}<div class="card"><ul class="g-list">${C.glow.do.map((t) => listItem('check', esc(t), 'good')).join('')}</ul></div></section>
@@ -1491,8 +1491,8 @@ function growFreedom() {
   ${secH('📜', 'Urge log', S.sos.length ? `<span class="pill good">${won} beaten</span>` : '')}
   <div class="card">${recent.length ? recent.map((s) => { const h = HABITS.find((x) => x.id === s.type) || { ic: '🌀', name: 'Other' }; return `<div class="tx"><div class="cat" aria-hidden="true">${h.ic}</div><div class="grow"><div>${h.name}</div><div class="tiny muted">${fmtDate(s.date)} ${s.t || ''}</div></div><span class="pill ${s.result === 'won' ? 'good' : 'bad'}">${s.result === 'won' ? 'Beat it' : 'Slipped'}</span></div>`; }).join('') : `<div class="empty"><div class="empty-ic">${icon('wind', 30)}</div>When an urge hits, tap “Urge?” — every urge you surf shows up here.</div>`}</div>
   <div class="grid duo">
-    <div class="card soft" style="--tint:var(--bad)"><div class="g-kick">${icon('dice', 14)} About gambling</div><p class="small" style="margin-top:6px">Gambling apps are engineered to keep you playing. If it feels out of control: block gambling sites and apps, ask your bank to block gambling transactions, use self-exclusion programs, let someone you trust help with money for a while, and contact a local gambling or mental-health helpline. Asking for help is strength.</p></div>
-    <div class="card soft" style="--tint:var(--blue)"><div class="g-kick">${icon('phoneOff', 14)} Make social media harder</div><ul class="g-list" style="margin-top:6px">${['Log out after each use', 'Delete apps — use the browser only', 'Turn on grayscale', 'Set app limits in Digital Wellbeing / Screen Time', 'Put Light where your social apps used to be'].map((t) => listItem('check', t)).join('')}</ul></div>
+    <div class="card soft" style="--tint:var(--bad)"><div class="g-kick">${icon('dice', 14)} About gambling</div><p class="small" style="margin-top:8px">Gambling apps are engineered to keep you playing. If it feels out of control: block gambling sites and apps, ask your bank to block gambling transactions, use self-exclusion programs, let someone you trust help with money for a while, and contact a local gambling or mental-health helpline. Asking for help is strength.</p></div>
+    <div class="card soft" style="--tint:var(--blue)"><div class="g-kick">${icon('phoneOff', 14)} Make social media harder</div><ul class="g-list" style="margin-top:8px">${['Log out after each use', 'Delete apps — use the browser only', 'Turn on grayscale', 'Set app limits in Digital Wellbeing / Screen Time', 'Put Light where your social apps used to be'].map((t) => listItem('check', t)).join('')}</ul></div>
   </div>`;
 }
 function growJournal() {
@@ -1500,7 +1500,7 @@ function growJournal() {
   return `<form class="card g-hero" style="--tint:var(--blue)" data-form="addjournal" data-p="${esc(p)}" novalidate>
     <div class="g-kick">${icon('pen', 14)} Today’s prompt</div><h2 class="g-title" style="font-size:1.2rem">${esc(p)}</h2>
     <textarea id="journal-in" aria-label="Journal entry" placeholder="Write freely…" style="margin-top:12px"></textarea>
-    <button class="btn primary block" style="margin-top:10px" type="submit">${icon('check', 18)} Save entry · +10 XP</button></form>
+    <button class="btn primary block" style="margin-top:12px" type="submit">${icon('check', 18)} Save entry · +10 XP</button></form>
   ${S.saved.length ? `${secH('🔖', 'Saved from the feed', `<button class="btn sm ghost" data-act="tab" data-tab="feed">Open in feed</button>`)}<div class="card">${[...S.saved].reverse().map((s, i) => `<div class="tx"><div class="grow"><div class="tiny muted">${esc(s.tag)}</div><div class="small">${esc(s.body)}</div></div><button class="icon-btn xs" data-act="delsaved" data-i="${S.saved.length - 1 - i}" aria-label="Remove saved card">${icon('x', 14)}</button></div>`).join('')}</div>` : ''}
   ${secH('📓', 'Entries', S.journal.length ? `<span class="pill">${S.journal.length}</span>` : '')}
   <div class="card">${S.journal.length ? `<ol class="timeline">${[...S.journal].reverse().map((j) => `<li><div class="tiny muted">${fmtDate(j.date)} · ${esc(j.prompt)}</div><div class="small" style="white-space:pre-wrap">${esc(j.text)}</div></li>`).join('')}</ol>` : `<div class="empty"><div class="empty-ic">${icon('bookOpen', 30)}</div>No entries yet. Five honest minutes is all it takes.</div>`}</div>`;
@@ -1623,7 +1623,7 @@ function renderWizard(keepScroll = false) {
       <div class="prog" role="progressbar" aria-label="Step ${wiz.step + 1} of ${wiz.steps.length}" aria-valuemin="1" aria-valuemax="${wiz.steps.length}" aria-valuenow="${wiz.step + 1}"><i style="width:${((wiz.step + 1) / wiz.steps.length) * 100}%"></i></div>
       <span class="pill timer" id="wiz-timer" aria-label="Time spent">${elapsed()}</span></div>
     <div class="wiz-body">
-      <h2 class="wiz-title" id="wiz-title">${st.title}</h2>${st.sub ? `<div class="muted small" style="margin-bottom:14px">${st.sub}</div>` : '<div style="height:10px"></div>'}
+      <h2 class="wiz-title" id="wiz-title">${st.title}</h2>${st.sub ? `<div class="muted small" style="margin-bottom:16px">${st.sub}</div>` : '<div style="height:10px"></div>'}
       ${st.fields.map(fieldHTML).join('')}
     </div>
     <div class="wiz-foot">
@@ -1640,14 +1640,14 @@ function fieldHTML(f) {
   const lbl = f.label ? `<label class="lbl" for="${id}" id="${id}-l">${f.label}</label>` : '';
   switch (f.type) {
     case 'info': return f.html;
-    case 'scale': { const faces = f.faces || FACES; return `<div style="margin-bottom:14px">${f.label ? `<div class="lbl" id="${id}-l">${f.label}</div>` : ''}<div class="scale" role="radiogroup" aria-labelledby="${id}-l">${faces.map((e, i) => `<button role="radio" aria-checked="${D[f.key] === i + 1}" class="${D[f.key] === i + 1 ? 'on' : ''}" data-act="wset" data-k="${f.key}" data-v="${i + 1}" aria-label="${i + 1} of 5, ${SCALE_WORDS[i]}">${e}</button>`).join('')}</div></div>`; }
+    case 'scale': { const faces = f.faces || FACES; return `<div style="margin-bottom:16px">${f.label ? `<div class="lbl" id="${id}-l">${f.label}</div>` : ''}<div class="scale" role="radiogroup" aria-labelledby="${id}-l">${faces.map((e, i) => `<button role="radio" aria-checked="${D[f.key] === i + 1}" class="${D[f.key] === i + 1 ? 'on' : ''}" data-act="wset" data-k="${f.key}" data-v="${i + 1}" aria-label="${i + 1} of 5, ${SCALE_WORDS[i]}">${e}</button>`).join('')}</div></div>`; }
     case 'sleep': { const h = sleepHours(D); return `<div class="grid"><div><label class="lbl" for="f-bed">Went to bed</label><input type="time" id="f-bed" data-w="bed" value="${D.bed}"></div><div><label class="lbl" for="f-wake">Woke up</label><input type="time" id="f-wake" data-w="wake" value="${D.wake}"></div></div>
       <div class="center" style="margin:12px 0" aria-live="polite"><span class="big-num" id="sleep-h">${h ?? '–'}</span> <span class="muted">hours · goal ${st.sleepTarget}h</span></div>`; }
     case 'text': return `<div style="margin-bottom:12px">${lbl}<textarea id="${id}" ${f.label ? '' : `aria-labelledby="wiz-title"`} data-w="${f.key}" rows="${f.rows || 4}" style="min-height:${(f.rows || 4) * 26}px" placeholder="${esc(f.ph || '')}" maxlength="2000">${esc(D[f.key] || '')}</textarea></div>`;
-    case 'num': return `<div style="margin-bottom:14px">${lbl}<div class="stepper"><button class="round-btn minus" data-act="wstep" data-k="${f.key}" data-s="-${f.step}" data-max="${f.max}" aria-label="Decrease">−</button>
+    case 'num': return `<div style="margin-bottom:16px">${lbl}<div class="stepper"><button class="round-btn minus" data-act="wstep" data-k="${f.key}" data-s="-${f.step}" data-max="${f.max}" aria-label="Decrease">−</button>
       <input type="number" id="${id}" class="v" data-w="${f.key}" data-num="1" value="${D[f.key] === '' || D[f.key] == null ? '' : D[f.key]}" step="${f.step}" min="0" max="${f.max}" inputmode="decimal" ${f.optional ? 'placeholder="—"' : ''}>
       <button class="round-btn" data-act="wstep" data-k="${f.key}" data-s="${f.step}" data-max="${f.max}" aria-label="Increase">+</button></div></div>`;
-    case 'yesno': return `<div style="margin-bottom:14px"><div class="lbl" id="${id}-l">${f.label}</div><div class="yesno" role="radiogroup" aria-labelledby="${id}-l"><button role="radio" aria-checked="${D[f.key] === true}" class="y ${D[f.key] === true ? 'on' : ''}" data-act="wset" data-k="${f.key}" data-v="true">Yes</button><button role="radio" aria-checked="${D[f.key] === false}" class="n ${D[f.key] === false ? 'on' : ''}" data-act="wset" data-k="${f.key}" data-v="false">No 💪</button></div></div>`;
+    case 'yesno': return `<div style="margin-bottom:16px"><div class="lbl" id="${id}-l">${f.label}</div><div class="yesno" role="radiogroup" aria-labelledby="${id}-l"><button role="radio" aria-checked="${D[f.key] === true}" class="y ${D[f.key] === true ? 'on' : ''}" data-act="wset" data-k="${f.key}" data-v="true">Yes</button><button role="radio" aria-checked="${D[f.key] === false}" class="n ${D[f.key] === false ? 'on' : ''}" data-act="wset" data-k="${f.key}" data-v="false">No 💪</button></div></div>`;
     case 'toggle': return `<button class="check ${D[f.key] ? 'on' : ''}" data-act="wtoggle" data-k="${f.key}" aria-pressed="${!!D[f.key]}"><span class="box" aria-hidden="true">${D[f.key] ? '✓' : ''}</span><span>${f.label}</span></button>`;
     case 'chips': return `<div style="margin-bottom:12px"><div class="chips" role="radiogroup" aria-label="${esc(f.label || 'Options')}">${f.opts.map((o) => `<button role="radio" aria-checked="${D[f.key] === o}" class="chip ${D[f.key] === o ? 'on' : ''}" data-act="wset" data-k="${f.key}" data-v="${esc(o)}" data-str="1">${esc(o)}</button>`).join('')}</div></div>`;
     case 'goal': return `<div class="chips" role="radiogroup" aria-label="Goal" style="margin-bottom:8px">${goals().map((g) => `<button role="radio" aria-checked="${D.goal === g.t}" class="chip ${D.goal === g.t ? 'on' : ''}" data-act="wset" data-k="goal" data-v="${esc(g.t)}" data-str="1">🎯 ${esc(g.t)}</button>`).join('') || '<div class="small muted">Add goals in Settings.</div>'}</div>`;
@@ -1682,7 +1682,7 @@ function weekStepHTML() {
 function summaryHTML() {
   const k = wiz.k, d = S.days[k];
   const gained = computeXP() - wiz.xpBefore;
-  const head = (ic, extra = '') => `<div class="center" style="margin:10px 0"><div style="font-size:3rem" aria-hidden="true">${ic}</div><div class="pill gold">+${gained} XP</div><div class="small muted" style="margin-top:6px">${extra || `Finished in ${elapsed()}`}</div></div>`;
+  const head = (ic, extra = '') => `<div class="center" style="margin:12px 0"><div style="font-size:3rem" aria-hidden="true">${ic}</div><div class="pill gold">+${gained} XP</div><div class="small muted" style="margin-top:8px">${extra || `Finished in ${elapsed()}`}</div></div>`;
   if (wiz.type === 'morning') {
     const pr = (d.morning?.priorities || []).filter((p) => p.t?.trim());
     return head('🌅') + `<div class="card stack">${d.morning.goal ? `<div><div class="tiny muted">Goal focus</div><strong>${esc(d.morning.goal)}</strong>${d.morning.goalAction ? `<div class="small">→ ${esc(d.morning.goalAction)}</div>` : ''}</div>` : ''}
@@ -1750,9 +1750,9 @@ function renderFocusRunning() {
   const t = S.timer, total = t.dur;
   openModal(`<div class="row between"><h2>⏱️ ${esc(t.label || 'Deep work')}</h2><button class="icon-btn" data-act="modal-close" aria-label="Minimize timer">–</button></div>
     <div class="focus-ring" id="focus-ring">${ring(100 - (timerLeftMs() / total) * 100, 'var(--gold)', 220, 12)}<div class="focus-time" data-timer-text aria-live="off">${timerLeftText()}</div></div>
-    <div class="quote small center" style="margin:6px 0 16px">“${esc(daily(C.wisdom, 7).q)}”</div>
+    <div class="quote small center" style="margin:8px 0 16px">“${esc(daily(C.wisdom, 7).q)}”</div>
     <div class="grid"><button class="btn" data-act="focus-cancel">Cancel</button><button class="btn primary" data-act="focus-stop">Stop & log</button></div>
-    <div class="tiny muted center" style="margin-top:10px">You can close this — the timer keeps running.</div>`, { label: 'Focus timer running', onClose: render });
+    <div class="tiny muted center" style="margin-top:12px">You can close this — the timer keeps running.</div>`, { label: 'Focus timer running', onClose: render });
 }
 function finishFocus(full) {
   const t = S.timer; if (!t) return;
@@ -1805,7 +1805,7 @@ function renderWP() {
     host.innerHTML = `<div class="center wp-done"><div class="empty-ic" style="width:84px;height:84px">${icon('trophy', 44)}</div>
       <h2>${wp.done.full ? 'Workout complete!' : 'Workout saved'}</h2>
       <p class="muted">${esc(wp.w.n)} · ${wp.done.mins} min added to today${wp.done.full ? ' · +25 XP' : ''}</p>
-      <p class="small" style="margin:14px 0">${wp.done.full ? 'Drink a glass of water and stretch for a minute. Your future self says thanks.' : 'Every minute counts. Finish the full routine next time for bonus XP.'}</p>
+      <p class="small" style="margin:16px 0">${wp.done.full ? 'Drink a glass of water and stretch for a minute. Your future self says thanks.' : 'Every minute counts. Finish the full routine next time for bonus XP.'}</p>
       <button class="btn primary block" data-act="modal-close">Done</button></div>`;
     return;
   }
@@ -1817,14 +1817,14 @@ function renderWP() {
   host.innerHTML = `<div class="row between">
       <div><div class="tiny muted">${esc(wp.w.n)} · ${L.n}</div><strong>Round ${st.round}/${wp.w.rounds} · move ${Math.max(workIdx, 1)}/${works}</strong></div>
       <div class="row"><button class="icon-btn" data-act="wp-voice" aria-label="${wp.voice ? 'Mute voice cues' : 'Turn on voice cues'}">${icon(wp.voice ? 'bell' : 'bellOff', 18)}</button><button class="icon-btn" data-act="wp-end" aria-label="End workout">${icon('x', 18)}</button></div></div>
-    <div class="prog" style="margin:12px 0 6px"><i style="width:${(wp.i / wp.steps.length) * 100}%"></i></div>
+    <div class="prog" style="margin:12px 0 8px"><i style="width:${(wp.i / wp.steps.length) * 100}%"></i></div>
     <div class="wp-phase ${st.phase}">${phase}</div>
     <div class="wp-name">${st.phase === 'rest' ? '<span class="muted">Next:</span> ' : ''}${esc(ex.n)}</div>
     <div class="wp-stage ${hasFigure(st.ex) ? 'has-fig' : ''}">${hasFigure(st.ex) ? `<div class="wp-fig">${figureDemo(st.ex, ex.n)}</div>` : ''}<div class="focus-ring wp-ring ${st.phase}" id="wp-ring">${ring(100, 'var(--wp-c)', 200, 12)}<div class="focus-time" id="wp-time" aria-live="off">${Math.ceil(wpLeft() / 1000)}</div></div></div>
     <ol class="how small">${ex.how.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>
     <p class="tiny muted tip">${icon('bulb', 12)} ${esc(ex.tip)}</p>
     ${next && st.phase === 'work' ? `<div class="wp-next tiny">Up next: <strong>${esc(exercise(next.ex).n)}</strong></div>` : ''}
-    <div class="grid" style="margin-top:14px"><button class="btn" data-act="wp-pause">${icon(wp.paused ? 'play' : 'pause', 18)} ${wp.paused ? 'Resume' : 'Pause'}</button><button class="btn primary" data-act="wp-skip">${icon('skip', 18)} Skip</button></div>`;
+    <div class="grid" style="margin-top:16px"><button class="btn" data-act="wp-pause">${icon(wp.paused ? 'play' : 'pause', 18)} ${wp.paused ? 'Resume' : 'Pause'}</button><button class="btn primary" data-act="wp-skip">${icon('skip', 18)} Skip</button></div>`;
   updateWP();
   animateFigures();
 }
@@ -1882,8 +1882,8 @@ function renderSOS(stage) {
     <div class="center"><span class="big-num" id="sos-left">${left}</span><span class="muted"> sec</span></div>
     ${s ? `<div class="card center small" style="margin-top:12px">Current streak: <strong>${habitStreak(s.id).current} days</strong> free of ${s.name.toLowerCase()}. Protect it.</div>` : ''}
     <div class="card"><div class="tiny muted">Remember why</div><div class="small">${esc(S.profile.why || goals().map((g) => g.t).join(' · '))}</div></div>
-    <div class="card"><div class="tiny muted" style="margin-bottom:6px">Do this instead</div>${alts.map((a) => `<div class="small" style="padding:3px 0">• ${esc(a)}</div>`).join('')}</div>
-    <div class="grid" style="margin-top:14px"><button class="btn" data-act="sos-slip">I slipped</button><button class="btn primary" data-act="sos-won">I beat it 💪</button></div>`;
+    <div class="card"><div class="tiny muted" style="margin-bottom:8px">Do this instead</div>${alts.map((a) => `<div class="small" style="padding:3px 0">• ${esc(a)}</div>`).join('')}</div>
+    <div class="grid" style="margin-top:16px"><button class="btn" data-act="sos-slip">I slipped</button><button class="btn primary" data-act="sos-won">I beat it 💪</button></div>`;
   let phase = 0, tick = 0;
   const br = $('#breath');
   const cycle = () => { phase = (phase + 1) % 2; br.className = 'breath ' + (phase ? 'in' : 'out'); br.textContent = phase ? 'Breathe in' : 'Breathe out'; };
@@ -1910,8 +1910,8 @@ function openChest() {
   S.chests[today()] = r;
   persist();
   const tierTxt = { common: 'Common', rare: '✨ Rare', legendary: '🌟 LEGENDARY' }[r.tier];
-  openModal(`<div class="center chest-open"><div class="chest-big" aria-hidden="true">🎁</div><div class="pill gold" style="margin:10px 0">${tierTxt} reward</div>
-    <h2>+${r.xp} XP</h2><div class="card" style="margin-top:14px;text-align:left">${esc(r.item)}</div>
+  openModal(`<div class="center chest-open"><div class="chest-big" aria-hidden="true">🎁</div><div class="pill gold" style="margin:12px 0">${tierTxt} reward</div>
+    <h2>+${r.xp} XP</h2><div class="card" style="margin-top:16px;text-align:left">${esc(r.item)}</div>
     <p class="small muted">Come back tomorrow — complete both check-ins to open another chest.</p>
     <button class="btn primary block" data-act="modal-close">Awesome</button></div>`, { label: 'Daily reward', onClose: render });
   burst(); buzz([40, 50, 40, 50, 80]);
@@ -1928,7 +1928,7 @@ let installEvt = null;
 function openSettings() {
   const st = S.settings, p = S.profile, bk = backupInfo();
   openModal(`<div class="row between"><h2>⚙️ Settings</h2><button class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
-    <div class="sec" style="margin-top:14px"><h2>🎨 Appearance</h2><span class="tiny muted">changes apply instantly</span></div>
+    <div class="sec" style="margin-top:16px"><h2>🎨 Appearance</h2><span class="tiny muted">changes apply instantly</span></div>
     <div class="card stack">
       <div><div class="lbl" data-i18n-skip>Language · Wika</div>${langSeg()}</div>
       <div class="seg" role="radiogroup" aria-label="Theme">${[['auto', 'contrast', 'Auto'], ['dark', 'moon', 'Dark'], ['light', 'sun', 'Light']].map(([v, ic, n]) => `<button type="button" role="radio" aria-checked="${st.theme === v}" class="${st.theme === v ? 'on' : ''}" data-act="set-theme" data-v="${v}">${icon(ic, 16)}${n}</button>`).join('')}</div>
@@ -1937,7 +1937,7 @@ function openSettings() {
     <div class="sec"><h2>👤 You & your goals</h2></div>
     <form data-form="settings" novalidate>
     <label class="lbl" for="s-name">Name</label><input type="text" id="s-name" value="${esc(p.name)}" maxlength="40">
-    <div class="lbl">Goals</div>${[0, 1, 2].map((i) => `<input type="text" id="s-g${i}" aria-label="Goal ${i + 1}" value="${esc(p.goals[i]?.t || '')}" style="margin-bottom:6px" placeholder="Goal ${i + 1}" maxlength="100">`).join('')}
+    <div class="lbl">Goals</div>${[0, 1, 2].map((i) => `<input type="text" id="s-g${i}" aria-label="Goal ${i + 1}" value="${esc(p.goals[i]?.t || '')}" style="margin-bottom:8px" placeholder="Goal ${i + 1}" maxlength="100">`).join('')}
     <label class="lbl" for="s-why">Your why</label><textarea id="s-why" maxlength="600">${esc(p.why || '')}</textarea>
     <div class="grid">
       <div><label class="lbl" for="s-cur">Currency</label><input type="text" id="s-cur" value="${esc(st.currency)}" maxlength="4"></div>
@@ -1954,7 +1954,7 @@ function openSettings() {
     <label class="lbl" for="s-am">Morning routine (one per line)</label><textarea id="s-am">${esc(st.hygAM.join('\n'))}</textarea>
     <label class="lbl" for="s-pm">Night routine (one per line)</label><textarea id="s-pm">${esc(st.hygPM.join('\n'))}</textarea>
     <label class="check" style="margin-top:12px"><input type="checkbox" id="s-haptics" ${st.haptics ? 'checked' : ''} class="sr-only"><span class="box" aria-hidden="true"></span><span>Vibration feedback (Android)</span></label>
-    <button class="btn primary block" style="margin-top:14px" type="submit">Save settings</button>
+    <button class="btn primary block" style="margin-top:16px" type="submit">Save settings</button>
     </form>
     <div class="sec"><h2>🔔 Reminders</h2></div>
     <div class="card small stack">
