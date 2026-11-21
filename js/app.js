@@ -24,7 +24,7 @@ import { setLang, LANGS, locale, tr } from './i18n.js';
 import { setLocale, getLocale } from './util.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '3.12.0';
+const APP_VERSION = '3.12.1';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 // One toast at a time, at the top. Its look follows what it says: success (green), heads-up (amber),
@@ -159,6 +159,8 @@ function render({ full = false } = {}) {
     view.innerHTML = iconize(({ today: viewToday, money: viewMoney, time: viewTime, feed: viewFeed, me: viewMe, grow: viewGrow })[UI.tab]());
     if (UI.tab === 'feed') feedInit();
     animateFigures();
+    // Year calendars open on this week (today sits at the right edge), so you don't have to swipe to find it.
+    for (const w of view.querySelectorAll('.heat-wrap')) w.scrollLeft = w.scrollWidth;
   } catch (err) {
     // Error boundary: never leave the user with a blank screen, and never touch their data.
     console.error(err);
