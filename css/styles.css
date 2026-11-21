@@ -588,9 +588,6 @@ body.feed-mode #nav { --glass: rgba(6, 8, 16, .55); --line-strong: rgba(255, 255
 @keyframes readfill { to { width: 100%; } }
 
 /* Floating emoji */
-.r-float span { position: absolute; bottom: -50px; left: var(--x); font-size: 1.6rem; opacity: 0; animation: floatup var(--d) linear infinite; animation-delay: var(--s); animation-play-state: paused; filter: saturate(1.1); }
-.reel.active .r-float span { animation-play-state: running; }
-@keyframes floatup { 0% { transform: translateY(0) rotate(0); opacity: 0; } 12% { opacity: .38; } 85% { opacity: .2; } 100% { transform: translateY(-115vh) rotate(35deg); opacity: 0; } }
 
 /* Content */
 .r-inner { position: relative; z-index: 2; width: 100%; padding: 130px calc(var(--gutter) + 66px) 120px var(--gutter); text-shadow: 0 2px 16px rgba(0, 0, 0, .35); }

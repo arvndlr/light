@@ -24,7 +24,7 @@ import { setLang, LANGS, locale, tr } from './i18n.js';
 import { setLocale, getLocale } from './util.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '3.10.0';
+const APP_VERSION = '3.10.1';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
@@ -790,24 +790,24 @@ const FEED_BATCH = 6, CLAIM_CAP = 15, TIME_CHECK_EVERY = 25;
 const feed = { items: [], active: -1, activeAt: 0, lastKind: null, views: 0, startedAt: 0, obs: null, tap: { t: 0, i: -1 }, mode: 'foryou', topic: 'all', menu: null };
 // bg = color palette class (see "Reels feed" in styles.css); ic = line icon for the topic chip and avatar.
 const KIND_META = {
-  wisdom: { tag: 'Wisdom', handle: 'light.wisdom', tags: '#mindset #stoic', bg: 'g-gold', ic: 'sparkle', fx: ['✨', '🌟', '💫'] },
-  challenge: { tag: 'Real-life challenge', handle: 'light.challenge', tags: '#discipline #irl', bg: 'g-green', ic: 'flame', fx: ['💪', '🔥', '⚡'] },
-  eq: { tag: 'EQ lesson', handle: 'light.eq', tags: '#emotionalintelligence', bg: 'g-violet', ic: 'heart', fx: ['❤️', '🧠', '🫶'] },
-  joke: { tag: 'Laugh', handle: 'light.comedy', tags: '#joke #lol', bg: 'g-pink', ic: 'smile', fx: ['😂', '🤣', '😆'] },
-  comedy: { tag: 'Comedy school', handle: 'light.comedy', tags: '#standup #funny', bg: 'g-pink', ic: 'mic', fx: ['🎤', '😂', '🎭'] },
-  glow: { tag: 'Glow-up', handle: 'light.glowup', tags: '#selfcare #grooming', bg: 'g-teal', ic: 'sparkles', fx: ['✨', '🪞', '💧'] },
-  avoid: { tag: 'Avoid this', handle: 'light.glowup', tags: '#stayhandsome', bg: 'g-red', ic: 'ban', fx: ['⛔', '🚫', '⚠️'] },
-  money: { tag: 'Money', handle: 'light.money', tags: '#savings #finance', bg: 'g-amber', ic: 'coin', fx: ['💰', '🏦', '📈'] },
-  prompt: { tag: 'Reflect', handle: 'light.journal', tags: '#journal #selfawareness', bg: 'g-blue', ic: 'pen', fx: ['📓', '💭', '🌙'] },
-  quiz: { tag: 'Quick quiz', handle: 'light.quiz', tags: '#brain #learn', bg: 'g-indigo', ic: 'target', fx: ['❓', '🧩', '💡'] },
-  poll: { tag: 'This or that', handle: 'light.you', tags: '#knowyourself', bg: 'g-violet', ic: 'compass', fx: ['🤔', '⚖️', '👀'] },
-  breathe: { tag: 'Reset', handle: 'light.calm', tags: '#breathe #calm', bg: 'g-blue', ic: 'wind', fx: ['🫧', '🌊', '☁️'] },
-  you: { tag: 'Your progress', handle: 'you', tags: '#yourjourney', bg: 'g-gold', ic: 'trophy', fx: ['🔥', '🏆', '⭐'] },
-  fact: { tag: 'Did you know?', handle: 'light.science', tags: '#science #health', bg: 'g-cyan', ic: 'bulb', fx: ['🔬', '🧬', '💡'] },
-  story: { tag: 'Story', handle: 'light.stories', tags: '#inspiration #mindset', bg: 'g-sunset', ic: 'bookOpen', fx: ['📖', '🌅', '✨'] },
-  tech: { tag: 'Tech', handle: 'light.tech', tags: '#tech #ai #iot #networking #coding', bg: 'g-tech', ic: 'cpu', fx: ['💻', '🤖', '📡'] },
-  techquiz: { tag: 'Tech quiz', handle: 'light.tech', tags: '#tech #quiz #learn', bg: 'g-tech', ic: 'cpu', fx: ['🧠', '💻', '⚡'] },
-  word: { tag: 'Word of the day', handle: 'light.words', tags: '#vocabulary #communication', bg: 'g-rose', ic: 'book', fx: ['📖', '✍️', '🗣️'] },
+  wisdom: { tag: 'Wisdom', handle: 'light.wisdom', tags: '#mindset #stoic', bg: 'g-gold', ic: 'sparkle' },
+  challenge: { tag: 'Real-life challenge', handle: 'light.challenge', tags: '#discipline #irl', bg: 'g-green', ic: 'flame' },
+  eq: { tag: 'EQ lesson', handle: 'light.eq', tags: '#emotionalintelligence', bg: 'g-violet', ic: 'heart' },
+  joke: { tag: 'Laugh', handle: 'light.comedy', tags: '#joke #lol', bg: 'g-pink', ic: 'smile' },
+  comedy: { tag: 'Comedy school', handle: 'light.comedy', tags: '#standup #funny', bg: 'g-pink', ic: 'mic' },
+  glow: { tag: 'Glow-up', handle: 'light.glowup', tags: '#selfcare #grooming', bg: 'g-teal', ic: 'sparkles' },
+  avoid: { tag: 'Avoid this', handle: 'light.glowup', tags: '#stayhandsome', bg: 'g-red', ic: 'ban' },
+  money: { tag: 'Money', handle: 'light.money', tags: '#savings #finance', bg: 'g-amber', ic: 'coin' },
+  prompt: { tag: 'Reflect', handle: 'light.journal', tags: '#journal #selfawareness', bg: 'g-blue', ic: 'pen' },
+  quiz: { tag: 'Quick quiz', handle: 'light.quiz', tags: '#brain #learn', bg: 'g-indigo', ic: 'target' },
+  poll: { tag: 'This or that', handle: 'light.you', tags: '#knowyourself', bg: 'g-violet', ic: 'compass' },
+  breathe: { tag: 'Reset', handle: 'light.calm', tags: '#breathe #calm', bg: 'g-blue', ic: 'wind' },
+  you: { tag: 'Your progress', handle: 'you', tags: '#yourjourney', bg: 'g-gold', ic: 'trophy' },
+  fact: { tag: 'Did you know?', handle: 'light.science', tags: '#science #health', bg: 'g-cyan', ic: 'bulb' },
+  story: { tag: 'Story', handle: 'light.stories', tags: '#inspiration #mindset', bg: 'g-sunset', ic: 'bookOpen' },
+  tech: { tag: 'Tech', handle: 'light.tech', tags: '#tech #ai #iot #networking #coding', bg: 'g-tech', ic: 'cpu' },
+  techquiz: { tag: 'Tech quiz', handle: 'light.tech', tags: '#tech #quiz #learn', bg: 'g-tech', ic: 'cpu' },
+  word: { tag: 'Word of the day', handle: 'light.words', tags: '#vocabulary #communication', bg: 'g-rose', ic: 'book' },
 };
 const poolFor = (k) => ({ wisdom: C.wisdom, challenge: C.challenges, eq: C.eq, joke: C.jokes, comedy: C.comedy, glow: C.glow.do, avoid: C.glow.avoid, money: C.money, prompt: C.prompts, quiz: C.quiz, poll: C.polls, breathe: [1], fact: C.facts, word: C.words, story: C.stories, tech: C.tech, techquiz: C.techQuiz })[k];
 
@@ -917,12 +917,10 @@ function reelHTML(it, i) {
     case 'you': body = `<div class="r-big">${d.big}</div><div class="r-title">${esc(d.title)}</div><div class="r-text sm">${words(d.body)}</div>${d.progress != null ? `<div class="xpbar" style="margin-top:16px"><i style="width:${d.progress * 100}%"></i></div>` : ''}${d.action ? `<button class="r-cta" data-act="${d.action.act}">${esc(d.action.label)}</button>` : ''}`; break;
     default: body = `<div class="r-text">${words(d)}</div>`;
   }
-  const floaters = [...m.fx, ...m.fx].map((e, j) => `<span style="--x:${((j * 17 + i * 23) % 86) + 4}%;--d:${8 + (j % 3) * 2}s;--s:${(j * 1.4).toFixed(1)}s">${e}</span>`).join('');
   const hint = i === 0 && feed.mode === 'foryou' && S.settings.feedHint !== false
     ? `<div class="r-hint" aria-hidden="true">${icon('chevronUp', 22)}<span>Swipe up for more</span></div>` : '';
   return `<section class="reel ${m.bg}" data-i="${i}" style="--read:${readMs(it)}ms" aria-label="${esc(m.tag)}, card ${i + 1}">
     <div class="r-progress" aria-hidden="true"><i></i></div>
-    <div class="r-float" aria-hidden="true">${floaters}</div>
     <div class="r-inner"><div class="r-topic">${icon(m.ic, 14)}<span>${m.tag}</span></div>${body}</div>
     <div class="rail">
       <button class="r-btn ${liked ? 'on' : ''}" data-act="like" aria-pressed="${liked}"><span class="r-ic">${icon('heart', 26, liked ? 'filled' : '')}</span><span>Like</span></button>
