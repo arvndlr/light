@@ -144,6 +144,15 @@ final class ScreenTime {
         return c.getTimeInMillis() + roll;
     }
 
+    /** Light-day key for today, and for n days ago. */
+    static String todayKey(int rollover) { return keyDaysAgo(0, rollover); }
+
+    static String keyDaysAgo(int n, int rollover) {
+        long roll = rollover * HOUR, ts = dayStart(System.currentTimeMillis(), roll);
+        for (int i = 0; i < n; i++) ts = dayStart(ts - HOUR, roll);
+        return key(ts, roll);
+    }
+
     private static String key(long ts, long roll) {
         return new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(ts - roll);
     }

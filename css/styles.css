@@ -1124,3 +1124,22 @@ body.feed-mode #nav { --glass: rgba(6, 8, 16, .55); --line-strong: rgba(255, 255
 .letter.sealed { display: flex; align-items: center; gap: 10px; }
 .letter.open p { margin-top: 6px; white-space: normal; }
 .val-ev { display: block; margin-top: 1px; }
+
+/* "Open Light instead?" */
+.ng-warn { display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 10px 12px; margin-bottom: 10px; border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); }
+.ng-apps { margin: 0; }
+.ng-stat { display: flex; align-items: baseline; gap: 10px; margin-top: 12px; }
+.ng-list { display: grid; gap: 4px; max-height: 50vh; overflow: auto; }
+.ng-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 2px; border-bottom: 1px solid var(--line); }
+.ng-row:last-child { border-bottom: 0; }
+.ng-pick { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; cursor: pointer; }
+.ng-pick input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
+.ng-pick .small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ng-lim { flex: none; max-width: 42%; padding: 6px 8px; border-radius: 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--line); font: inherit; font-size: .85rem; }
+.ng-opts { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 420px) {
+  .ng-opts { grid-template-columns: 1fr; gap: 8px; }
+  .ng-opts .routine { display: grid; grid-template-columns: auto 1fr; column-gap: 12px; row-gap: 2px; align-items: center; padding: 12px 14px; }
+  .ng-opts .r-emoji { grid-row: span 2; }
+}

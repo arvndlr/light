@@ -16,7 +16,7 @@ import { icon, ico, iconize } from './icons.js';
 import { LEVELS, GROUPS, EXERCISES, WORKOUTS, WEEK_PLAN, exercise, workout, workoutSteps, workoutMinutes, suggestWorkout, levelInfo } from './fitness.js';
 import { dayPlan } from './plan.js';
 import { me, VALUES, valuesCheck, STRENGTH_QS, scoreStrengths, topStrengths, strengthInfo, TRAITS as BIG5, TRAIT_QS, scoreTraits, goodDayFormula, identitySentence, ID_TEMPLATES, identityProgress } from './me.js';
-import { native, isAndroidWeb, APK_URL, syncScreen, screenOn, screenAvg, appCat } from './screen.js';
+import { native, isAndroidWeb, APK_URL, syncScreen, screenOn, screenAvg, appCat, nudgeReady, nudgeCfg, nudgeCandidates, nudgeWeek, pushNudge, NUDGE_LIMITS } from './screen.js';
 import { TIME_CATS, KINDS, timeCat, blockMins, fmtHM, blocksOn, dayMinutes, timeSummary, timeInsights, timeFuture, starterSchedule } from './time.js';
 import { DISCLAIMER, RED_FLAGS, EMERGENCY, IMMUNITY, ASTHMA_BASICS, TRIGGERS, EXERCISE_TIPS, FOODS, MYTHS, BREATHING, breathing, SYMPTOMS, asthmaControl } from './health.js';
 import { figureSVG, hasFigure, poseCount, animateFigures } from './figures.js';
@@ -24,7 +24,7 @@ import { setLang, LANGS, locale, tr } from './i18n.js';
 import { setLocale, getLocale } from './util.js';
 import { pickKind, nudge, dwellSignal, splitJoke, SIGNAL, pickIndex, pruneSeen, TOPICS, topicKinds } from './feed.js';
 
-const APP_VERSION = '3.7.0';
+const APP_VERSION = '3.8.0';
 
 // ---------- Feedback: toast, haptics, confetti, notifications ----------
 let toastT = null;
@@ -621,7 +621,71 @@ function screenCard(k) {
       ${list.length > 8 ? `<button class="btn sm ghost block" style="margin-top:6px" data-act="sc-all">${UI.scAll ? 'Show less' : `Show all ${list.length} apps`}</button>` : ''}
       <div class="tiny muted" style="margin-top:8px">Tap an app to change its category${ago != null ? ` · updated ${ago < 1 ? 'just now' : ago + ' min ago'}` : ''}</div>`
       : '<div class="empty">No app use recorded yet today.</div>'}
+  </div>
+  ${nudgeCard(k)}`;
+}
+
+// "Open Light instead?" — the phone shows a card over the apps you choose.
+const limitLabel = (m) => m ? `${fmtHM(m)} a day` : 'No limit';
+function nudgeWords() {
+  const w = { title: 'Open Light instead?', opening: 'You’re opening {app}.', used: 'You’ve used {app} for {used} today.', over: 'You’re past your {limit} {app} limit — {used} today.',
+    light: 'Open Light · 60 seconds', cont: 'Continue to {app} · {min} min', contOver: 'Continue · {min} min', chose: 'This week you chose Light {n} times. Make it one more.' };
+  for (const k2 of Object.keys(w)) w[k2] = tr(w[k2]);
+  return w;
+}
+function syncNudge() {
+  if (!nudgeReady()) return;
+  const idn = me().ids[0];
+  const line = idn ? `You’re becoming: ${idn.t}` : S.profile?.why ? `Remember why: ${S.profile.why}` : '';
+  pushNudge(nudgeWords(), line ? tr(line) : '');
+}
+function nudgeCard(k) {
+  const c = nudgeCfg(), apps = Object.values(c.apps);
+  const head = '<div class="sec"><h2>🛡️ Open Light instead?</h2></div>';
+  if (!nudgeReady()) return `${head}<div class="card sc-get"><p class="small">When you open TikTok, Facebook or YouTube, Light can show a gentle card: “You’ve used TikTok for 1h 20m today. 60 seconds of Light instead?”</p>
+    <p class="tiny muted" style="margin-top:6px">Install the latest Light app to turn this on. Your data stays — just install it over the old one.</p>
+    <a class="btn sm primary" style="margin-top:10px" href="${APK_URL}">${icon('download', 14)} Update the Light app</a></div>`;
+  if (!c.on || !apps.length) return `${head}<div class="card"><p class="small">Choose the apps that steal your time. When you open one, Light shows a card over it: take 60 seconds of Light, or continue for a while. Set a daily limit and it comes back when you reach it.</p>
+    <button class="btn sm primary" style="margin-top:10px" data-act="ng-setup">${ico('🛡️', 14)} Choose apps</button></div>`;
+  const wk = nudgeWeek(7, k), n = native();
+  const warn = !n.canOverlay() ? `<div class="ng-warn small"><span>Light can’t show its card over other apps yet, so it sends a notification instead.</span> <button class="btn sm" data-act="ng-overlay">Allow</button></div>` : '';
+  return `${head}<div class="card">
+    ${warn}
+    <div class="chips ng-apps">${apps.map((a) => `<span class="chip sm on"><span data-i18n-skip>${esc(a.n)}</span>${a.limit ? ` · ${fmtHM(a.limit)}` : ''}</span>`).join('')}</div>
+    ${wk.shown ? `<div class="ng-stat"><div class="big-num" style="font-size:1.6rem">${wk.light}<span class="small muted"> / ${wk.shown}</span></div><div class="small">times you chose Light this week</div></div>`
+      : '<p class="tiny muted" style="margin-top:8px">On. Open one of these apps and Light will be there.</p>'}
+    <div class="row wrap" style="gap:8px;margin-top:10px"><button class="btn sm" data-act="ng-setup">${icon('pen', 14)} Change apps and limits</button><button class="btn sm ghost" data-act="ng-off">Turn off</button></div>
   </div>`;
+}
+function openNudgeSetup() {
+  const c = nudgeCfg(), list = nudgeCandidates();
+  openModal(`<div class="row between"><h2>🛡️ Open Light instead?</h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
+    <p class="small muted" style="margin:6px 0 12px">Pick the apps that waste your time. A limit brings the card back when you reach it.</p>
+    ${list.length ? `<div class="ng-list">${list.map((a) => { const on = !!c.apps[a.p], lim = c.apps[a.p]?.limit || 0;
+      return `<div class="ng-row" data-p="${esc(a.p)}" data-n="${esc(a.n)}"><label class="ng-pick"><input type="checkbox" ${on ? 'checked' : ''}><span class="small" data-i18n-skip>${esc(a.n)}</span>${a.m >= 1 ? `<span class="tiny muted">${fmtHM(Math.round(a.m))}/day</span>` : ''}</label>
+        <select class="ng-lim" aria-label="Daily limit for ${esc(a.n)}">${NUDGE_LIMITS.map((m) => `<option value="${m}" ${m === lim ? 'selected' : ''}>${limitLabel(m)}</option>`).join('')}</select></div>`; }).join('')}</div>`
+      : '<div class="empty">No social, video or game apps in your screen time yet. Use your phone for a day, then come back.</div>'}
+    ${!native().canOverlay() ? '<div class="ng-warn small" style="margin-top:12px">After you save, allow Display over other apps for Light, so the card can appear over TikTok and the others.</div>' : ''}
+    <button class="btn primary block" style="margin-top:14px" data-act="ng-save">${icon('check', 16)} Save</button>`, { label: 'Open Light instead' });
+}
+function openNudgeLanding(raw) {
+  const [, name = 'that app', used = '0'] = raw.split('|');
+  const idn = me().ids[0], b = BREATHING[0];
+  buzz([20, 30, 20]);
+  openModal(`<div class="row between"><h2>🌱 You chose Light</h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close">${icon('x', 18)}</button></div>
+    <p class="small" style="margin:6px 0 4px" data-i18n-skip>${esc(tr(`You chose Light over ${name}${+used >= 1 ? ` (${fmtHM(+used)} today)` : ''}. That’s a vote for the person you’re becoming.`))}</p>
+    <p class="tiny muted" style="margin-bottom:12px">Spend the next 60 seconds on something that gives back:</p>
+    <div class="ng-opts">
+      <button class="card routine" data-act="ng-breathe"><span class="r-emoji" aria-hidden="true">🫧</span><strong>Breathe</strong><span class="tiny muted">${esc(b.n)} · ${b.mins} min</span></button>
+      <button class="card routine" data-act="ng-feed"><span class="r-emoji" aria-hidden="true">✨</span><strong>Scroll something good</strong><span class="tiny muted">Your Light feed</span></button>
+      ${idn ? `<button class="card routine" data-act="ng-vote" data-id="${idn.id}"><span class="r-emoji" aria-hidden="true">🗳️</span><strong>Cast a vote</strong><span class="tiny muted" data-i18n-skip>${esc(idn.t)}</span></button>`
+        : '<button class="card routine" data-act="ng-future"><span class="r-emoji" aria-hidden="true">🗳️</span><strong>Future me</strong><span class="tiny muted">Choose who you’re becoming</span></button>'}
+    </div>`, { label: 'You chose Light' });
+}
+function checkNudgeLanding() {
+  let raw = '';
+  try { raw = native()?.takeNudge?.() || ''; } catch { raw = ''; }
+  if (raw && S.profile) openNudgeLanding(raw);
 }
 function openAppCat(p, name) {
   const cur0 = S.settings.appCats?.[p] || appCat({ p, c: '' });
@@ -2055,6 +2119,22 @@ const A = {
   'write-letter': () => openLetter(),
   'lt-when': (el) => { $$('[data-act="lt-when"]').forEach((b) => { b.classList.toggle('on', b === el); b.setAttribute('aria-checked', b === el); }); },
   'sc-allow': () => native()?.openUsageAccess(),
+  'ng-setup': () => openNudgeSetup(),
+  'ng-overlay': () => native()?.openOverlay(),
+  'ng-save': () => {
+    const apps = {};
+    for (const r of $$('.ng-row')) if ($('input', r).checked) apps[r.dataset.p] = { n: r.dataset.n, limit: +$('.ng-lim', r).value || 0 };
+    S.settings.nudge = { on: Object.keys(apps).length > 0, apps };
+    persist(); syncNudge(); closeModal(); render();
+    if (!Object.keys(apps).length) { toast('No apps chosen — nudges are off'); return; }
+    toast(`🛡️ Light will be there when you open ${Object.values(apps).map((a) => a.n).join(', ')}`, { ms: 4000 });
+    if (!native()?.canOverlay()) setTimeout(() => native()?.openOverlay(), 900);
+  },
+  'ng-off': () => { S.settings.nudge = { ...nudgeCfg(), on: false }; persist(); syncNudge(); render(); toast('Nudges are off'); },
+  'ng-breathe': () => { closeModal(); openBreathingEx(BREATHING[0].id); },
+  'ng-feed': () => { closeModal(); go('feed'); },
+  'ng-future': () => { closeModal(); UI.me = 'future'; go('me'); },
+  'ng-vote': (el) => { closeModal(); A['id-vote'](el); },
   'sc-refresh': () => { refreshScreen(true); render(); toast('Screen time updated'); },
   'sc-view': (el) => { UI.scView = el.dataset.v; UI.scAll = false; render(); },
   'sc-all': () => { UI.scAll = !UI.scAll; render(); },
@@ -2439,7 +2519,11 @@ const onRoute = () => {
 };
 window.addEventListener('popstate', onRoute);
 window.addEventListener('hashchange', onRoute);
-window.addEventListener('lightnative-resume', () => { if (S.profile && UI.tab === 'time') { refreshScreen(true); render(); } });
+window.addEventListener('lightnative-resume', () => {
+  if (!S.profile) return;
+  if (UI.tab === 'time') { refreshScreen(true); render(); }
+  checkNudgeLanding();
+});
 
 // ---------- Boot ----------
 setLang(S.settings.lang); setLocale(locale());
@@ -2451,3 +2535,5 @@ Object.assign(UI, routeFromHash()); // reopen the page you were on
 if (S.profile) syncHash(true);
 render();
 if (S.timer && timerLeftMs() <= 0) finishFocus(true);
+if (S.profile && nudgeCfg().on) syncNudge(); // keeps the phone's copy (language, identity line) current
+checkNudgeLanding();

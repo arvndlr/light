@@ -21,12 +21,14 @@ public class MainActivity extends Activity {
     static final String START = "https://arvndlr.github.io/light/";
     private static final int FILE_REQ = 7;
 
+    static volatile String pendingNudge; // set when opened from "Open Light instead?"
     private WebView web;
     private ValueCallback<Uri[]> fileCb;
 
     @Override
     protected void onCreate(Bundle saved) {
         super.onCreate(saved);
+        takeNudge(getIntent());
         web = new WebView(this);
         web.setBackgroundColor(0xFF080B16);
         setContentView(web);
@@ -67,6 +69,17 @@ public class MainActivity extends Activity {
 
         if (saved != null) web.restoreState(saved);
         else web.loadUrl(START);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        takeNudge(intent);
+    }
+
+    private void takeNudge(Intent i) {
+        String n = i == null ? null : i.getStringExtra("nudge");
+        if (n != null) { pendingNudge = n; i.removeExtra("nudge"); }
     }
 
     @Override

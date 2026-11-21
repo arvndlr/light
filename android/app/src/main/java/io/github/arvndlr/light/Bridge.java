@@ -10,6 +10,7 @@ import android.os.Environment;
 import android.os.Process;
 import android.provider.MediaStore;
 import android.provider.Settings;
+import android.content.pm.PackageManager;
 import android.webkit.JavascriptInterface;
 import android.widget.Toast;
 
@@ -25,7 +26,7 @@ public class Bridge {
     Bridge(Activity act) { this.act = act; }
 
     @JavascriptInterface
-    public int version() { return 1; }
+    public int version() { return 2; }
 
     /** Has the user allowed Light in Settings → Usage access? */
     @JavascriptInterface
@@ -96,5 +97,53 @@ public class Bridge {
             Intent i = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text);
             try { act.startActivity(Intent.createChooser(i, null)); } catch (Exception ignored) { }
         });
+    }
+
+    // ---- "Open Light instead?" (version 2)
+
+    /** Can Light show its card over other apps (Settings → Display over other apps)? */
+    @JavascriptInterface
+    public boolean canOverlay() { return Settings.canDrawOverlays(act); }
+
+    @JavascriptInterface
+    public void openOverlay() {
+        act.runOnUiThread(() -> {
+            try {
+                act.startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + act.getPackageName())));
+            } catch (Exception e) {
+                try { act.startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)); } catch (Exception ignored) { }
+            }
+        });
+    }
+
+    /** Saves the nudge settings (JSON, see NudgeService) and starts or stops it. */
+    @JavascriptInterface
+    public boolean setNudge(String json) {
+        try {
+            new org.json.JSONObject(json);
+            NudgeService.prefs(act).edit().putString("cfg", json).apply();
+            if (Build.VERSION.SDK_INT >= 33 && act.checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+                act.runOnUiThread(() -> act.requestPermissions(new String[] { "android.permission.POST_NOTIFICATIONS" }, 9));
+            }
+            NudgeService.sync(act.getApplicationContext());
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @JavascriptInterface
+    public boolean nudgeRunning() { return NudgeService.running; }
+
+    /** { day: { pkg: { s: shown, l: chose Light, c: continued } } } */
+    @JavascriptInterface
+    public String nudgeStats() { return NudgeService.prefs(act).getString("stats", "{}"); }
+
+    /** "pkg|name|minutes" if Light was just opened from a nudge (read once), else "". */
+    @JavascriptInterface
+    public String takeNudge() {
+        String n = MainActivity.pendingNudge;
+        MainActivity.pendingNudge = null;
+        return n == null ? "" : n;
     }
 }

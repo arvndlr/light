@@ -706,3 +706,43 @@ patterns.unshift(
   [/^(.+) a day$/, '$1 kada araw'],
   [/^You say (.+) matters to you, but it barely shows in your days \((.+)\)\. What’s one small thing you could do for it today\?$/, (t, a, b) => `Sinasabi mong mahalaga ang ${low(t, a)}, pero halos hindi ito makita sa mga araw mo (${t(b)}). Ano ang isang maliit na magagawa mo para dito ngayon?`],
 );
+
+// Open Light instead?
+Object.assign(dict, {
+  'Open Light instead?': 'Light na lang muna?',
+  'You’re opening {app}.': 'Bubuksan mo ang {app}.',
+  'You’ve used {app} for {used} today.': '{used} ka na sa {app} ngayong araw.',
+  'You’re past your {limit} {app} limit — {used} today.': 'Lampas ka na sa {limit} na limit mo sa {app} — {used} ngayong araw.',
+  'Open Light · 60 seconds': 'Buksan ang Light · 60 segundo',
+  'Continue to {app} · {min} min': 'Ituloy ang {app} · {min} min',
+  'Continue · {min} min': 'Ituloy · {min} min',
+  'This week you chose Light {n} times. Make it one more.': 'Ngayong linggo, {n} beses mong pinili ang Light. Dagdagan mo pa ng isa.',
+  'When you open TikTok, Facebook or YouTube, Light can show a gentle card: “You’ve used TikTok for 1h 20m today. 60 seconds of Light instead?”': 'Kapag binuksan mo ang TikTok, Facebook o YouTube, magpapakita ang Light ng card: “1h 20m ka na sa TikTok ngayong araw. 60 segundo ng Light muna?”',
+  'Install the latest Light app to turn this on. Your data stays — just install it over the old one.': 'I-install ang pinakabagong Light app para magamit ito. Hindi mawawala ang data mo — i-install lang ito sa ibabaw ng luma.',
+  'Update the Light app': 'I-update ang Light app',
+  'Choose the apps that steal your time. When you open one, Light shows a card over it: take 60 seconds of Light, or continue for a while. Set a daily limit and it comes back when you reach it.': 'Piliin ang mga app na umuubos ng oras mo. Kapag binuksan mo ang isa, may lalabas na card ng Light: 60 segundo ng Light, o ituloy nang sandali. Maglagay ng daily limit at babalik ito kapag naabot mo na.',
+  'Choose apps': 'Pumili ng apps',
+  'Light can’t show its card over other apps yet, so it sends a notification instead.': 'Hindi pa maipakita ng Light ang card sa ibabaw ng ibang apps, kaya notification muna ang ipinapadala nito.',
+  'Allow': 'Payagan',
+  'times you chose Light this week': 'beses mong pinili ang Light ngayong linggo',
+  'On. Open one of these apps and Light will be there.': 'Naka-on. Buksan ang isa sa mga app na ito at nandoon ang Light.',
+  'Change apps and limits': 'Palitan ang apps at limits',
+  'Turn off': 'I-off',
+  'Pick the apps that waste your time. A limit brings the card back when you reach it.': 'Piliin ang mga app na sayang sa oras mo. Babalik ang card kapag naabot mo ang limit.',
+  'No limit': 'Walang limit',
+  'No social, video or game apps in your screen time yet. Use your phone for a day, then come back.': 'Wala pang social, video o game apps sa screen time mo. Gamitin muna ang phone mo nang isang araw, saka bumalik.',
+  'After you save, allow Display over other apps for Light, so the card can appear over TikTok and the others.': 'Pagka-save, payagan ang Light sa Display over other apps, para lumabas ang card sa ibabaw ng TikTok at iba pa.',
+  'You chose Light': 'Pinili mo ang Light',
+  'Spend the next 60 seconds on something that gives back:': 'Gamitin ang susunod na 60 segundo sa bagay na may balik:',
+  'Breathe': 'Huminga', 'Scroll something good': 'Mag-scroll ng maganda', 'Your Light feed': 'Ang Light feed mo', 'Cast a vote': 'Bumoto',
+  'Choose who you’re becoming': 'Piliin kung sino ang nagiging ikaw',
+  'No apps chosen — nudges are off': 'Walang napiling app — naka-off ang nudges', 'Nudges are off': 'Naka-off ang nudges',
+});
+patterns.unshift(
+  [/^You chose Light over (.+?)(?: \((.+) today\))?\. That’s a vote for the person you’re becoming\.$/, (t, a, b) => `Pinili mo ang Light kaysa sa ${a}${b ? ` (${b} ngayong araw)` : ''}. Boto iyan para sa taong nagiging ikaw.`],
+  [/^Remember why: (.+)$/, 'Tandaan kung bakit: $1'],
+  [/^(.+) a day$/, '$1 kada araw'],
+  [/^Daily limit for (.+)$/, 'Daily limit para sa $1'],
+  [/^Light will be there when you open (.+)$/, 'Nandoon ang Light kapag binuksan mo ang $1'],
+  [/^(.+)\/day$/, '$1/araw'],
+);

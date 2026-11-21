@@ -66,3 +66,41 @@ export function screenAvg(n = 7, k = today()) {
   const list = Object.values(apps).map((a) => ({ ...a, m: keys.length ? a.m / keys.length : 0 })).sort((a, b) => b.m - a.m);
   return { days: keys.length, apps: list, total: sum(list.map((a) => a.m)) };
 }
+
+// ---------- "Open Light instead?" (Android app 2+) ----------
+// When you open an app you chose, the phone shows a card over it: 60 seconds of Light, or continue for a while.
+// Settings live in S.settings.nudge = { on, apps: { pkg: { n, limit } } }; the phone keeps its own copy.
+export const NUDGE_SUGGEST = ['com.zhiliaoapp.musically', 'com.ss.android.ugc.trill', 'com.facebook.katana', 'com.facebook.lite', 'com.google.android.youtube', 'com.instagram.android'];
+export const NUDGE_LIMITS = [0, 15, 30, 45, 60, 120];
+export const nudgeReady = () => { try { return (native()?.version?.() || 1) >= 2; } catch { return false; } };
+export const nudgeCfg = () => ({ on: !!S.settings.nudge?.on, apps: S.settings.nudge?.apps || {} });
+
+/** Apps worth watching: what you already watch, then your time-leak apps (most used first), then the usual suspects you have. */
+export function nudgeCandidates(k = today()) {
+  const out = new Map();
+  for (const [p, a] of Object.entries(nudgeCfg().apps)) out.set(p, { p, n: a.n, m: 0 });
+  const avg = screenAvg(30, k).apps;
+  for (const a of avg) if (['social', 'videos', 'games'].includes(a.cat) || NUDGE_SUGGEST.includes(a.p)) {
+    const o = out.get(a.p); if (o) o.m = a.m; else out.set(a.p, { p: a.p, n: a.n, m: a.m });
+  }
+  return [...out.values()].sort((a, b) => b.m - a.m);
+}
+
+/** Times you saw the card, chose Light and continued, over the last n days. */
+export function nudgeWeek(n = 7, k = today()) {
+  let all = {};
+  try { all = JSON.parse(native()?.nudgeStats?.() || '{}'); } catch { all = {}; }
+  const cut = addDays(k, -(n - 1)), r = { shown: 0, light: 0, cont: 0, apps: {} };
+  for (const [d, apps] of Object.entries(all)) if (d >= cut && d <= k) for (const [p, x] of Object.entries(apps)) {
+    r.shown += x.s || 0; r.light += x.l || 0; r.cont += x.c || 0;
+    const o = r.apps[p] || (r.apps[p] = { light: 0, cont: 0 }); o.light += x.l || 0; o.cont += x.c || 0;
+  }
+  return r;
+}
+
+/** Sends the settings (plus the card's words, already translated) to the phone. */
+export function pushNudge(t, line = '') {
+  const n = native(); if (!n?.setNudge) return false;
+  const c = nudgeCfg();
+  return n.setNudge(JSON.stringify({ on: c.on && Object.keys(c.apps).length > 0, apps: c.apps, rollover: DAY_ROLLOVER_HOURS, line, t }));
+}
